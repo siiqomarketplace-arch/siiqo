@@ -1,0 +1,282 @@
+import React, { useState, ChangeEvent, FormEvent, DragEvent} from 'react';
+import Icon from '@/components/AppIcon';
+import Image from '@/components/ui/AppImage';
+import Button from '@/components/ui/new/Button';
+import Input from '@/components/ui/new/Input';
+import Select from '@/components/ui/new/NewSelect';
+
+// Props interface with loading and disabled states
+export interface AddProductModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (formData: ProductFormData) => void;
+    editingProduct?: EditingProduct | null | any;
+    loading?: boolean;
+    disabled?: boolean;
+}
+
+// Type definitions
+interface ProductDimensions {
+    length: string;
+    width: string;
+    height: string;
+}
+
+interface ProductImage {
+    id: number;
+    file: File;
+    url: string;
+    alt: string;
+}
+
+interface ProductFormData {
+    name: string;
+    description: string;
+    category: string;
+    price: string;
+    comparePrice: string;
+    cost: string;
+    sku: string;
+    barcode: string;
+    stock: string;
+    lowStockThreshold: string;
+    weight: string;
+    dimensions: ProductDimensions;
+    status: 'active' | 'draft' | 'inactive';
+    visibility: 'visible' | 'hidden';
+    seoTitle: string;
+    seoDescription: string;
+    tags: string[];
+    images: ProductImage[];
+}
+
+interface EditingProduct {
+    name?: string;
+    description?: string;
+    category?: string;
+    price?: string;
+    comparePrice?: string;
+    cost?: string;
+    sku?: string;
+    barcode?: string;
+    stock?: string;
+    lowStockThreshold?: string;
+    weight?: string;
+    dimensions?: ProductDimensions;
+    status?: 'active' | 'draft' | 'inactive';
+    visibility?: 'visible' | 'hidden';
+    seoTitle?: string;
+    seoDescription?: string;
+    tags?: string[];
+    images?: ProductImage[];
+}
+
+interface SelectOption {
+    value: string;
+    label: string;
+}
+
+interface Tab {
+    id: string;
+    label: string;
+    icon: string;
+}
+
+const AddProductModal: React.FC<AddProductModalProps> = ({
+    isOpen,
+    onClose,
+    onSave,
+    editingProduct = null,
+    loading = false,
+    disabled = false
+}) => {
+    const [activeTab, setActiveTab] = useState<string>('basic');
+    const [formData, setFormData] = useState<ProductFormData>({
+        name: editingProduct?.name || '',
+        description: editingProduct?.description || '',
+        category: editingProduct?.category || '',
+        price: editingProduct?.price || '',
+        comparePrice: editingProduct?.comparePrice || '',
+        cost: editingProduct?.cost || '',
+        sku: editingProduct?.sku || '',
+        barcode: editingProduct?.barcode || '',
+        stock: editingProduct?.stock || '',
+        lowStockThreshold: editingProduct?.lowStockThreshold || '10',
+        weight: editingProduct?.weight || '',
+        dimensions: editingProduct?.dimensions || { length: '', width: '', height: '' },
+        status: editingProduct?.status || 'draft',
+        visibility: editingProduct?.visibility || 'visible',
+        seoTitle: editingProduct?.seoTitle || '',
+        seoDescription: editingProduct?.seoDescription || '',
+        tags: editingProduct?.tags || [],
+        images: editingProduct?.images || []
+    });
+
+    const [dragActive, setDragActive] = useState<boolean>(false);
+
+    const categoryOptions: SelectOption[] = [
+        { value: 'electronics', label: 'Electronics' },
+        { value: 'clothing', label: 'Clothing' },
+        { value: 'home', label: 'Home & Garden' },
+        { value: 'books', label: 'Books' },
+        { value: 'sports', label: 'Sports & Outdoors' }
+    ];
+
+    const statusOptions: SelectOption[] = [
+        { value: 'active', label: 'Active' },
+        { value: 'draft', label: 'Draft' },
+        { value: 'inactive', label: 'Inactive' }
+    ];
+
+    const visibilityOptions: SelectOption[] = [
+        { value: 'visible', label: 'Visible' },
+        { value: 'hidden', label: 'Hidden' }
+    ];
+
+    const tabs: Tab[] = [
+        { id: 'basic', label: 'Basic Info', icon: 'Info' },
+        { id: 'images', label: 'Images', icon: 'Image' },
+        { id: 'pricing', label: 'Pricing', icon: 'DollarSign' },
+        { id: 'inventory', label: 'Inventory', icon: 'Package' },
+        { id: 'seo', label: 'SEO', icon: 'Search' }
+    ];
+
+    const handleInputChange = (field: keyof ProductFormData, value: string): void => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleDimensionChange = (dimension: keyof ProductDimensions, value: string): void => {
+        setFormData(prev => ({
+            ...prev,
+            dimensions: {
+                ...prev.dimensions,
+                [dimension]: value
+            }
+        }));
+    };
+
+    const handleImageUpload = (files: FileList | null): void => {
+        if (!files) return;
+
+        const newImages: ProductImage[] = Array.from(files).map(file => ({
+            id: Date.now() + Math.random(),
+            file,
+            url: URL.createObjectURL(file),
+            alt: file.name
+        }));
+
+        setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, ...newImages]
+        }));
+    };
+
+    const removeImage = (imageId: number): void => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter(img => img.id !== imageId)
+        }));
+    };
+
+    const handleDrag = (e: DragEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleImageUpload(e.dataTransfer.files);
+        }
+    };
+
+    const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+        e.preventDefault();
+        if (!loading && !disabled) {
+            onSave(formData);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1300 p-4">
+            <div className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[75vh] overflow-y-scroll">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-border">
+                    <h2 className="text-xl font-semibold text-foreground">
+                        {editingProduct ? 'Edit Product' : 'Add New Product'}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-muted rounded-md transition-smooth"
+                        disabled={loading || disabled}
+                    >
+                        <Icon name="X" size={20} />
+                    </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="border-b border-border">
+                    <div className="flex overflow-x-auto">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium border-b-2 transition-smooth ${
+                                    activeTab === tab.id
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                                disabled={loading || disabled}
+                            >
+                                <Icon name={tab.icon} size={16} />
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Content */}
+                <form 
+                    onSubmit={handleSubmit} 
+                    className={`flex flex-col h-full ${loading || disabled ? 'opacity-70 pointer-events-none' : ''}`}
+                >
+                    {/* Rest of your form content */}
+                    
+                    {/* Footer */}
+                    <div className="flex items-center justify-end space-x-3 p-6 border-t border-border">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={loading || disabled}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="default"
+                            disabled={loading || disabled}
+                        >
+                            {loading ? 'Saving...' : editingProduct ? 'Update Product' : 'Save Product'}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default AddProductModal;
