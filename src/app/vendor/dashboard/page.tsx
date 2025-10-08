@@ -314,7 +314,7 @@ const VendorDashboard: React.FC = () => {
             </div>
 
             {/* Notifications */}
-            <div className="lg:col-span-4">
+            <div className="z-10 lg:col-span-4">
               <NotificationPanel notifications={dashboardData.notifications} />
             </div>
 

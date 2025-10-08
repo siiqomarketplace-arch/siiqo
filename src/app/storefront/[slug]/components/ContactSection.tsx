@@ -3,27 +3,10 @@ import Icon, { type LucideIconName } from "@/components/AppIcon";
 import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 
-// --- START OF TYPESCRIPT CONVERSION ---
-
-interface SocialMediaLinks {
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
-}
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
 interface Business {
   name: string;
   phone: string;
-  email: string;
   address: string;
-  website?: string;
-  socialMedia?: SocialMediaLinks;
-  coordinates: Coordinates;
 }
 
 interface ContactFormData {
@@ -37,8 +20,6 @@ interface ContactSectionProps {
   business: Business | any;
   onSendMessage: (data: ContactFormData) => Promise<void>;
 }
-
-// --- END OF TYPESCRIPT CONVERSION ---
 
 const ContactSection: React.FC<ContactSectionProps> = ({
   business,
@@ -101,13 +82,13 @@ const ContactSection: React.FC<ContactSectionProps> = ({
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Contact Details */}
           <div className="space-y-6">
-            <div className="space-y-4">
+            <div className="p-6 space-y-4 border-l-4 rounded-lg border-primary bg-gray-100/30">
               {/* Phone */}
-              <div className="flex items-center p-4 space-x-4 rounded-lg bg-surface">
-                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+              <div className="flex items-center space-x-2 rounded-lg bg-surface">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/5">
                   <Icon
                     name={"Phone" as LucideIconName}
-                    size={20}
+                    size={14}
                     className="text-primary"
                   />
                 </div>
@@ -120,42 +101,18 @@ const ContactSection: React.FC<ContactSectionProps> = ({
                   size="sm"
                   onClick={handleCallClick}
                   iconName={"Phone" as LucideIconName}
-                  iconSize={16}
+                  iconSize={14}
                 >
                   Call
                 </Button>
               </div>
 
-              {/* Email */}
-              <div className="flex items-center p-4 space-x-4 rounded-lg bg-surface">
-                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
-                  <Icon
-                    name={"Mail" as LucideIconName}
-                    size={20}
-                    className="text-primary"
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-text-primary">Email</p>
-                  <p className="text-text-secondary">{business.email}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEmailClick}
-                  iconName={"Mail" as LucideIconName}
-                  iconSize={16}
-                >
-                  Email
-                </Button>
-              </div>
-
               {/* Address */}
-              <div className="flex items-center p-4 space-x-4 rounded-lg bg-surface">
-                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+              <div className="flex items-center space-x-2 rounded-lg bg-surface">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/5">
                   <Icon
                     name={"MapPin" as LucideIconName}
-                    size={20}
+                    size={14}
                     className="text-primary"
                   />
                 </div>
@@ -168,82 +125,12 @@ const ContactSection: React.FC<ContactSectionProps> = ({
                   size="sm"
                   onClick={handleDirectionsClick}
                   iconName={"Navigation" as LucideIconName}
-                  iconSize={16}
+                  iconSize={14}
                 >
                   Directions
                 </Button>
               </div>
-
-              {/* Website */}
-              {business.website && (
-                <div className="flex items-center p-4 space-x-4 rounded-lg bg-surface">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
-                    <Icon
-                      name={"Globe" as LucideIconName}
-                      size={20}
-                      className="text-primary"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-text-primary">Website</p>
-                    <p className="text-text-secondary">{business.website}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(business.website, "_blank")}
-                    iconName={"ExternalLink" as LucideIconName}
-                    iconSize={16}
-                  >
-                    Visit
-                  </Button>
-                </div>
-              )}
             </div>
-
-            {/* Social Media */}
-            {business.socialMedia && (
-              <div>
-                <h3 className="mb-3 font-medium text-text-primary">
-                  Follow Us
-                </h3>
-                <div className="flex space-x-3">
-                  {business.socialMedia.facebook && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        window.open(business.socialMedia!.facebook, "_blank")
-                      }
-                    >
-                      <Icon name={"Facebook" as LucideIconName} size={20} />
-                    </Button>
-                  )}
-                  {business.socialMedia.instagram && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        window.open(business.socialMedia!.instagram, "_blank")
-                      }
-                    >
-                      <Icon name={"Instagram" as LucideIconName} size={20} />
-                    </Button>
-                  )}
-                  {business.socialMedia.twitter && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        window.open(business.socialMedia!.twitter, "_blank")
-                      }
-                    >
-                      <Icon name={"Twitter" as LucideIconName} size={20} />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Contact Form */}
@@ -312,21 +199,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({
               </Button>
             </form>
           </div>
-        </div>
-      </div>
-
-      {/* Map */}
-      <div>
-        <h3 className="mb-4 font-medium text-text-primary">Location</h3>
-        <div className="w-full h-64 overflow-hidden border rounded-lg lg:h-80 border-border">
-          <iframe
-            width="100%"
-            height="100%"
-            loading="lazy"
-            title={business.name}
-            referrerPolicy="no-referrer-when-downgrade"
-            src={`https://www.google.com/maps?q=${business.coordinates.lat},${business.coordinates.lng}&z=15&output=embed`}
-          />
         </div>
       </div>
     </div>

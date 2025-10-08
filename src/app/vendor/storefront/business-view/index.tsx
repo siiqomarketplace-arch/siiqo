@@ -30,7 +30,6 @@ interface Storefront {
   email: string;
   phone: string;
   state: string;
-  // Additional properties to match Business interface for AboutSection
   name?: string;
   story?: string;
   established?: number | string;
@@ -237,7 +236,7 @@ const BusinessStorefrontView: React.FC = () => {
         tabs={tabs}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 lg:pb-8">
+      <main className="px-4 py-8 pb-20 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:pb-8">
         {renderTabContent()}
       </main>
     </div>

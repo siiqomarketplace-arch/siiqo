@@ -1,28 +1,34 @@
-import React, { useState, ChangeEvent, FormEvent, DragEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  FormEvent,
+  DragEvent,
+} from "react";
 import Icon from "@/components/AppIcon";
 import Image from "@/components/ui/AppImage";
 import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 import Select from "@/components/ui/new/NewSelect";
 
-// Type definitions
+// --- Type Definitions ---
 interface ProductDimensions {
   length: string;
   width: string;
   height: string;
 }
 
-interface ProductImage {
+interface ManagedImage {
   id: number;
   file?: File;
   url: string;
   alt: string;
-  serverId?: number; // Server-side image ID for deletion
-  isUploaded?: boolean; // Track if image is uploaded to server
-  isUploading?: boolean; // Track upload status
+  serverId?: number;
+  isUploaded?: boolean;
+  isUploading?: boolean;
 }
 
-interface ProductFormData {
+export interface ProductFormData {
   name: string;
   description: string;
   category: string;
@@ -40,28 +46,15 @@ interface ProductFormData {
   seoTitle: string;
   seoDescription: string;
   tags: string[];
-  images: ProductImage[];
+  images: ManagedImage[];
 }
 
-interface EditingProduct {
-  name?: string;
-  description?: string;
-  category?: string;
-  price?: string;
-  comparePrice?: string;
-  cost?: string;
-  sku?: string;
-  barcode?: string;
-  stock?: string;
-  lowStockThreshold?: string;
-  weight?: string;
-  dimensions?: ProductDimensions;
-  status?: "active" | "draft" | "inactive";
-  visibility?: "visible" | "hidden";
-  seoTitle?: string;
-  seoDescription?: string;
-  tags?: string[];
-  images?: ProductImage[];
+interface AddProductModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (formData: ProductFormData) => void;
+  editingProduct?: any | null;
+  loading?: boolean;
 }
 
 interface SelectOption {
@@ -74,102 +67,65 @@ interface Tab {
   label: string;
   icon: string;
 }
-interface AddProductModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (formData: ProductFormData) => Promise<void> | void; // ✅ allow both
-  editingProduct?: EditingProduct | null | any;
-  loading?: boolean;
-  disabled?: boolean;
-}
 
-// API Functions
-// API Functions
+// --- Helper Functions ---
 const getVendorToken = (): string | null => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("vendorToken");
-  }
-  return null;
+  return typeof window !== "undefined"
+    ? localStorage.getItem("vendorToken")
+    : null;
 };
 
-const uploadImageToServer = async (
-  file: File
-): Promise<{ id: number; url: string }> => {
+const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
   const token = getVendorToken();
+  if (!token) throw new Error("Authentication token not found.");
+
   const formData = new FormData();
-
-  // Try different field names - test one at a time
-  formData.append("files", file); // Most common alternative
-  // formData.append("image", file);  // Your current one
-  // formData.append("upload", file);  // Another common one
-  // formData.append("files", file);   // Another possibility
-
-  // Add debugging
-  console.log("File details:", {
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    lastModified: file.lastModified,
-  });
-
-  console.log("FormData contents:");
-  for (let [key, value] of formData.entries()) {
-    console.log(key, value);
-  }
+  formData.append("files", file);
 
   const response = await fetch(
     "https://server.bizengo.com/api/vendor/upload-file",
     {
       method: "POST",
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-        // Don't manually set Content-Type for FormData
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     }
-  );
-
-  console.log("Response status:", response.status);
-  console.log(
-    "Response headers:",
-    Object.fromEntries(response.headers.entries())
   );
 
   if (!response.ok) {
     const errorData = await response
       .json()
       .catch(() => ({ message: "Upload failed" }));
-    console.error("Upload response:", errorData);
-    throw new Error(errorData.message || `Upload failed: ${response.status}`);
+    throw new Error(
+      errorData.message || `Upload failed with status: ${response.status}`
+    );
   }
 
   const result = await response.json();
-  console.log("Success response:", result);
-
-  return {
-    id: result.id || result.data?.id,
-    url: result.url || result.data?.url || result.file_url,
-  };
-};
-const deleteImageFromServer = async (imageId: number): Promise<void> => {
-  const token = getVendorToken();
-  const response = await fetch(
-    `https://server.bizengo.com/api/vendor/delete-image/${imageId}`,
-    {
-      method: "DELETE",
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: "Delete failed" }));
-    throw new Error(errorData.message || `Delete failed: ${response.status}`);
+  if (!result.urls || result.urls.length === 0) {
+    throw new Error("API did not return an image URL.");
   }
+  return { url: result.urls[0] };
+};
+
+const initialFormData: ProductFormData = {
+  name: "",
+  description: "",
+  category: "electronics",
+  price: "",
+  comparePrice: "",
+  cost: "",
+  sku: "",
+  barcode: "",
+  stock: "",
+  lowStockThreshold: "10",
+  weight: "",
+  dimensions: { length: "", width: "", height: "" },
+  status: "active",
+  visibility: "visible",
+  seoTitle: "",
+  seoDescription: "",
+  tags: [],
+  images: [],
 };
 
 const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -178,38 +134,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   onSave,
   editingProduct = null,
   loading = false,
-  disabled = false,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("basic");
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: editingProduct?.name || "",
-    description: editingProduct?.description || "",
-    category: editingProduct?.category || "",
-    price: editingProduct?.price || "",
-    comparePrice: editingProduct?.comparePrice || "",
-    cost: editingProduct?.cost || "",
-    sku: editingProduct?.sku || "",
-    barcode: editingProduct?.barcode || "",
-    stock: editingProduct?.stock || "",
-    lowStockThreshold: editingProduct?.lowStockThreshold || "10",
-    weight: editingProduct?.weight || "",
-    dimensions: editingProduct?.dimensions || {
-      length: "",
-      width: "",
-      height: "",
-    },
-    status: editingProduct?.status || "draft",
-    visibility: editingProduct?.visibility || "visible",
-    seoTitle: editingProduct?.seoTitle || "",
-    seoDescription: editingProduct?.seoDescription || "",
-    tags: editingProduct?.tags || [],
-    images: (editingProduct?.images || []).map((img: any) =>
-      typeof img === "string"
-        ? { url: img, isUploaded: true } // normalize backend strings
-        : img
-    ),
-  });
-
+  const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
 
@@ -217,8 +144,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     { value: "electronics", label: "Electronics" },
     { value: "clothing", label: "Clothing" },
     { value: "home", label: "Home & Garden" },
-    { value: "books", label: "Books" },
-    { value: "sports", label: "Sports & Outdoors" },
   ];
 
   const statusOptions: SelectOption[] = [
@@ -240,337 +165,242 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     { id: "seo", label: "SEO", icon: "Search" },
   ];
 
+  useEffect(() => {
+    if (isOpen) {
+      if (editingProduct) {
+        setFormData({
+          name: editingProduct.name || "",
+          description: editingProduct.description || "",
+          category: editingProduct.category || "electronics",
+          price: (editingProduct.price / 100).toString() || "",
+          comparePrice: (editingProduct.comparePrice / 100)?.toString() || "",
+          cost: (editingProduct.cost / 100)?.toString() || "",
+          sku: editingProduct.sku || "",
+          barcode: editingProduct.barcode || "",
+          stock: editingProduct.stock?.toString() || "",
+          lowStockThreshold:
+            editingProduct.lowStockThreshold?.toString() || "10",
+          weight: editingProduct.weight?.toString() || "",
+          dimensions: editingProduct.dimensions || {
+            length: "",
+            width: "",
+            height: "",
+          },
+          status: editingProduct.status || "active",
+          visibility:
+            editingProduct.visibility === false ? "hidden" : "visible",
+          seoTitle: editingProduct.seoTitle || "",
+          seoDescription: editingProduct.seoDescription || "",
+          tags: editingProduct.tags || [],
+          images: (editingProduct.images || []).map(
+            (img: any, index: number) => ({
+              id: Date.now() + index,
+              url: typeof img === "string" ? img : img.url,
+              alt: "Existing image",
+              isUploaded: true,
+            })
+          ),
+        });
+      } else {
+        setFormData(initialFormData);
+      }
+      setActiveTab("basic");
+      setUploadErrors([]);
+    }
+  }, [isOpen, editingProduct]);
+
   const handleInputChange = (
-    field: keyof ProductFormData,
-    value: string
-  ): void => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (field: keyof ProductFormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleDimensionChange = (
     dimension: keyof ProductDimensions,
     value: string
-  ): void => {
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      dimensions: {
-        ...prev.dimensions,
-        [dimension]: value,
-      },
+      dimensions: { ...prev.dimensions, [dimension]: value },
     }));
   };
 
-  const handleImageUpload = async (files: FileList | null): Promise<void> => {
+  const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
-
-    setUploadErrors([]); // Clear previous errors
-
-    // Create temporary images with local URLs
-    const tempImages: ProductImage[] = Array.from(files).map((file) => ({
-      id: Date.now() + Math.random(),
-      file,
-      url: URL.createObjectURL(file),
-      alt: file.name,
-      isUploaded: false,
-      isUploading: true,
-    }));
-
-    // Add temporary images to state immediately for UI feedback
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...tempImages],
-    }));
-
-    // Upload each image
-    const uploadPromises = tempImages.map(async (tempImage) => {
-      try {
-        const uploadResult = await uploadImageToServer(tempImage.file!);
-
-        // Update the image with server data
-        setFormData((prev) => ({
-          ...prev,
-          images: prev.images.map((img) =>
-            img.id === tempImage.id
-              ? {
-                  ...img,
-                  serverId: uploadResult.id,
-                  url: uploadResult.url,
-                  isUploaded: true,
-                  isUploading: false,
-                }
-              : img
-          ),
-        }));
-
-        return { success: true, imageId: tempImage.id };
-      } catch (error) {
-        console.error("Image upload failed:", error);
-
-        // Remove failed image from state
-        setFormData((prev) => ({
-          ...prev,
-          images: prev.images.filter((img) => img.id !== tempImage.id),
-        }));
-
-        // Add error message
-        setUploadErrors((prev) => [
-          ...prev,
-          `Failed to upload ${tempImage.alt}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        ]);
-
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
+    setUploadErrors([]);
+    Array.from(files).forEach((file) => {
+      const tempId = Date.now() + Math.random();
+      const tempImage: ManagedImage = {
+        id: tempId,
+        file,
+        url: URL.createObjectURL(file),
+        alt: file.name,
+        isUploading: true,
+        isUploaded: false,
+      };
+      setFormData((prev) => ({ ...prev, images: [...prev.images, tempImage] }));
+      uploadImageToServer(file)
+        .then((result) => {
+          setFormData((prev) => ({
+            ...prev,
+            images: prev.images.map((img) =>
+              img.id === tempId
+                ? {
+                    ...img,
+                    url: result.url,
+                    isUploaded: true,
+                    isUploading: false,
+                    file: undefined,
+                  }
+                : img
+            ),
+          }));
+        })
+        .catch((error) => {
+          console.error("Image upload failed:", error);
+          setFormData((prev) => ({
+            ...prev,
+            images: prev.images.filter((img) => img.id !== tempId),
+          }));
+          setUploadErrors((prev) => [
+            ...prev,
+            `Failed to upload ${file.name}: ${error.message}`,
+          ]);
+        });
     });
-
-    await Promise.all(uploadPromises);
   };
 
-  const removeImage = async (imageId: number): Promise<void> => {
-    const imageToRemove = formData.images.find((img) => img.id === imageId);
-
-    if (!imageToRemove) return;
-
-    // If image is uploaded to server, delete it from server first
-    if (imageToRemove.isUploaded && imageToRemove.serverId) {
-      try {
-        await deleteImageFromServer(imageToRemove.serverId);
-      } catch (error) {
-        console.error("Failed to delete image from server:", error);
-        setUploadErrors((prev) => [
-          ...prev,
-          `Failed to delete image: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        ]);
-        return; // Don't remove from UI if server deletion failed
-      }
-    }
-
-    // Remove image from state
+  const removeImage = (imageId: number) => {
     setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((img) => img.id !== imageId),
     }));
-
-    // Revoke object URL to free memory
-    if (imageToRemove.url.startsWith("blob:")) {
-      URL.revokeObjectURL(imageToRemove.url);
-    }
   };
 
-  const uploadAllImages = async (): Promise<boolean> => {
-    const unuploadedImages = formData.images.filter(
-      (img) => !img.isUploaded && img.file
-    );
-
-    if (unuploadedImages.length === 0) return true;
-
-    setUploadErrors([]);
-
-    const uploadPromises = unuploadedImages.map(async (image) => {
-      try {
-        const uploadResult = await uploadImageToServer(image.file!);
-
-        setFormData((prev) => ({
-          ...prev,
-          images: prev.images.map((img) =>
-            img.id === image.id
-              ? {
-                  ...img,
-                  serverId: uploadResult.id,
-                  url: uploadResult.url,
-                  isUploaded: true,
-                  isUploading: false,
-                }
-              : img
-          ),
-        }));
-
-        return { success: true };
-      } catch (error) {
-        setUploadErrors((prev) => [
-          ...prev,
-          `Failed to upload ${image.alt}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        ]);
-        return { success: false };
-      }
-    });
-
-    const results = await Promise.all(uploadPromises);
-    return results.every((result) => result.success);
-  };
-
-  const handleDrag = (e: DragEvent<HTMLDivElement>): void => {
+  const handleDrag = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleImageUpload(e.dataTransfer.files);
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Check if all images are uploaded
-    const hasUnuploadedImages = formData.images.some(
-      (img: ProductImage) => !img.isUploaded
-    );
-
-    if (hasUnuploadedImages) {
-      alert("Please wait for all images to upload before saving the product.");
+    if (formData.images.some((img) => img.isUploading)) {
+      alert("Please wait for all images to finish uploading.");
       return;
     }
-
-    // ✅ Map frontend -> backend structure
-    const payload = {
-      product_name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      product_price: parseFloat(formData.price) || 0,
-      quantity: parseInt(formData.stock, 10) || 0,
-      status: formData.status || "active",
-      visibility: formData.visibility === "visible",
-      images: formData.images
-        .filter((img) => img.isUploaded)
-        .map((img) => img.url),
-    };
-
-    console.log("📦 Final Payload:", payload);
-
-    onSave(payload as any);
+    onSave(formData);
   };
 
   if (!isOpen) return null;
 
   const hasUploadingImages = formData.images.some((img) => img.isUploading);
-  const hasUnuploadedImages = formData.images.some(
-    (img) => !img.isUploaded && img.file
-  );
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-1300">
-      <div className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[75vh] overflow-y-scroll">
-        {/* Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-xl font-semibold text-foreground">
             {editingProduct ? "Edit Product" : "Add New Product"}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-muted transition-smooth"
+            className="p-2 transition-colors rounded-md hover:bg-muted"
           >
             <Icon name="X" size={20} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-border">
-          <div className="flex overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium border-b-2 transition-smooth ${
-                  activeTab === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon name={tab.icon} size={16} />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
         <form
           onSubmit={handleSubmit}
-          className={`flex flex-col h-full ${
-            loading || disabled ? "opacity-70 pointer-events-none" : ""
-          }`}
+          className="flex flex-col flex-1 overflow-hidden"
         >
+          <div className="border-b border-border">
+            <div className="flex overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon name={tab.icon} size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex-1 p-6 overflow-y-auto">
             {activeTab === "basic" && (
               <div className="space-y-6">
                 <Input
                   label="Product Name"
-                  type="text"
+                  name="name"
                   value={formData.name}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    handleInputChange("name", e.target.value)
-                  }
+                  onChange={handleInputChange}
                   placeholder="Enter product name"
                   required
                 />
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-foreground">
                     Description
                   </label>
                   <textarea
+                    name="description"
                     value={formData.description}
-                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                      handleInputChange("description", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="Enter product description"
                     rows={4}
-                    className="w-full px-3 py-2 border rounded-lg border-border bg-background placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-border bg-background"
                   />
                 </div>
-
                 <Select
                   label="Category"
                   options={categoryOptions}
                   value={formData.category}
-                  onChange={(value: string) =>
-                    handleInputChange("category", value)
+                  onChange={(value) =>
+                    handleSelectChange("category", value as string)
                   }
                   placeholder="Select category"
                   required
                 />
-
                 <div className="grid grid-cols-2 gap-4">
                   <Select
                     label="Status"
                     options={statusOptions}
                     value={formData.status}
-                    onChange={(value: string) =>
-                      handleInputChange(
+                    onChange={(value) =>
+                      handleSelectChange(
                         "status",
                         value as ProductFormData["status"]
                       )
                     }
                   />
-
                   <Select
                     label="Visibility"
                     options={visibilityOptions}
                     value={formData.visibility}
-                    onChange={(value: string) =>
-                      handleInputChange(
+                    onChange={(value) =>
+                      handleSelectChange(
                         "visibility",
                         value as ProductFormData["visibility"]
                       )
@@ -582,35 +412,19 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
             {activeTab === "images" && (
               <div className="space-y-6">
-                {/* Upload Errors */}
                 {uploadErrors.length > 0 && (
-                  <div className="p-3 border rounded-lg bg-error/10 border-error/20">
-                    <h4 className="mb-2 text-sm font-medium text-error">
-                      Upload Errors:
-                    </h4>
-                    <ul className="space-y-1 text-sm text-error">
-                      {uploadErrors.map((error, index) => (
-                        <li key={index}>• {error}</li>
-                      ))}
-                    </ul>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setUploadErrors([])}
-                    >
-                      Clear Errors
-                    </Button>
+                  <div className="p-3 text-sm border rounded-lg bg-error/10 border-error/20 text-error">
+                    {uploadErrors.map((err, i) => (
+                      <p key={i}>{err}</p>
+                    ))}
                   </div>
                 )}
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-foreground">
                     Product Images
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-smooth ${
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                       dragActive
                         ? "border-primary bg-primary/5"
                         : "border-border"
@@ -628,24 +442,19 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     <p className="mb-2 text-muted-foreground">
                       Drag and drop images here, or click to select
                     </p>
-                    <p className="mb-4 text-xs text-muted-foreground">
-                      Images will be uploaded automatically
-                    </p>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        handleImageUpload(e.target.files)
-                      }
+                      onChange={(e) => handleImageUpload(e.target.files)}
                       className="hidden"
-                      id="image-upload"
+                      id="image-upload-input"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() =>
-                        document.getElementById("image-upload")?.click()
+                        document.getElementById("image-upload-input")?.click()
                       }
                       disabled={hasUploadingImages}
                     >
@@ -653,73 +462,32 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     </Button>
                   </div>
                 </div>
-
-                {/* Upload All Button */}
-                {hasUnuploadedImages && (
-                  <div className="flex justify-center">
-                    <Button
-                      type="button"
-                      variant="default"
-                      onClick={uploadAllImages}
-                      disabled={hasUploadingImages}
-                    >
-                      Upload All Images
-                    </Button>
-                  </div>
-                )}
-
                 {formData.images.length > 0 && (
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    {formData.images.map((image, index) => (
-                      <div key={image.id} className="relative group">
-                        <div className="overflow-hidden rounded-lg aspect-square bg-muted">
-                          <Image
-                            src={image.url}
-                            alt={image.alt}
-                            className="object-cover w-full h-full"
-                          />
-                          {image.isUploading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                              <div className="w-6 h-6 border-b-2 border-white rounded-full animate-spin"></div>
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeImage(image.id)}
-                          disabled={image.isUploading}
-                          className="absolute p-1 rounded-full opacity-0 top-2 right-2 bg-error text-error-foreground group-hover:opacity-100 transition-smooth disabled:opacity-50"
-                        >
-                          <Icon name="X" size={14} />
-                        </button>
-
-                        {index === 0 && (
-                          <span className="absolute px-2 py-1 text-xs rounded bottom-2 left-2 bg-primary text-primary-foreground">
-                            Main
-                          </span>
+                    {formData.images.map((image) => (
+                      <div
+                        key={image.id}
+                        className="relative group aspect-square"
+                      >
+                        <Image
+                          src={image.url}
+                          alt={image.alt}
+                          className="object-cover w-full h-full rounded-lg"
+                        />
+                        {image.isUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/60">
+                            <div className="w-8 h-8 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                          </div>
                         )}
-
-                        {/* Upload Status */}
-                        <div className="absolute bottom-2 right-2">
-                          {image.isUploading && (
-                            <span className="px-2 py-1 text-xs rounded bg-warning text-warning-foreground">
-                              Uploading...
-                            </span>
-                          )}
-                          {image.isUploaded && (
-                            <span className="px-2 py-1 text-xs rounded bg-success text-success-foreground">
-                              ✓
-                            </span>
-                          )}
-                          {!image.isUploaded &&
-                            !image.isUploading &&
-                            image.file && (
-                              <span className="px-2 py-1 text-xs rounded bg-muted text-muted-foreground">
-                                Pending
-                              </span>
-                            )}
-                        </div>
+                        {!image.isUploading && (
+                          <button
+                            type="button"
+                            onClick={() => removeImage(image.id)}
+                            className="absolute p-1 text-white transition-opacity bg-red-600 rounded-full opacity-0 top-1 right-1 group-hover:opacity-100"
+                          >
+                            <Icon name="X" size={14} />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -732,71 +500,32 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <Input
                     label="Price"
+                    name="price"
                     type="number"
                     value={formData.price}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("price", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
                     required
                   />
-
                   <Input
                     label="Compare at Price"
+                    name="comparePrice"
                     type="number"
                     value={formData.comparePrice}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("comparePrice", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
-                    description="Show a higher price for comparison"
                   />
-
                   <Input
                     label="Cost per Item"
+                    name="cost"
                     type="number"
                     value={formData.cost}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("cost", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
-                    description="For profit calculations"
                   />
-                </div>
-
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <h4 className="mb-2 font-medium text-foreground">
-                    Profit Calculation
-                  </h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Price:</span>
-                      <span className="text-foreground">
-                        ${formData.price || "0.00"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cost:</span>
-                      <span className="text-foreground">
-                        -${formData.cost || "0.00"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between pt-1 border-t border-border">
-                      <span className="font-medium text-foreground">
-                        Profit:
-                      </span>
-                      <span className="font-medium text-success">
-                        $
-                        {(
-                          (parseFloat(formData.price) || 0) -
-                          (parseFloat(formData.cost) || 0)
-                        ).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -806,93 +535,77 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Input
                     label="SKU"
-                    type="text"
+                    name="sku"
                     value={formData.sku}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("sku", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="Enter SKU"
                   />
-
                   <Input
                     label="Barcode"
-                    type="text"
+                    name="barcode"
                     value={formData.barcode}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("barcode", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="Enter barcode"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Input
                     label="Stock Quantity"
+                    name="stock"
                     type="number"
                     value={formData.stock}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("stock", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="0"
                     min="0"
                     required
                   />
-
                   <Input
                     label="Low Stock Threshold"
+                    name="lowStockThreshold"
                     type="number"
                     value={formData.lowStockThreshold}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("lowStockThreshold", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="10"
                     min="0"
-                    description="Alert when stock falls below this number"
                   />
                 </div>
-
                 <div className="space-y-4">
                   <h4 className="font-medium text-foreground">
                     Shipping Information
                   </h4>
-
                   <Input
                     label="Weight (kg)"
+                    name="weight"
                     type="number"
                     value={formData.weight}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("weight", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="0.0"
                     step="0.1"
                   />
-
                   <div className="grid grid-cols-3 gap-4">
                     <Input
                       label="Length (cm)"
                       type="number"
                       value={formData.dimensions.length}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e) =>
                         handleDimensionChange("length", e.target.value)
                       }
                       placeholder="0"
                     />
-
                     <Input
                       label="Width (cm)"
                       type="number"
                       value={formData.dimensions.width}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e) =>
                         handleDimensionChange("width", e.target.value)
                       }
                       placeholder="0"
                     />
-
                     <Input
                       label="Height (cm)"
                       type="number"
                       value={formData.dimensions.height}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e) =>
                         handleDimensionChange("height", e.target.value)
                       }
                       placeholder="0"
@@ -906,72 +619,46 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               <div className="space-y-6">
                 <Input
                   label="SEO Title"
-                  type="text"
+                  name="seoTitle"
                   value={formData.seoTitle}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    handleInputChange("seoTitle", e.target.value)
-                  }
+                  onChange={handleInputChange}
                   placeholder="Enter SEO title"
-                  description="Recommended: 50-60 characters"
                 />
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-foreground">
                     SEO Description
                   </label>
                   <textarea
+                    name="seoDescription"
                     value={formData.seoDescription}
-                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                      handleInputChange("seoDescription", e.target.value)
-                    }
+                    onChange={handleInputChange}
                     placeholder="Enter SEO description"
                     rows={3}
-                    className="w-full px-3 py-2 border rounded-lg border-border bg-background placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Recommended: 150-160 characters
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-foreground">
-                    Product Tags
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter tags separated by commas"
-                    description="Help customers find your product"
+                    className="w-full px-3 py-2 border rounded-lg border-border bg-background"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end p-6 space-x-3 border-t border-border">
+          <div className="flex items-center justify-end p-6 space-x-3 border-t border-border bg-card">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading || disabled || hasUploadingImages}
+              disabled={loading}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="default"
-              disabled={
-                loading || disabled || hasUploadingImages || hasUnuploadedImages
-              }
+              disabled={loading || hasUploadingImages}
             >
               {loading
                 ? "Saving..."
                 : hasUploadingImages
-                ? "Uploading images..."
-                : hasUnuploadedImages
-                ? "Upload images first"
-                : editingProduct
-                ? "Update Product"
+                ? "Uploading..."
                 : "Save Product"}
             </Button>
           </div>

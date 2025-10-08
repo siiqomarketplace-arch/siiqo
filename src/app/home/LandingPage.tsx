@@ -1,9 +1,14 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { Search, ShoppingBag, AlertCircle } from "lucide-react";
 import api from "@/lib/api_client";
 import api_endpoints from "@/hooks/api_endpoints";
 import { Storefront, APIResponse } from "@/types/storeFront";
-import { StorefrontCard, StorefrontSkeleton } from "@/app/home/ui/StoreFrontCard";
+import {
+  StorefrontCard,
+  StorefrontSkeleton,
+} from "@/app/home/ui/StoreFrontCard";
 
 const LandingPage: React.FC = () => {
   const [distance, setDistance] = useState<string>("2 km");
@@ -22,8 +27,7 @@ const LandingPage: React.FC = () => {
         const data: APIResponse = await api.get(
           api_endpoints.FETCH_STOREFRONTS
         );
-        
-        console.log("store front: ", data);
+
         setStorefronts(data.storefronts);
       } catch (err: any) {
         setError(err.message || "Failed to load storefronts");
@@ -118,7 +122,7 @@ const LandingPage: React.FC = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StorefrontSkeleton count={6} />
           </div>
         )}

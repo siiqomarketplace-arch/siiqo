@@ -105,6 +105,8 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  console.log("popular token: ", token);
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
@@ -368,6 +370,7 @@ export default function MarketplaceBrowse() {
   };
 
   // Fetch cart quantities
+  // Update fetchCartQuantities to handle errors better
   const fetchCartQuantities = async () => {
     try {
       const data = await apiCall(api_endpoints.FETCH_CART_ITEMS);
@@ -378,10 +381,45 @@ export default function MarketplaceBrowse() {
       });
 
       setCartQuantities(quantities);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching cart quantities:", error);
+
+      // Don't show notification for cart fetch errors during initial load
+      // The user might not have any items in cart yet, which could cause 500
+      if (error.message.includes("500")) {
+        console.log(
+          "Cart is empty or endpoint issue - continuing without cart data"
+        );
+        setCartQuantities({}); // Set empty cart
+      }
     }
   };
+
+  // Update your initial load to not break if cart fails
+  useEffect(() => {
+    const initializeData = async () => {
+      setLoading(true);
+
+      // Fetch products first
+      const fetchedProducts = await fetchProductsFromAPI();
+      setAllProducts(fetchedProducts);
+
+      // Try to fetch cart, but don't fail if it errors
+      if (typeof window !== "undefined" && sessionStorage.getItem("RSToken")) {
+        try {
+          await fetchCartQuantities();
+        } catch (error) {
+          console.log("Could not load cart - user may not have cart yet");
+          // Continue without cart data
+        }
+      }
+
+      setLoading(false);
+      setInitialLoadComplete(true);
+    };
+
+    initializeData();
+  }, []);
 
   // Detect mobile
   useEffect(() => {
@@ -569,8 +607,8 @@ export default function MarketplaceBrowse() {
   };
 
   // Navigate to details page
-  const router = useRouter()
-  
+  const router = useRouter();
+
   const handleNavigateToDetailPage = (item: Product) => {
     router.push(`/product-detail?id=${item.id}`);
   };
@@ -1018,10 +1056,13 @@ export default function MarketplaceBrowse() {
                           className="flex items-center justify-center w-full gap-2 px-4 text-sm transition-colors disabled:opacity-50"
                         >
                           <LucideCircleArrowOutUpRight className="w-4 h-4" />
-                          <span> {isDisabled ? "Viewing..." : "View Detail"}</span>
+                          <span>
+                            {" "}
+                            {isDisabled ? "Viewing..." : "View Detail"}
+                          </span>
                         </Button>
                       </div>
-                      
+
                       <Button
                         onClick={() => {
                           handleBuyNow(selectedProduct);

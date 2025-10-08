@@ -1,13 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
-import { Storefront } from "@/types/storeFront";
 import Skeleton from "../../../components/skeleton";
+import { Storefront } from "@/types/storeFront";
 
-interface StorefrontCardProps {
-  storefront: Storefront;
-}
+export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
+  const router = useRouter();
 
-export const StorefrontCard: React.FC<StorefrontCardProps> = ({ storefront }) => {
+  useEffect(() => {
+    sessionStorage.setItem(
+      "selectedVendorEmail",
+      storefront.vendor?.email || ""
+    );
+    sessionStorage.setItem(
+      "selectedBusinessName",
+      storefront.business_name || ""
+    );
+
+    if (!storefront.business_name) {
+      console.error("Missing vendor email or business name");
+    }
+  }, [storefront]);
+
   const formatEstablishedDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -35,8 +49,31 @@ export const StorefrontCard: React.FC<StorefrontCardProps> = ({ storefront }) =>
     )}&background=${colors[colorIndex]}&color=fff&size=300`;
   };
 
+  const handleClick = () => {
+    if (storefront.business_name && storefront.vendor?.email) {
+      const slugify = (text: string) =>
+        text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
+      const businessSlug = slugify(storefront.business_name);
+
+      // Save vendor email temporarily in sessionStorage
+      sessionStorage.setItem("selectedVendorEmail", storefront.vendor.email);
+
+      // Navigate without exposing email in URL
+      router.push(`/storefront/${encodeURIComponent(businessSlug)}`);
+    } else {
+      console.warn("Business name or vendor email missing");
+    }
+  };
+
   return (
-    <div className="overflow-hidden transition-shadow bg-white rounded-lg shadow-sm hover:shadow-md">
+    <div
+      onClick={handleClick}
+      className="overflow-hidden transition-all duration-200 bg-white rounded-lg cursor-pointer hover:-translate-y-1 hover:shadow-md"
+    >
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200">
         <img
           src={
@@ -99,7 +136,7 @@ export const StorefrontCard: React.FC<StorefrontCardProps> = ({ storefront }) =>
   );
 };
 
-//  storefront skeleton component
+// Storefront Skeleton
 interface StorefrontSkeletonProps {
   count?: number;
 }
@@ -112,25 +149,16 @@ export const StorefrontSkeleton: React.FC<StorefrontSkeletonProps> = ({
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
-          className="overflow-hidden bg-white rounded-lg shadow-md"
+          className="overflow-hidden bg-white border border-gray-200 rounded-lg"
         >
-          {/* Banner */}
           <Skeleton width="100%" height="192px" className="rounded-t-lg" />
-
           <div className="p-4">
-            {/* Title */}
             <Skeleton width="70%" height="24px" className="mb-2" />
-
-            {/* Description */}
             <Skeleton count={2} width="100%" height="16px" className="mb-1" />
-
-            {/* Footer info */}
             <div className="flex items-center justify-between mt-3">
               <Skeleton width="120px" height="14px" />
               <Skeleton width="60px" height="14px" />
             </div>
-
-            {/* Vendor info */}
             <div className="pt-3 mt-3 border-t border-gray-100">
               <div className="flex items-center space-x-2">
                 <Skeleton type="circle" width="24px" height="24px" />

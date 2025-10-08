@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 // import AddProductModal from "./components/AddProductModal";
 import { useRouter } from "next/navigation";
 import { RoleProvider } from "@/components/ui/RoleContextNavigation";
@@ -102,12 +102,14 @@ const ToastContainer: React.FC<{
 
   return (
     <div className="fixed z-50 max-w-sm top-4 right-4 w-96">
-      {toasts.map(toast => (
+      {toasts.map((toast) => (
         <ToastNotification key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
     </div>
   );
 };
+
+// --- START OF TYPESCRIPT CONVERSION ---
 
 // Define specific string literal types for controlled vocabularies
 type ProductStatus = "active" | "draft" | "inactive" | "out-of-stock";
@@ -147,16 +149,10 @@ interface AddProductRequest {
   status: string;
   visibility: boolean;
   images: string[];
-  quantity?: number;
-  stock?: number;
-  sku?: string;
-  barcode?: string;
-  weight?: number;
-  compare_price?: number;
-  cost?: number;
+  quantity: number; // ✅ added
 }
 
-interface EditProductRequest extends AddProductRequest {}
+interface EditProductRequest extends Partial<AddProductRequest> {}
 
 interface ApiErrorResponse {
   message?: string;
@@ -201,14 +197,19 @@ interface VendorData {
 }
 
 // API Service class for product operations
+
+// Updated ProductApiService class with the new token and proper error handling
+
 class ProductApiService {
   private static baseUrl = "https://server.bizengo.com/api/vendor";
 
+  // Your NEW token (but you'll need to get an even newer one since this expires Jan 23, 2025)
   private static async getAuthToken(): Promise<string> {
     if (typeof window === "undefined") {
-      return "";
+      return ""; // Return empty string on server-side
     }
 
+    // Check localStorage first
     const storedToken = window.localStorage.getItem("vendorToken");
 
     if (storedToken && storedToken !== "null") {
@@ -225,15 +226,18 @@ class ProductApiService {
       }
     }
 
+    // Use your NEW token as fallback (but this will also expire)
     const newToken =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NTg0OTUwMCwianRpIjoiYWNkZmYzNjUtNGVhZC00NDgzLWE3ZjgtZTlkYzk1NTIzNzRhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJpZCI6Miwicm9sZSI6InZlbmRvciJ9LCJuYmYiOjE3NTU4NDk1MDAsImNzcmYiOiJlZmNjNjczZS1mMTdkLTQ5NmMtOWY5Yi1hYjg1NjExYTE4YjEiLCJleHAiOjE3NTU5MzU5MDB9.kBBHDyU8cLXc-A-XJR3CJoi7t9-Bs4YDdaBwuInJFjg";
 
+    // Store it for future use
     if (typeof window !== "undefined") {
       window.localStorage.setItem("authToken", newToken);
     }
     return newToken;
   }
 
+  // Updated request method with better error handling
   private static async request(
     endpoint: string,
     options: RequestInit = {}
@@ -287,6 +291,7 @@ class ProductApiService {
     } catch (error) {
       console.error("API Request failed:", error);
 
+      // Handle network errors specifically
       if (error instanceof TypeError && error.message.includes("fetch")) {
         throw new Error(
           "Network error. Please check your internet connection and try again."
@@ -326,6 +331,7 @@ class ProductApiService {
     return response.json();
   }
 
+  // Helper method to convert File to base64
   static fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -335,10 +341,11 @@ class ProductApiService {
         const base64 = result.split(",")[1];
         resolve(base64);
       };
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
   }
 
+  // Method to manually login and get a fresh token
   static async login(email: string, password: string): Promise<string> {
     try {
       const response = await fetch(
@@ -373,6 +380,7 @@ class ProductApiService {
     }
   }
 }
+
 const ProductManagement: React.FC = () => {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -395,20 +403,20 @@ const ProductManagement: React.FC = () => {
   // Toast management functions
   const addToast = (toast: Omit<Toast, "id">): string => {
     const id = Date.now().toString();
-    setToasts(prev => [...prev, { ...toast, id }]);
+    setToasts((prev) => [...prev, { ...toast, id }]);
     return id;
   };
 
   const removeToast = (id: string): void => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   const updateToast = (
     id: string,
     updates: Partial<Omit<Toast, "id">>
   ): void => {
-    setToasts(prev =>
-      prev.map(toast => (toast.id === id ? { ...toast, ...updates } : toast))
+    setToasts((prev) =>
+      prev.map((toast) => (toast.id === id ? { ...toast, ...updates } : toast))
     );
   };
 
@@ -454,7 +462,7 @@ const ProductManagement: React.FC = () => {
 
     if (selectedCategory) {
       filtered = filtered.filter(
-        product =>
+        (product) =>
           product.category.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
@@ -462,7 +470,7 @@ const ProductManagement: React.FC = () => {
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        product =>
+        (product) =>
           product.name.toLowerCase().includes(lowercasedQuery) ||
           product.sku.toLowerCase().includes(lowercasedQuery)
       );
@@ -479,15 +487,15 @@ const ProductManagement: React.FC = () => {
     productId: number | string,
     isSelected: boolean
   ): void => {
-    setSelectedProducts(prev =>
+    setSelectedProducts((prev) =>
       isSelected
         ? [...prev, Number(productId)]
-        : prev.filter(id => id !== Number(productId))
+        : prev.filter((id) => id !== Number(productId))
     );
   };
 
   const handleSelectAll = (isSelected: boolean): void => {
-    setSelectedProducts(isSelected ? filteredProducts.map(p => p.id) : []);
+    setSelectedProducts(isSelected ? filteredProducts.map((p) => p.id) : []);
   };
 
   const handleBulkAction = (action: BulkAction, productIds: number[]): void => {
@@ -501,7 +509,7 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleEditProduct = (productId: number | string): void => {
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (product) {
       setEditingProduct(product);
       setShowAddModal(true);
@@ -509,8 +517,9 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleDuplicateProduct = (productId: number | string): void => {
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (product) {
+      // Show loading toast for duplicate action
       const loadingToastId = addToast({
         type: "loading",
         title: "Duplicating product...",
@@ -518,6 +527,7 @@ const ProductManagement: React.FC = () => {
         duration: 0,
       });
 
+      // Simulate duplicate operation
       setTimeout(() => {
         const duplicatedProduct: Product = {
           ...product,
@@ -526,8 +536,9 @@ const ProductManagement: React.FC = () => {
           sku: `${product.sku}-COPY`,
           createdAt: new Date().toISOString(),
         };
-        setProducts(prev => [duplicatedProduct, ...prev]);
+        setProducts((prev) => [duplicatedProduct, ...prev]);
 
+        // Remove loading toast and show success
         removeToast(loadingToastId);
         addToast({
           type: "success",
@@ -544,6 +555,7 @@ const ProductManagement: React.FC = () => {
       typeof window !== "undefined" &&
       window.confirm("Are you sure you want to delete this product?")
     ) {
+      // Show loading toast for delete action
       const loadingToastId = addToast({
         type: "loading",
         title: "Deleting product...",
@@ -551,11 +563,13 @@ const ProductManagement: React.FC = () => {
         duration: 0,
       });
 
+      // Simulate delete operation (replace with actual API call)
       setTimeout(() => {
-        const deletedProduct = products.find(p => p.id === productId);
-        setProducts(prev => prev.filter(p => p.id !== productId));
-        setSelectedProducts(prev => prev.filter(id => id !== productId));
+        const deletedProduct = products.find((p) => p.id === productId);
+        setProducts((prev) => prev.filter((p) => p.id !== productId));
+        setSelectedProducts((prev) => prev.filter((id) => id !== productId));
 
+        // Remove loading toast and show success
         removeToast(loadingToastId);
         addToast({
           type: "success",
@@ -574,8 +588,8 @@ const ProductManagement: React.FC = () => {
     field: string,
     value: string | number
   ): void => {
-    setProducts(prev =>
-      prev.map(product => {
+    setProducts((prev) =>
+      prev.map((product) => {
         if (String(product.id) === productId) {
           const isNumericField = [
             "price",
@@ -594,68 +608,28 @@ const ProductManagement: React.FC = () => {
     );
   };
 
-  const transformFormDataToApiRequest = async (
+  // Transform form data to API format
+  const transformFormDataToApiRequest = (
     formData: ProductFormData
-  ): Promise<AddProductRequest> => {
-    console.log("Original Form Data:", formData);
+  ): AddProductRequest => {
+    // Collect URLs from successfully uploaded images
+    const imageUrls = formData.images
+      .filter((img: any) => img && img.isUploaded && img.url) // ✅ Guard against undefined items
+      .map((img: any) => img.url);
 
-    const validImages = Array.isArray(formData.images)
-      ? formData.images.filter(img => img && (img.file || img.url))
-      : [];
-
-    const imagePromises = validImages.map(async img => {
-      try {
-        if (img.file instanceof File) {
-          const base64 = await ProductApiService.fileToBase64(img.file);
-          return base64;
-        }
-        if (img.url && typeof img.url === "string") {
-          return img.url;
-        }
-        return null;
-      } catch (error) {
-        console.error("Error processing image:", error);
-        return null;
-      }
-    });
-
-    const processedImages = await Promise.all(imagePromises);
-    const images = processedImages.filter(
-      (img): img is string => img !== null && img !== ""
-    );
-
-    if (!formData.name || formData.name.trim() === "") {
-      throw new Error("Product name is required");
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      throw new Error("Valid product price is required");
-    }
-
-    // ✅ INCLUDE ALL POSSIBLE FIELDS THE BACKEND MIGHT NEED
-    const apiData: any = {
-      product_name: formData.name.trim(),
+    // Format the data according to API expectations
+    const apiData: AddProductRequest = {
+      product_name: formData.name,
       description: (formData.description || "").trim(),
       category: (formData.category || "Uncategorized").trim(),
-      product_price: parseFloat(formData.price),
+      product_price: Math.round((parseFloat(formData.price) || 0) * 100), // Convert to kobo/cents
+      quantity: parseInt(formData.stock, 10) || 0,
       status: formData.status || "active",
       visibility: formData.visibility === "visible",
-      images: images,
-      // ✅ ADD THESE - Backend likely requires them
-      quantity: parseInt(formData.stock, 10) || 0,
-      stock: parseInt(formData.stock, 10) || 0,
-      sku: formData.sku || `SKU-${Date.now()}`,
+      images: imageUrls,
     };
 
-    // Add optional fields only if they have values
-    if (formData.barcode) apiData.barcode = formData.barcode;
-    if (formData.weight) apiData.weight = parseFloat(formData.weight);
-    if (formData.comparePrice)
-      apiData.compare_price = parseFloat(formData.comparePrice);
-    if (formData.cost) apiData.cost = parseFloat(formData.cost);
-
-    console.log("🚀 FINAL API REQUEST DATA:", JSON.stringify(apiData, null, 2));
-
+    console.log("📦 Final Payload:", apiData);
     return apiData;
   };
 
@@ -666,27 +640,30 @@ const ProductManagement: React.FC = () => {
     const actionText = isEditing ? "Updating" : "Adding";
     const successText = isEditing ? "updated" : "added";
 
+    // Show loading toast
     const loadingToastId = addToast({
       type: "loading",
       title: `${actionText} product...`,
       message: "Please wait while we save your product.",
-      duration: 0,
+      duration: 0, // Don't auto-remove loading toast
     });
 
     setLoading(true);
     setError(null);
 
     try {
-      const apiData = await transformFormDataToApiRequest(formData);
+      const apiData = transformFormDataToApiRequest(formData);
 
       if (editingProduct) {
+        // Edit existing product
         const response = await ProductApiService.editProduct(
           editingProduct.id,
           apiData
         );
 
-        setProducts(prev =>
-          prev.map(p =>
+        // Update local state with the response
+        setProducts((prev) =>
+          prev.map((p) =>
             p.id === editingProduct.id
               ? {
                   ...p,
@@ -696,6 +673,7 @@ const ProductManagement: React.FC = () => {
                   price: apiData.product_price,
                   status: apiData.status as ProductStatus,
                   image: apiData.images[0] || p.image,
+                  // Add other fields as needed
                 }
               : p
           )
@@ -703,10 +681,12 @@ const ProductManagement: React.FC = () => {
 
         console.log("Product updated successfully:", response);
       } else {
+        // Add new product
         const response = await ProductApiService.addProduct(apiData);
 
+        // Create new product from response and add to local state
         const newProduct: Product = {
-          id: response.id || Date.now(),
+          id: response.id || Date.now(), // Use API response ID if available
           name: apiData.product_name,
           description: apiData.description,
           category: apiData.category,
@@ -715,16 +695,18 @@ const ProductManagement: React.FC = () => {
           image:
             apiData.images[0] ||
             "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
-          sku: `SKU-${Date.now()}`,
+          sku: `SKU-${Date.now()}`, // Generate SKU or get from response
           stock: parseInt(formData.stock, 10) || 0,
           createdAt: new Date().toISOString(),
           views: 0,
+          // Add other fields as needed
         };
 
-        setProducts(prev => [newProduct, ...prev]);
+        setProducts((prev) => [newProduct, ...prev]);
         console.log("Product added successfully:", response);
       }
 
+      // Remove loading toast and show success
       removeToast(loadingToastId);
       addToast({
         type: "success",
@@ -740,6 +722,7 @@ const ProductManagement: React.FC = () => {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to save product";
 
+      // Remove loading toast and show error
       removeToast(loadingToastId);
       addToast({
         type: "error",
@@ -755,11 +738,11 @@ const ProductManagement: React.FC = () => {
   };
 
   const lowStockCount = products.filter(
-    p => p.stock > 0 && p.stock <= 10
+    (p) => p.stock > 0 && p.stock <= 10
   ).length;
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
+  const outOfStockCount = products.filter((p) => p.stock === 0).length;
   const activeProductsCount = products.filter(
-    p => p.status === "active"
+    (p) => p.status === "active"
   ).length;
 
   return (
@@ -947,7 +930,6 @@ const ProductManagement: React.FC = () => {
                       onEditProduct={handleEditProduct}
                       onDuplicateProduct={handleDuplicateProduct}
                       onDeleteProduct={handleDeleteProduct}
-                      viewMode={viewMode}
                     />
                   )}
                 </div>

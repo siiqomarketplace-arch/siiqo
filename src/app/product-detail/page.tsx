@@ -204,6 +204,12 @@ const ProductDetail = () => {
 
   // Transform API product to local Product interface
   const transformApiProduct = (apiProduct: ApiProduct): Product => {
+    sessionStorage.setItem("selectedVendorEmail", apiProduct.vendor.email);
+    sessionStorage.setItem(
+      "selectedBusinessName",
+      apiProduct.vendor.business_name
+    );
+
     return {
       id: apiProduct.id.toString(),
       title: apiProduct.product_name,
@@ -249,6 +255,33 @@ const ProductDetail = () => {
       views: 67, // Mock views
       watchers: 8, // Mock watchers
     };
+  };
+
+  // Navigate to Seller Profile
+  const handleNavigateToVendorProfile = () => {
+    const vendorEmail = sessionStorage.getItem("selectedVendorEmail");
+    const businessName = sessionStorage.getItem("selectedBusinessName");
+
+    if (!vendorEmail) {
+      console.error("Vendor email not found!");
+    }
+
+    if (!businessName) {
+      console.error("Business name not found!");
+    }
+
+    if (businessName && vendorEmail) {
+      const slugify = (text: string) =>
+        text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
+      const businessSlug = slugify(businessName);
+      router.push(`/seller-profile/${encodeURIComponent(businessSlug)}`);
+    } else {
+      console.warn("Missing vendor email or business name!");
+    }
   };
 
   // Fetch product data
@@ -516,6 +549,7 @@ const ProductDetail = () => {
               <SellerCard
                 seller={product.seller}
                 onContact={handleContactSeller}
+                onNavigateToVendorProfile={handleNavigateToVendorProfile}
               />
 
               <PriceComparison
@@ -617,6 +651,7 @@ const ProductDetail = () => {
               seller={product.seller}
               onContact={handleContactSeller}
               isMobile={true}
+              onNavigateToVendorProfile={handleNavigateToVendorProfile}
             />
 
             <PriceComparison
@@ -635,7 +670,9 @@ const ProductDetail = () => {
 
             {/* Mobile Action Buttons */}
             <div className="fixed bottom-0 left-0 right-0 p-4 space-y-3 bg-white border-t border-border">
-              <Button type="button" variant="navy"
+              <Button
+                type="button"
+                variant="navy"
                 onClick={handleBuyNow}
                 disabled={
                   isAddingToCart || product.availability !== "Available"
@@ -651,8 +688,10 @@ const ProductDetail = () => {
                   `Buy Now - ₦${product.price.toLocaleString()}`
                 )}
               </Button>
-              
-              <Button type="button" variant="outline"
+
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => handleAddToCart(1)}
                 disabled={
                   isAddingToCart || product.availability !== "Available"

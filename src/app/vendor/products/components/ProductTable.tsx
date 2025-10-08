@@ -4,14 +4,9 @@ import Icon from "@/components/AppIcon";
 import Image from "@/components/ui/alt/AppImageAlt";
 import Button from "@/components/ui/new/Button";
 import { Checkbox } from "@/components/ui/new/Checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Type definitions
+
 interface Product {
   id: any;
   name: string;
@@ -86,6 +81,10 @@ const ProductTable: React.FC<ProductTableProps> = ({
     setEditingCell(null);
     setEditValue("");
   };
+
+	const handleDeleteProduct = () => {
+		
+	}
 
   const getStatusBadge = (status: Product["status"]): JSX.Element => {
     const statusConfig: Record<Product["status"], StatusConfig> = {
@@ -162,7 +161,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
               const stockStatus = getStockStatus(product.stock);
               return (
                 <tr
-                  key={product.id || `product-${index}`}
+                  key={product.id || index}
                   className="hover:bg-muted/30 transition-smooth"
                 >
                   <td className="px-4 py-4">
@@ -174,7 +173,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     />
                   </td>
 
-                  {/* Product name + image */}
                   <td className="px-4 py-4">
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-lg bg-muted">
@@ -201,7 +199,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     </span>
                   </td>
 
-                  {/* Price with quick edit */}
                   <td className="px-4 py-4">
                     {editingCell === `${product.id}-price` ? (
                       <div className="flex items-center space-x-2">
@@ -237,7 +234,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     )}
                   </td>
 
-                  {/* Stock with quick edit */}
                   <td className="px-4 py-4">
                     <div className="flex items-center space-x-2">
                       <Icon
@@ -280,47 +276,37 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     </div>
                   </td>
 
-                  {/* Status */}
                   <td className="px-4 py-4">
                     {getStatusBadge(product.status)}
                   </td>
 
-                  {/* Created Date */}
                   <td className="px-4 py-4">
                     <span className="text-sm text-muted-foreground">
                       {new Date(product.createdAt).toLocaleDateString()}
                     </span>
                   </td>
 
-                  {/* Actions with dropdown */}
-                  <td className="px-4 py-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Icon name="MoreHorizontal" size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-32">
-                        <DropdownMenuItem
-                          onClick={() => onEditProduct(product.id)}
-                        >
-                          <Icon name="Edit" size={14} className="mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onDuplicateProduct(product.id)}
-                        >
-                          <Icon name="Copy" size={14} className="mr-2" />{" "}
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onDeleteProduct(product.id)}
-                          className="text-error focus:text-error"
-                        >
-                          <Icon name="Trash2" size={14} className="mr-2" />{" "}
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditProduct(product.id)}
+                        iconName="Edit"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDuplicateProduct(product.id)}
+                        iconName="Copy"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDeleteProduct(product.id)}
+                        iconName="Trash2"
+                      />
+                    </div>
                   </td>
                 </tr>
               );
@@ -342,6 +328,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
           <p className="mb-4 text-muted-foreground">
             Get started by adding your first product to the catalog.
           </p>
+          <Button variant="default" iconName="Plus" iconPosition="left">
+            Add New Product
+          </Button>
         </div>
       )}
     </div>

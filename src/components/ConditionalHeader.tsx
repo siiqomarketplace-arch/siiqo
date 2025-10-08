@@ -27,14 +27,12 @@ const ConditionalHeader: React.FC = () => {
     return null;
   }
 
-  if (pathname.startsWith("/vendor/auth")) {
-    return <Header />;
-  }
-
+  // Show vendor sidebar for all vendor pages (except auth, already handled above)
   if (pathname.startsWith("/vendor")) {
     return <VendorHeader onLogout={handleLogout} />;
   }
 
+  // Show customer header for all other pages
   return <Header />;
 };
 

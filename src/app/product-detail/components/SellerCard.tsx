@@ -4,7 +4,6 @@ import React from "react";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
 import Button from "@/components/Button";
-import Link from "next/link";
 
 interface Seller {
   name: string;
@@ -19,16 +18,19 @@ interface Seller {
 interface SellerCardProps {
   seller: Seller;
   onContact: () => void;
+  onNavigateToVendorProfile: () => void;
   isMobile?: boolean;
 }
 
 const SellerCard = ({
   seller,
   onContact,
+  onNavigateToVendorProfile,
   isMobile = false,
 }: SellerCardProps) => {
   return (
     <div className="p-4 border rounded-lg bg-surface border-border md:p-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold font-heading text-text-primary">
           Seller Information
@@ -40,10 +42,10 @@ const SellerCard = ({
           </div>
         )}
       </div>
+
+      {/* Seller Info */}
       <div className="flex items-start space-x-4">
-        {/* Seller Avatar */}
         <div className="flex-shrink-0">
-          {/* Add 'relative' to this div */}
           <div className="relative w-16 h-16 overflow-hidden rounded-full bg-surface-secondary">
             <Image
               src={seller.avatar}
@@ -55,7 +57,6 @@ const SellerCard = ({
           </div>
         </div>
 
-        {/* Seller Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center mb-2 space-x-2">
             <h4 className="font-semibold truncate text-text-primary">
@@ -109,13 +110,14 @@ const SellerCard = ({
         <span>Contact Seller</span>
       </Button>
 
-      {/* Additional Actions */}
+      {/* Actions */}
       <div className="flex items-center justify-center pt-4 mt-4 space-x-6 border-t border-border-light">
-        <button className="flex items-center gap-1 transition-colors duration-200 hover:underline text-text-secondary">
+        <button
+          onClick={onNavigateToVendorProfile}
+          className="flex items-center gap-1 transition-colors duration-200 hover:underline text-text-secondary"
+        >
           <Icon name="User" size={16} />
-          <Link href="/seller-details" className="text-sm">
-            View Profile
-          </Link>
+          <span className="text-sm">View Profile</span>
         </button>
 
         <button className="flex items-center gap-1 transition-colors duration-200 text-text-secondary hover:text-text-primary">
