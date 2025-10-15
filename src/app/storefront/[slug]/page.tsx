@@ -8,6 +8,8 @@ import ContactSection from "./components/ContactSection";
 import ReviewsSection from "./components/ReviewSection";
 import Icon from "@/components/AppIcon";
 import Image from "@/components/ui/alt/AppImageAlt";
+import { baseURL } from "@/hooks/api_endpoints";
+import NotificationToast from "@/components/ui/NotificationToast";
 
 interface Review {
   id: number;
@@ -31,6 +33,7 @@ interface Product {
 interface VendorInfo {
   name: string;
   address: string;
+  banner?: string;
   phone_number: string;
   is_verified: string;
   average_rating: number;
@@ -41,6 +44,13 @@ interface VendorInfo {
 
 type TabId = "products" | "about" | "reviews" | "contact";
 
+interface Notification {
+  id: string;
+  type: "success" | "error" | "info";
+  message: string;
+}
+
+
 const VendorDetails = () => {
   const [vendorInformation, setVendorInformation] = useState<VendorInfo | null>(
     null
@@ -49,11 +59,13 @@ const VendorDetails = () => {
   const [business, setBusiness] = useState<Storefront | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("products");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isSent, setIsSent] = useState(false);
 
   const getValidImageUrl = (url?: string | null) => {
     if (!url) return "/placeholder.jpg";
     if (url.startsWith("http")) return url;
-    return `https://server.bizengo.com/api${url}`;
+    return `${baseURL}${url}`;
   };
 
   useEffect(() => {
@@ -67,8 +79,8 @@ const VendorDetails = () => {
     const fetchVendorData = async () => {
       try {
         const [vendorRes, productRes] = await Promise.all([
-          fetch(`https://server.bizengo.com/api/user/${email}`),
-          fetch(`https://server.bizengo.com/api/vendor-products/${email}`),
+          fetch(`${baseURL}/user/${email}`),
+          fetch(`${baseURL}/vendor-products/${email}`),
         ]);
 
         if (!vendorRes.ok) throw new Error("Failed to load vendor data");
@@ -79,7 +91,7 @@ const VendorDetails = () => {
 
         setVendorInformation(vendorData);
         setProducts(productData.products || []);
-        setBusiness(productData.products || []);
+        setBusiness(productData.storefront || productData);
       } catch (error) {
         console.error("Error fetching vendor details:", error);
       } finally {
@@ -112,6 +124,7 @@ const VendorDetails = () => {
   const userProfile = {
     name: vendorInformation?.name || "Sarah Johnson",
     phone: vendorInformation?.phone_number || "+1 (555) 123-4567",
+    banner_image: vendorInformation?.banner || "",
     identity: vendorInformation?.is_verified || "Not verified",
     avatar: getValidImageUrl(vendorInformation?.profile_pic),
     location: vendorInformation?.address || "San Francisco, CA",
@@ -123,6 +136,85 @@ const VendorDetails = () => {
       totalReviews,
     },
     bio: "Passionate about sustainable living and finding great deals on quality items...",
+  };
+
+  // Add notification
+  const addNotification = (
+    type: "success" | "error" | "info",
+    message: string
+  ) => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, type, message }]);
+  };
+
+  // Remove notification
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // submit contact form
+  const handleSubmitContactForm = async (data: {
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+  }) => {
+    if (!data.name || !data.email || !data.message) {
+      addNotification("error", "Business information is missing.");
+      return;
+    }
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulated success
+      setIsSent(true);
+      addNotification("success", "Your message has been sent successfully!");
+
+      // Log message for debugging
+      console.log("Simulated message data:", {
+        ...data,
+      });
+
+      // Reset send state after 2 seconds
+      setTimeout(() => setIsSent(false), 2000);
+    } catch (error) {
+      console.error("Simulated error sending message:", error);
+      addNotification("error", "Failed to send message. Please try again.");
+    }
+  };
+
+  const handleSubmitReviewForm = async (data: {
+    name: string;
+    email: string;
+    rating: number;
+    message: string;
+  }) => {
+    if (!data.name || !data.email || !data.rating || !data.message) {
+      addNotification("error", "Business information is missing.");
+      return;
+    }
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulated success
+      setIsSent(true);
+      addNotification("success", "Your message has been sent successfully!");
+
+      // Log message for debugging
+      console.log("Review Submitted: ", {
+        ...data,
+      });
+
+      // Reset send state after 2 seconds
+      setTimeout(() => setIsSent(false), 2000);
+    } catch (error) {
+      console.error("Simulated error sending message:", error);
+      addNotification("error", "Failed to send message. Please try again.");
+    }
   };
 
   const renderTabContent = () => {
@@ -144,7 +236,7 @@ const VendorDetails = () => {
           <ReviewsSection
             reviews={vendorInformation?.reviews || []}
             businessRating={{ average: 0, total: 0 }}
-            onWriteReview={() => alert("Write review")}
+            onWriteReview={handleSubmitReviewForm}
           />
         );
       case "contact":
@@ -155,7 +247,7 @@ const VendorDetails = () => {
               phone: business.extended?.phone,
               address: business.address,
             }}
-            onSendMessage={async () => alert("Message sent")}
+            onSendMessage={handleSubmitContactForm}
           />
         ) : null;
       default:
@@ -174,139 +266,173 @@ const VendorDetails = () => {
     );
   }
 
-return (
-  <div className="min-h-screen px-4 mt-6 mb-28 bg-background">
-    <div className="grid grid-cols-1 gap-6 mx-auto md:grid-cols-12 max-w-7xl">
-      {/* Left - Vendor Info */}
-      <section className="space-y-6 md:col-span-4">
-        <div className="col-span-4">
-          <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
-            <div className="mb-6 text-center">
-              <div className="relative w-24 h-24 mx-auto overflow-hidden rounded-full">
-                <Image
-                  // fill
-                  src={userProfile.avatar}
-                  alt={userProfile.name}
-                  className="object-cover"
-                  sizes="96px"
-                />
-              </div>
-              <h1 className="mt-4 text-2xl font-semibold font-heading text-text-primary">
-                {userProfile.name}
-              </h1>
-              <span className="flex items-center justify-center gap-1 mt-2 text-sm text-text-secondary">
-                <Icon name="MapPin" size={14}/>
-                {userProfile.location}
-              </span>
-              <p className="mt-2 text-sm text-text-tertiary">
-                Member since {userProfile.joinDate}
-              </p>
-            </div>
-
-            {/* Verification Badges */}
-            <div className="mb-6 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Icon
-                    name="Phone"
-                    size={16}
-                    className="text-text-secondary"
-                  />
-                  <span className="text-sm text-text-secondary">Phone</span>
-                </div>
-                {userProfile.isVerified.phone ? (
-                  <span className="text-sm">{userProfile.phone}</span>
-                ) : (
-                  <span className="text-xs text-text-tertiary">
-                    Not available
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Icon
-                    name="Shield"
-                    size={16}
-                    className="text-text-secondary"
-                  />
-                  <span className="text-sm text-text-secondary">Identity</span>
-                </div>
-                {userProfile.isVerified.identity ? (
-                  <span className="text-sm">{userProfile.identity}</span>
-                ) : (
-                  <div className="text-xs text-primary hover:underline">
-                    Not verified.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div className="mb-6">
-              <h3 className="mb-2 text-sm font-medium text-text-primary">
-                About
-              </h3>
-              <p className="text-sm leading-relaxed text-text-secondary">
-                {userProfile.bio}
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Card */}
-          <div className="p-6 border rounded-lg bg-surface border-border">
-            <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
-              Activity Stats
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Icon name="Package" size={16} className="text-primary" />
-                  <span className="text-sm text-text-secondary">
-                    Items Listed
-                  </span>
-                </div>
-                <span className="font-semibold text-text-primary">
-                  {userProfile.stats.itemsListed}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Icon
-                    name="Star"
-                    size={16}
-                    className="text-orange-500 fill-current"
-                  />
-                  <span className="text-sm text-text-secondary">
-                    Seller Rating
-                  </span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="font-semibold text-text-primary">
-                    {userProfile.stats.sellerRating}
-                  </span>
-                  <span className="text-xs text-text-tertiary">
-                    ({userProfile.stats.totalReviews})
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Right - Tabs and Content */}
-      <section className="max-h-screen px-4 md:col-span-8 lg:overflow-y-auto custom-scrollbar">
-        <TabNavigation
-          activeTab={activeTab}
-          onTabChange={id => setActiveTab(id as TabId)}
-          tabs={tabs}
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Notifications */}
+      {notifications.map(notification => (
+        <NotificationToast
+          key={notification.id}
+          notification={notification}
+          onClose={removeNotification}
         />
-        <div className="mt-4">{renderTabContent()}</div>
-      </section>
-    </div>
-  </div>
-);
+      ))}
 
+      {/* Banner Section */}
+      <div className="relative flex w-full h-48 mb-8 overflow-hidden sm:h-64 lg:h-72">
+        {userProfile?.banner_image &&
+        userProfile?.banner_image !== "/banner.jpg" ? (
+          <>
+            <Image
+              src={userProfile.banner_image}
+              alt={`${userProfile.name || "Vendor"} banner`}
+              className="object-cover w-full h-full"
+            />
+            <div className="absolute inset-0 bg-black/30"></div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center w-full h-full bg-blue-100">
+            <h2 className="font-semibold text-blue-200 text-9xl">
+              Vendor Store
+            </h2>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 mt-6 mb-28">
+        <div className="grid grid-cols-1 gap-6 mx-auto md:grid-cols-12 max-w-7xl">
+          {/* Left - Vendor Info */}
+          <section className="space-y-6 md:col-span-4">
+            <div className="col-span-4">
+              <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
+                <div className="mb-6 text-center">
+                  <div className="relative w-24 h-24 mx-auto overflow-hidden rounded-full">
+                    <Image
+                      src={userProfile.avatar}
+                      alt={userProfile.name}
+                      className="object-cover"
+                      sizes="96px"
+                    />
+                  </div>
+                  <h1 className="mt-4 text-2xl font-semibold font-heading text-text-primary">
+                    {userProfile.name}
+                  </h1>
+                  <span className="flex items-center justify-center gap-1 mt-2 text-sm text-text-secondary">
+                    <Icon name="MapPin" size={14} />
+                    {userProfile.location}
+                  </span>
+                  <p className="mt-2 text-sm text-text-tertiary">
+                    Member since {userProfile.joinDate}
+                  </p>
+                </div>
+
+                {/* Verification Badges */}
+                <div className="mb-6 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon
+                        name="Phone"
+                        size={16}
+                        className="text-text-secondary"
+                      />
+                      <span className="text-sm text-text-secondary">Phone</span>
+                    </div>
+                    {userProfile.isVerified.phone ? (
+                      <span className="text-sm">{userProfile.phone}</span>
+                    ) : (
+                      <span className="text-xs text-text-tertiary">
+                        Not available
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon
+                        name="Shield"
+                        size={16}
+                        className="text-text-secondary"
+                      />
+                      <span className="text-sm text-text-secondary">
+                        Identity
+                      </span>
+                    </div>
+                    {userProfile.isVerified.identity ? (
+                      <span className="text-sm">{userProfile.identity}</span>
+                    ) : (
+                      <div className="text-xs text-primary hover:underline">
+                        Not verified.
+                      </div>
+                    )}
+                  </div> */}
+                </div>
+
+                {/* Bio */}
+                <div className="mb-6">
+                  <h3 className="mb-2 text-sm font-medium text-text-primary">
+                    About
+                  </h3>
+                  <p className="text-sm leading-relaxed text-text-secondary">
+                    {userProfile.bio}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stats Card */}
+              <div className="p-6 border rounded-lg bg-surface border-border">
+                <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
+                  Activity Stats
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="Package" size={16} className="text-primary" />
+                      <span className="text-sm text-text-secondary">
+                        Items Listed
+                      </span>
+                    </div>
+                    <span className="font-semibold text-text-primary">
+                      {userProfile.stats.itemsListed}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon
+                        name="Star"
+                        size={16}
+                        className="text-orange-500 fill-current"
+                      />
+                      <span className="text-sm text-text-secondary">
+                        Seller Rating
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="font-semibold text-text-primary">
+                        {userProfile.stats.sellerRating}
+                      </span>
+                      <span className="text-xs text-text-tertiary">
+                        ({userProfile.stats.totalReviews})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Right - Tabs and Content */}
+          <section className="max-h-screen px-4 md:col-span-8 lg:overflow-y-auto custom-scrollbar">
+            <TabNavigation
+              activeTab={activeTab}
+              onTabChange={id => setActiveTab(id as TabId)}
+              tabs={tabs}
+            />
+            <div className="mt-4">{renderTabContent()}</div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default VendorDetails;

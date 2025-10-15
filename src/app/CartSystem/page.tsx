@@ -23,6 +23,7 @@ import DeliveryForm from "@/app/CartSystem/checkout/components/DeliveryForm";
 import PaymentForm from "@/app/CartSystem/checkout/components/PaymentForm";
 import Button from "@/components/Button";
 import OrderTracking from "./checkout/components/OrderTracking";
+import { useCartModal } from "@/context/cartModalContext";
 
 export default function JumiaCartSystem() {
   const cartItems = useCartItems();
@@ -32,8 +33,7 @@ export default function JumiaCartSystem() {
   const { notifications, removeNotification } = useCartNotifications();
   const isLoading = useCartLoading();
 
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+const { isCartOpen, currentStep, setCurrentStep, closeCart, openCart } = useCartModal();
 
   const [deliveryData, setDeliveryData] = useState({
     firstName: "",
@@ -55,10 +55,10 @@ export default function JumiaCartSystem() {
     fetchCart();
   }, [fetchCart]);
 
-  const handleCheckout = () => {
-    setIsCheckoutOpen(true);
-    setCurrentStep(1);
-  };
+const handleCheckout = () => {
+  openCart(1);
+  setCurrentStep(1);
+};
 
   const handleDeliverySubmit = (data: any) => {
     setDeliveryData(data);
@@ -81,7 +81,7 @@ export default function JumiaCartSystem() {
     //   body: JSON.stringify(orderData)
     // });
 
-    console.log("✅ Order Summary:", {
+    console.log("Order Summary:", {
       delivery: deliveryData,
       payment: data,
       items: cartItems,
@@ -93,7 +93,7 @@ export default function JumiaCartSystem() {
 
   const handleBack = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
-    else setIsCheckoutOpen(false);
+    else closeCart();
   };
 
   // Progress steps data
@@ -245,7 +245,7 @@ export default function JumiaCartSystem() {
       {/* Unified Drawer */}
       <div
         className={`fixed right-0 top-0 h-full w-full sm:w-[450px] bg-white shadow-lg transform transition-transform duration-300 z-50 ${
-          isCheckoutOpen ? "translate-x-0" : "translate-x-full"
+          isCartOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header with Progress */}
@@ -258,7 +258,7 @@ export default function JumiaCartSystem() {
                 ? "Payment Method"
                 : "Order Confirmed"}
             </h2>
-            <button onClick={() => setIsCheckoutOpen(false)}>✕</button>
+            <button onClick={closeCart}>✕</button>
           </div>
 
           {/* Progress bar */}
@@ -351,7 +351,7 @@ export default function JumiaCartSystem() {
               deliveryMethod={deliveryData.deliveryMethod}
               paymentMethod={paymentData.paymentMethod}
               onClose={() => {
-                setIsCheckoutOpen(false);
+                closeCart();
                 setCurrentStep(0);
               }}
             />

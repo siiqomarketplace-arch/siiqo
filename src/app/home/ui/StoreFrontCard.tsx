@@ -61,6 +61,10 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
 
       // Save vendor email temporarily in sessionStorage
       sessionStorage.setItem("selectedVendorEmail", storefront.vendor.email);
+      sessionStorage.setItem(
+        "selectedBusinessName",
+        storefront.business_name
+      );
 
       // Navigate without exposing email in URL
       router.push(`/storefront/${encodeURIComponent(businessSlug)}`);

@@ -10,10 +10,10 @@ import SimilarProducts from "./components/SimilarProducts";
 import PriceComparison from "./components/PriceComparison";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 import Button from "@/components/Button";
+import { useCartModal } from "@/context/cartModalContext";
 
-// API Response Types
-interface ApiProduct {
-  id: number;
+interface ApiProductFull {
+  id: number | string;
   product_name: string;
   description: string;
   product_price: number;
@@ -21,11 +21,30 @@ interface ApiProduct {
   images: string[];
   status: string;
   visibility: boolean;
-  vendor: {
-    id: number;
-    business_name: string;
-    email: string;
+  discount?: number;
+  condition?: string;
+  rating?: number;
+  review_count?: number;
+  distance?: number;
+  location?: {
+    address: string;
+    lat: number;
+    lng: number;
   };
+  seller?: {
+    id: number | string;
+    name: string;
+    avatar?: string;
+    rating?: number;
+    review_count?: number;
+    response_time?: string;
+    member_since?: string;
+    verified?: boolean;
+  };
+  availability?: string;
+  last_updated?: string | Date;
+  views?: number;
+  watchers?: number;
 }
 
 // Local Product Interface (transformed from API)
@@ -72,17 +91,6 @@ interface PriceComparisonItem {
   rating: number;
 }
 
-interface SimilarProduct {
-  id: string;
-  title: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  distance: number;
-  rating: number;
-  condition: string;
-}
-
 interface Notification {
   id: string;
   type: "success" | "error" | "info";
@@ -115,7 +123,7 @@ const NotificationToast: React.FC<{
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 p-4 rounded-lg border ${
+      className={`fixed top-4 right-4 z-[9999] p-4 rounded-lg border ${
         bgColors[notification.type]
       } shadow-lg max-w-sm animate-in slide-in-from-right duration-300`}
     >
@@ -139,6 +147,7 @@ const NotificationToast: React.FC<{
 
 const ProductDetail = () => {
   const [product, setProduct] = useState<Product | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -147,9 +156,13 @@ const ProductDetail = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
 
+  const { openCart } = useCartModal();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL || "https://server.bizengo.com/api";
 
   // Get auth token from sessionStorage (as specified in your note)
   const getAuthToken = () => {
@@ -202,86 +215,70 @@ const ProductDetail = () => {
     return null;
   };
 
-  // Transform API product to local Product interface
-  const transformApiProduct = (apiProduct: ApiProduct): Product => {
-    sessionStorage.setItem("selectedVendorEmail", apiProduct.vendor.email);
-    sessionStorage.setItem(
-      "selectedBusinessName",
-      apiProduct.vendor.business_name
-    );
-
+  const transformApiProduct = (apiProduct: ApiProductFull): Product => {
     return {
       id: apiProduct.id.toString(),
-      title: apiProduct.product_name,
-      price: apiProduct.product_price / 100,
-      originalPrice: (apiProduct.product_price / 100) * 1.2,
-      discount: 17, // Mock discount
-      condition: "Like New", // Mock condition
-      rating: 4.7, // Mock rating
-      reviewCount: 89, // Mock review count
-      distance: 1.2, // Mock distance
-      location: {
-        address: "Electronic Store, Lagos, Nigeria", // Mock location
-        lat: 6.5244, // Lagos coordinates
-        lng: 3.3792,
-      },
+      title: apiProduct.product_name || "Unknown Product",
+      price: apiProduct.product_price / 100 || 0,
+      originalPrice: (apiProduct.product_price / 100) * 1.2 || 0,
+      discount: apiProduct.discount ?? 0,
+      condition: apiProduct.condition ?? "Like New",
+      rating: apiProduct.rating ?? 4.7,
+      reviewCount: apiProduct.review_count ?? 0,
+      distance: apiProduct.distance ?? 0,
+      location: apiProduct.location ?? { address: "Unknown", lat: 0, lng: 0 },
       images:
         apiProduct.images.length > 0
           ? apiProduct.images
           : [
               "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&h=600&fit=crop",
             ],
-      description: apiProduct.description,
+      description: apiProduct.description || "No description available",
       specifications: {
-        Category: apiProduct.category,
-        Status: apiProduct.status,
+        Category: apiProduct.category || "General",
+        Status: apiProduct.status || "unknown",
         "Product ID": apiProduct.id.toString(),
-        Seller: apiProduct.vendor.business_name,
+        Seller: apiProduct.seller?.name || "Unknown",
       },
       seller: {
-        id: apiProduct.vendor.id.toString(),
-        name: apiProduct.vendor.business_name,
+        id: apiProduct.seller?.id.toString() || "0",
+        name: apiProduct.seller?.name || "Unknown Seller",
         avatar:
+          apiProduct.seller?.avatar ||
           "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-        rating: 4.8,
-        reviewCount: 156,
-        responseTime: "Usually responds within 2 hours",
-        memberSince: "2020",
-        verifiedSeller: true,
+        rating: apiProduct.seller?.rating ?? 0,
+        reviewCount: apiProduct.seller?.review_count ?? 0,
+        responseTime: apiProduct.seller?.response_time || "N/A",
+        memberSince: apiProduct.seller?.member_since || "N/A",
+        verifiedSeller: apiProduct.seller?.verified ?? false,
       },
       availability:
-        apiProduct.status === "active" ? "Available" : "Unavailable",
-      lastUpdated: new Date(Date.now() - 3600000), // Mock last updated
-      views: 67, // Mock views
-      watchers: 8, // Mock watchers
+        apiProduct.availability ??
+        (apiProduct.status === "active" ? "Available" : "Unavailable"),
+      lastUpdated: apiProduct.last_updated
+        ? new Date(apiProduct.last_updated)
+        : new Date(),
+      views: apiProduct.views ?? 0,
+      watchers: apiProduct.watchers ?? 0,
     };
   };
 
-  // Navigate to Seller Profile
-  const handleNavigateToVendorProfile = () => {
-    const vendorEmail = sessionStorage.getItem("selectedVendorEmail");
-    const businessName = sessionStorage.getItem("selectedBusinessName");
+  // Extract category from current product
+  const currentCategory = product?.specifications?.Category;
+  console.log("Current Product Category:", currentCategory);
+  // `${apiBase}/marketplace/products?category=${category}&limit=10`
 
-    if (!vendorEmail) {
-      console.error("Vendor email not found!");
-    }
+  const handleNavigateToVendorProfile = (vendor: Product["seller"]) => {
+    if (!vendor || !vendor.name) return;
 
-    if (!businessName) {
-      console.error("Business name not found!");
-    }
+    const slugify = (text: string) =>
+      text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
 
-    if (businessName && vendorEmail) {
-      const slugify = (text: string) =>
-        text
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)+/g, "");
-
-      const businessSlug = slugify(businessName);
-      router.push(`/seller-profile/${encodeURIComponent(businessSlug)}`);
-    } else {
-      console.warn("Missing vendor email or business name!");
-    }
+    const businessSlug = slugify(vendor.name);
+    router.push(`/seller-profile/${encodeURIComponent(businessSlug)}`);
   };
 
   // Fetch product data
@@ -292,14 +289,49 @@ const ProductDetail = () => {
         setError(null);
 
         // Get product ID from URL params
-        const productId = searchParams.get("id") || "1"; // Default to 1 if no ID
+        const productId = searchParams.get("id") || "1";
+        if (!productId) {
+          setError("Missing product ID.");
+          return;
+        }
 
         const apiProduct = await apiCall(
-          `https://server.bizengo.com/api/marketplace/products/${productId}`
+          `${apiBase}/marketplace/products/${productId}`
         );
 
+        console.log("API Product Response:", apiProduct);
         const transformedProduct = transformApiProduct(apiProduct);
         setProduct(transformedProduct);
+
+        // Get the category from the fetched product
+        const category = apiProduct.specifications?.Category;
+        console.log("Current Product Category:", category);
+
+        // fetch similar products by category
+        if (category) {
+          try {
+            const similarResponse = await apiCall(
+              `${apiBase}/marketplace/products?category=${category}`
+            );
+
+            console.log("All product with thesame Category: ", similarResponse);
+
+            // Check if similarResponse is an array
+            if (Array.isArray(similarResponse)) {
+              const transformed = similarResponse.map(transformApiProduct);
+              // Filter out current product
+              const filtered = transformed.filter(
+                (p: Product) => p.id !== productId
+              );
+              setAllProducts(filtered);
+            }
+          } catch (err) {
+            console.error("Error fetching similar products:", err);
+            setAllProducts([]);
+          }
+        }
+
+        console.log("Fetched Product:", transformedProduct);
 
         // Check if product is in wishlist
         if (typeof window !== "undefined") {
@@ -316,7 +348,7 @@ const ProductDetail = () => {
     };
 
     fetchProduct();
-  }, [searchParams]);
+  }, [searchParams]); // Remove product?.id and currentCategory from dependencies
 
   const handleWishlistToggle = () => {
     if (!product || typeof window === "undefined") return;
@@ -343,7 +375,7 @@ const ProductDetail = () => {
     try {
       setIsAddingToCart(true);
 
-      await apiCall("https://server.bizengo.com/api/cart/add", {
+      await apiCall(`${apiBase}/cart/add`, {
         method: "POST",
         body: JSON.stringify({
           product_id: parseInt(product.id),
@@ -367,17 +399,55 @@ const ProductDetail = () => {
   const handleBuyNow = async () => {
     if (!product) return;
 
-    // Add to cart first, then redirect to checkout
-    await handleAddToCart(1);
+    try {
+      setIsBuyingNow(true);
 
-    // Simulate navigation to checkout
-    addNotification("info", "Redirecting to checkout...");
-    // router.push('/checkout');
+      await apiCall(`${apiBase}/cart/add`, {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: parseInt(product.id),
+          quantity: 1,
+        }),
+      });
+
+      // Update local cart quantity first
+      setCartQuantity(prev => prev + 1);
+      openCart(1); // Open cart modal to checkout step
+
+      addNotification("success", "Product added! Redirecting to checkout...");
+    } catch (error) {
+      console.error("Error on Buy Now:", error);
+      addNotification("error", "Failed to process Buy Now. Please try again.");
+    } finally {
+      setIsBuyingNow(false);
+    }
   };
 
+  // Navigate to Seller Profile Contact Tab
   const handleContactSeller = () => {
     addNotification("info", "Opening seller contact...");
-    // router.push('/messages');
+    const businessName = sessionStorage.getItem("selectedBusinessName");
+
+    if (!businessName) {
+      console.error("Business name not found!");
+      return;
+    }
+
+    if (businessName) {
+      const slugify = (text: string) =>
+        text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
+      const businessSlug = slugify(businessName);
+      // Navigate to seller profile with contact tab
+      router.push(
+        `/seller-profile/${encodeURIComponent(businessSlug)}?tab=contact`
+      );
+    } else {
+      console.warn("Missing business name!");
+    }
   };
 
   const handleGetDirections = () => {
@@ -406,43 +476,6 @@ const ProductDetail = () => {
       addNotification("success", "Link copied to clipboard!");
     }
   };
-
-  // Mock data for components that don't have API endpoints yet
-  const similarProducts: SimilarProduct[] = [
-    {
-      id: "2",
-      title: "iPhone 14 Pro - 128GB Space Black",
-      price: 749,
-      originalPrice: 999,
-      image:
-        "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop",
-      distance: 1.2,
-      rating: 4.7,
-      condition: "Excellent",
-    },
-    {
-      id: "3",
-      title: "Samsung Galaxy S23 Ultra",
-      price: 699,
-      originalPrice: 899,
-      image:
-        "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop",
-      distance: 0.5,
-      rating: 4.6,
-      condition: "Good",
-    },
-    {
-      id: "4",
-      title: "Google Pixel 7 Pro",
-      price: 649,
-      originalPrice: 799,
-      image:
-        "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=300&h=300&fit=crop",
-      distance: 2.1,
-      rating: 4.8,
-      condition: "Like New",
-    },
-  ];
 
   const priceComparisons: PriceComparisonItem[] = [
     {
@@ -504,6 +537,13 @@ const ProductDetail = () => {
     );
   }
 
+  // 4. Your filter should now work
+  const similarProductsData = allProducts.filter(
+    (p: Product) =>
+      p.id !== product?.id &&
+      p.specifications?.Category === product?.specifications?.Category
+  );
+
   return (
     <div className="min-h-screen mb-20 bg-background">
       {/* Notifications */}
@@ -549,7 +589,9 @@ const ProductDetail = () => {
               <SellerCard
                 seller={product.seller}
                 onContact={handleContactSeller}
-                onNavigateToVendorProfile={handleNavigateToVendorProfile}
+                onNavigateToVendorProfile={() =>
+                  handleNavigateToVendorProfile(product.seller)
+                }
               />
 
               <PriceComparison
@@ -562,12 +604,10 @@ const ProductDetail = () => {
                   type="button"
                   variant="navy"
                   onClick={handleBuyNow}
-                  disabled={
-                    isAddingToCart || product.availability !== "Available"
-                  }
+                  disabled={isBuyingNow || product.availability !== "Available"}
                   className="w-full py-4 text-sm transition-colors duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAddingToCart ? (
+                  {isBuyingNow ? (
                     <div className="flex items-center justify-center space-x-2">
                       <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
                       <span>Processing...</span>
@@ -609,8 +649,8 @@ const ProductDetail = () => {
 
           <div className="mt-12">
             <SimilarProducts
-              products={similarProducts}
-              onProductClick={productId =>
+              products={similarProductsData}
+              onProductClick={(productId: string) =>
                 router.push(`/product-detail?id=${productId}`)
               }
             />
@@ -651,7 +691,9 @@ const ProductDetail = () => {
               seller={product.seller}
               onContact={handleContactSeller}
               isMobile={true}
-              onNavigateToVendorProfile={handleNavigateToVendorProfile}
+              onNavigateToVendorProfile={() =>
+                handleNavigateToVendorProfile(product.seller)
+              }
             />
 
             <PriceComparison
@@ -661,11 +703,10 @@ const ProductDetail = () => {
             />
 
             <SimilarProducts
-              products={similarProducts}
-              onProductClick={productId =>
+              products={similarProductsData}
+              onProductClick={(productId: string) =>
                 router.push(`/product-detail?id=${productId}`)
               }
-              isMobile={true}
             />
 
             {/* Mobile Action Buttons */}
@@ -674,14 +715,12 @@ const ProductDetail = () => {
                 type="button"
                 variant="navy"
                 onClick={handleBuyNow}
-                disabled={
-                  isAddingToCart || product.availability !== "Available"
-                }
-                className="w-full py-4 text-sm transition-colors duration-200disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isBuyingNow || product.availability !== "Available"}
+                className="text-sm transition-colors duration-200disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isAddingToCart ? (
+                {isBuyingNow ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
+                    <div className="w-3 h-3 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
                     <span>Processing...</span>
                   </div>
                 ) : (

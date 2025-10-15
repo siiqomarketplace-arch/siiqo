@@ -236,7 +236,6 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #f97316; /* Tailwind orange-500 */
-  border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #ea580c; /* orange-600 */

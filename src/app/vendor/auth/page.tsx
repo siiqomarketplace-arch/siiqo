@@ -1218,7 +1218,7 @@ const VendorAuth: React.FC = () => {
           </div>
 
           {/* Auth Form */}
-          <Card className="mb-6 border shadow-xl border-gary-200 bg-white/80 backdrop-blur-sm">
+          <Card className="mb-6 border border-gary-200 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div onSubmit={handleSubmit} className="space-y-4">
                 {/* Registration Fields */}

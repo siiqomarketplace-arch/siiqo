@@ -237,37 +237,6 @@ const VendorProfile: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* Stats
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-text-primary">
-                {userProfile.stats.itemsListed}
-              </div>
-              <div className="text-xs text-text-secondary">Listed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-text-primary">
-                {userProfile.stats.purchasesMade}
-              </div>
-              <div className="text-xs text-text-secondary">Purchased</div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-1">
-                <Icon
-                  name="Star"
-                  size={14}
-                  className="fill-current text-warning"
-                />
-                <span className="text-lg font-semibold text-text-primary">
-                  {userProfile.stats.sellerRating}
-                </span>
-              </div>
-              <div className="text-xs text-text-secondary">
-                ({userProfile.stats.totalReviews} reviews)
-              </div>
-            </div>
-          </div> */}
         </div>
 
         {/* Products Header */}

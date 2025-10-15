@@ -2,8 +2,17 @@
 import React, { useEffect, useState } from "react";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
+import { baseURL } from "@/hooks/api_endpoints";
+import { Storefront } from "@/types/storeFront";
+import ProductGrid from "./components/ProductGrid";
+import ContactSection from "./components/ContactSection";
+import ReviewsSection from "./components/ReviewSection";
+import TabNavigation from "./components/TabNavigation";
+import { useSearchParams } from "next/navigation";
+import NotificationToast from "@/components/ui/NotificationToast";
 
 interface Review {
+  id: number;
   reviewername: string;
   revieweremail: string;
   feedback: string;
@@ -11,7 +20,7 @@ interface Review {
 }
 
 interface Product {
-  id: string | number;
+  id: number;
   name: string;
   price: number;
   images?: string[];
@@ -22,6 +31,7 @@ interface VendorInfo {
   name: string;
   address: string;
   phone_number: string;
+  banner?: string;
   is_verified: string;
   average_rating: number;
   open_hours?: string;
@@ -29,19 +39,31 @@ interface VendorInfo {
   reviews?: Review[];
 }
 
+type TabId = "products" | "reviews" | "contact";
+
+interface Notification {
+  id: string;
+  type: "success" | "error" | "info";
+  message: string;
+}
+
 // Star Rating Component
-const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) => {
+const StarRating = ({
+  rating,
+  size = 16,
+}: {
+  rating: number;
+  size?: number;
+}) => {
   return (
     <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
+      {[1, 2, 3, 4, 5].map(star => (
         <Icon
           key={star}
           name="Star"
           size={size}
           className={`${
-            star <= rating
-              ? "text-orange-500 fill-current"
-              : "text-gray-300"
+            star <= rating ? "text-orange-500 fill-current" : "text-gray-300"
           }`}
         />
       ))}
@@ -50,44 +72,58 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
 };
 
 // Review Card Component
-const ReviewCard = ({ review }: { review: Review }) => {
-  return (
-    <div className="bg-surface border border-border rounded-lg p-4 hover:shadow-sm transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary font-semibold text-sm">
-              {review.reviewername.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <h4 className="font-medium text-text-primary">
-              {review.reviewername}
-            </h4>
-            <p className="text-xs text-text-tertiary">{review.revieweremail}</p>
-          </div>
-        </div>
-        <StarRating rating={review.rating} size={14} />
-      </div>
-      
-      <p className="text-sm text-text-secondary leading-relaxed">
-        {review.feedback || "No feedback provided"}
-      </p>
-    </div>
-  );
-};
+// const ReviewCard = ({ review }: { review: Review }) => {
+//   return (
+//     <div className="p-4 transition-shadow border rounded-lg bg-surface border-border hover:shadow-sm">
+//       <div className="flex items-start justify-between mb-3">
+//         <div className="flex items-center gap-3">
+//           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+//             <span className="text-sm font-semibold text-primary">
+//               {review.reviewername.charAt(0).toUpperCase()}
+//             </span>
+//           </div>
+//           <div>
+//             <h4 className="font-medium text-text-primary">
+//               {review.reviewername}
+//             </h4>
+//             <p className="text-xs text-text-tertiary">{review.revieweremail}</p>
+//           </div>
+//         </div>
+//         <StarRating rating={review.rating} size={14} />
+//       </div>
+
+//       <p className="text-sm leading-relaxed text-text-secondary">
+//         {review.feedback || "No feedback provided"}
+//       </p>
+//     </div>
+//   );
+// };
 
 const VendorDetails = () => {
-  const [vendorInformation, setVendorInformation] = useState<VendorInfo | null>(null);
+  const [vendorInformation, setVendorInformation] = useState<VendorInfo | null>(
+    null
+  );
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"products" | "reviews">("products");
+  const [activeTab, setActiveTab] = useState<TabId>("products");
+  const [business, setBusiness] = useState<Storefront | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isSent, setIsSent] = useState(false);
 
   const getValidImageUrl = (url?: string | null) => {
     if (!url) return "/placeholder.jpg";
     if (url.startsWith("http")) return url;
-    return `https://server.bizengo.com/api${url}`;
+    return `${baseURL}${url}`;
   };
+
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as TabId | null;
+
+  useEffect(() => {
+    if (tabParam && ["products", "reviews", "contact"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     const email = sessionStorage.getItem("selectedVendorEmail");
@@ -100,8 +136,8 @@ const VendorDetails = () => {
     const fetchVendorData = async () => {
       try {
         const [vendorRes, productRes] = await Promise.all([
-          fetch(`https://server.bizengo.com/api/user/${email}`),
-          fetch(`https://server.bizengo.com/api/vendor-products/${email}`),
+          fetch(`${baseURL}/user/${email}`),
+          fetch(`${baseURL}/vendor-products/${email}`),
         ]);
 
         if (!vendorRes.ok) throw new Error("Failed to load vendor data");
@@ -112,6 +148,7 @@ const VendorDetails = () => {
 
         setVendorInformation(vendorData);
         setProducts(productData.products || []);
+        setBusiness(productData.products || []);
       } catch (error) {
         console.error("Error fetching vendor details:", error);
       } finally {
@@ -131,9 +168,19 @@ const VendorDetails = () => {
 
   const totalReviews = vendorInformation?.reviews?.length || 0;
 
+  const tabs = React.useMemo(
+    () => [
+      { id: "products", label: "Products", count: products.length },
+      { id: "reviews", label: "Reviews", count: totalReviews },
+      { id: "contact", label: "Contact" },
+    ],
+    [products.length, totalReviews]
+  );
+
   const userProfile = {
     name: vendorInformation?.name || "Sarah Johnson",
     phone: vendorInformation?.phone_number || "+1 (555) 123-4567",
+    banner_image: vendorInformation?.banner || "/banner.jpg",
     identity: vendorInformation?.is_verified || "Not verified",
     avatar: getValidImageUrl(vendorInformation?.profile_pic),
     location: vendorInformation?.address || "San Francisco, CA",
@@ -147,6 +194,85 @@ const VendorDetails = () => {
     bio: "Passionate about sustainable living and finding great deals on quality items...",
   };
 
+  // Add notification
+  const addNotification = (
+    type: "success" | "error" | "info",
+    message: string
+  ) => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, type, message }]);
+  };
+
+  // Remove notification
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // submit contact form
+  const handleSubmitContactForm = async (data: {
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+  }) => {
+    if (!data.name || !data.email || !data.message) {
+      addNotification("error", "Business information is missing.");
+      return;
+    }
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulated success
+      setIsSent(true);
+      addNotification("success", "Your message has been sent successfully!");
+
+      // Log message for debugging
+      console.log("Simulated message data:", {
+        ...data,
+      });
+
+      // Reset send state after 2 seconds
+      setTimeout(() => setIsSent(false), 2000);
+    } catch (error) {
+      console.error("Simulated error sending message:", error);
+      addNotification("error", "Failed to send message. Please try again.");
+    }
+  };
+
+    const handleSubmitReview = async (data: {
+      name: string;
+      email: string;
+      rating: number;
+      message: string;
+    }) => {
+      if (!data.name || !data.email || !data.rating || !data.message) {
+        addNotification("error", "Business information is missing.");
+        return;
+      }
+
+      try {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Simulated success
+        setIsSent(true);
+        addNotification("success", "Your message has been sent successfully!");
+
+        // Log message for debugging
+        console.log("Review Submitted: ", {
+          ...data,
+        });
+
+        // Reset send state after 2 seconds
+        setTimeout(() => setIsSent(false), 2000);
+      } catch (error) {
+        console.error("Simulated error sending message:", error);
+        addNotification("error", "Failed to send message. Please try again.");
+      }
+    };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -158,34 +284,95 @@ const VendorDetails = () => {
     );
   }
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "products":
+        return <ProductGrid products={userProfile ? products : []} />;
+      case "reviews":
+        return (
+          <ReviewsSection
+            reviews={vendorInformation?.reviews || []}
+            businessRating={{ average: 0, total: 0 }}
+            onWriteReview={handleSubmitReview}
+          />
+        );
+      case "contact":
+        return business ? (
+          <ContactSection
+            business={{
+              name: business.business_name,
+              phone: business.extended?.phone ?? "",
+              address: business.address,
+            }}
+            onSendMessage={handleSubmitContactForm}
+            isSent={isSent}
+          />
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background px-6 pt-10 pb-24">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-12 max-w-7xl mx-auto">
+    <div className="min-h-screen mb-28 bg-background">
+      {/* Notifications */}
+      {notifications.map(notification => (
+        <NotificationToast
+          key={notification.id}
+          notification={notification}
+          onClose={removeNotification}
+        />
+      ))}
+
+      {/* Banner Section */}
+      <div className="relative flex w-full h-48 mb-8 overflow-hidden sm:h-64 lg:h-72">
+        {userProfile?.banner_image &&
+        userProfile?.banner_image !== "/banner.jpg" ? (
+          <>
+            <Image
+              src={userProfile.banner_image}
+              alt={`${userProfile.name || "Vendor"} banner`}
+              className="object-cover w-full h-full"
+            />
+            <div className="absolute inset-0 bg-black/30"></div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center w-full h-full bg-blue-100">
+            <h2 className="font-semibold text-blue-200 text-9xl">
+              Vendor Store
+            </h2>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 px-4 mx-auto md:grid-cols-12 max-w-7xl">
         {/* Left - Vendor Info */}
-        <div className="md:col-span-4 space-y-6">
+        <section className="space-y-6 md:col-span-4">
           <div className="col-span-4">
-            <div className="bg-surface rounded-lg border border-border p-6 mb-6">
-              <div className="text-center mb-6">
-                <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto">
+            <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
+              <div className="mb-6 text-center">
+                <div className="relative w-24 h-24 mx-auto overflow-hidden rounded-full">
                   <Image
-                    fill
                     src={userProfile.avatar}
                     alt={userProfile.name}
                     className="object-cover"
                     sizes="96px"
                   />
                 </div>
-                <h1 className="text-2xl font-heading font-semibold text-text-primary mt-4">
+                <h1 className="mt-4 text-2xl font-semibold font-heading text-text-primary">
                   {userProfile.name}
                 </h1>
-                <span>{userProfile.location}</span>
-                <p className="text-text-tertiary text-sm mt-1">
+                <span className="flex items-center justify-center gap-1 mt-2 text-sm text-text-secondary">
+                  <Icon name="MapPin" size={14} />
+                  {userProfile.location}
+                </span>
+                <p className="mt-2 text-sm text-text-tertiary">
                   Member since {userProfile.joinDate}
                 </p>
               </div>
 
               {/* Verification Badges */}
-              <div className="space-y-2 mb-6">
+              <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Icon
@@ -203,7 +390,8 @@ const VendorDetails = () => {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between">
+
+                {/* <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Icon
                       name="Shield"
@@ -221,23 +409,23 @@ const VendorDetails = () => {
                       Not verified.
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
               {/* Bio */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-text-primary mb-2">
+                <h3 className="mb-2 text-sm font-medium text-text-primary">
                   About
                 </h3>
-                <p className="text-sm text-text-secondary leading-relaxed">
+                <p className="text-sm leading-relaxed text-text-secondary">
                   {userProfile.bio}
                 </p>
               </div>
             </div>
 
             {/* Stats Card */}
-            <div className="bg-surface rounded-lg border border-border p-6">
-              <h3 className="text-lg font-heading font-semibold text-text-primary mb-4">
+            <div className="p-6 border rounded-lg bg-surface border-border">
+              <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
                 Activity Stats
               </h3>
               <div className="space-y-4">
@@ -275,196 +463,17 @@ const VendorDetails = () => {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Right - Products & Reviews */}
-        <div className="md:col-span-8">
-          {/* Tab Navigation */}
-          <div className="flex gap-4 mb-6 border-b border-border">
-            <button
-              onClick={() => setActiveTab("products")}
-              className={`pb-3 px-4 font-medium transition-colors relative flex items-center gap-2 ${
-                activeTab === "products"
-                  ? "text-primary"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <span>Products</span>
-              <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  activeTab === "products"
-                    ? "bg-primary text-white"
-                    : "bg-gray-200 text-text-secondary"
-                }`}
-              >
-                {products.length}
-              </span>
-              {activeTab === "products" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`pb-3 px-4 font-medium transition-colors relative flex items-center gap-2 ${
-                activeTab === "reviews"
-                  ? "text-primary"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <span>Reviews</span>
-              <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  activeTab === "reviews"
-                    ? "bg-primary text-white"
-                    : "bg-gray-200 text-text-secondary"
-                }`}
-              >
-                {totalReviews}
-              </span>
-              {activeTab === "reviews" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
-            </button>
-          </div>
-
-          {/* Products Tab */}
-          {activeTab === "products" && (
-            <>
-              {products.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
-                  {products.map(product => (
-                    <div
-                      key={product.id}
-                      className="border rounded-lg overflow-hidden bg-surface border-border hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative w-full h-40 bg-gray-100">
-                        <Image
-                          fill
-                          src={getValidImageUrl(product.images?.[0])}
-                          alt={product.name}
-                          className="object-cover"
-                          sizes="160px"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <p className="font-medium text-text-primary line-clamp-1">
-                          {product.name}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-primary">
-                          ₦{product.price?.toLocaleString()}
-                        </p>
-                        <div className="flex items-center space-x-1 mt-2">
-                          <Icon
-                            name="Star"
-                            size={14}
-                            className="text-orange-500 fill-current"
-                          />
-                          <span className="text-xs font-medium text-text-secondary">
-                            {product.rating.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Icon
-                    name="Package"
-                    size={48}
-                    className="mx-auto mb-4 text-text-tertiary"
-                  />
-                  <p className="text-text-secondary">
-                    No products available from this vendor.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Reviews Tab */}
-          {activeTab === "reviews" && (
-            <>
-              {vendorInformation?.reviews &&
-              vendorInformation.reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Rating Summary */}
-                  <div className="bg-surface border border-border rounded-lg p-6 mb-6">
-                    <div className="flex items-center gap-8">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold text-text-primary mb-2">
-                          {averageRating.toFixed(1)}
-                        </div>
-                        <StarRating
-                          rating={Math.round(averageRating)}
-                          size={20}
-                        />
-                        <p className="text-sm text-text-tertiary mt-2">
-                          Based on {totalReviews}{" "}
-                          {totalReviews === 1 ? "review" : "reviews"}
-                        </p>
-                      </div>
-
-                      <div className="flex-1">
-                        {[5, 4, 3, 2, 1].map(star => {
-                          const count =
-                            vendorInformation.reviews?.filter(
-                              r => r.rating === star
-                            ).length || 0;
-                          const percentage =
-                            totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-
-                          return (
-                            <div
-                              key={star}
-                              className="flex items-center gap-2 mb-2"
-                            >
-                              <span className="text-sm text-text-secondary w-8">
-                                {star}{" "}
-                                <Icon
-                                  name="Star"
-                                  size={12}
-                                  className="inline text-orange-500"
-                                />
-                              </span>
-                              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-orange-500"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                              <span className="text-sm text-text-tertiary w-8">
-                                {count}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reviews List */}
-                  {vendorInformation.reviews.map((review, index) => (
-                    <ReviewCard key={index} review={review} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Icon
-                    name="MessageSquare"
-                    size={48}
-                    className="mx-auto mb-4 text-text-tertiary"
-                  />
-                  <p className="text-text-secondary mb-2">No reviews yet</p>
-                  <p className="text-sm text-text-tertiary">
-                    Be the first to leave a review for this vendor!
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        {/* Right - Tabs and Content */}
+        <section className="max-h-screen px-4 md:col-span-8 lg:overflow-y-auto custom-scrollbar">
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={id => setActiveTab(id as TabId)}
+            tabs={tabs}
+          />
+          <div className="mt-4">{renderTabContent()}</div>
+        </section>
       </div>
     </div>
   );

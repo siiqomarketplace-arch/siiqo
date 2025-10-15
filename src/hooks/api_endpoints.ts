@@ -1,7 +1,15 @@
+export const baseURL =
+    process.env.NEXT_PUBLIC_API_URL || "https://server.bizengo.com/api";
+
+export const mockApiBaseURL = "https://68ee74e8df2025af7803c34e.mockapi.io/signup"
+// export const mockApiBaseURL = "https://admin.mockwave.io/mockwave/blessed_sam_747679/bizengo-auth/api/v1/auth/signup"
+
 const api_endpoints = {
     // authentications.
     LOGIN: "/auth/login",
-    REGISTER: "/auth/register",
+    SIGNUP: "/auth/signup",
+    FORGOT_PASSWORD_REQUEST: "/auth/request-password-reset",
+    RESET_PASSWORD: "/auth/reset-password",
 
     // user endpoints.
     PROFILE: "/user/profile",
@@ -19,7 +27,7 @@ const api_endpoints = {
 
     // Storefronts
     FETCH_STOREFRONTS: "/admin/storefronts",
-    
+
     // vendor apis
     VENDOR_LOGIN: "vendor/login",
 };

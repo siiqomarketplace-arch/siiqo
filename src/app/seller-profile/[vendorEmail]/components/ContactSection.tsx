@@ -33,6 +33,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
   const [phone, setPhone] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setIsSubmitting(true);

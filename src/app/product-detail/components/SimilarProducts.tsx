@@ -10,7 +10,7 @@ interface SimilarProduct {
   title: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  images: string[];
   distance: number;
   rating: number;
   condition: string;
@@ -54,7 +54,7 @@ const SimilarProducts = ({
               {/* Product Image */}
               <div className="relative overflow-hidden aspect-square bg-surface-secondary">
                 <Image
-                  src={product.image}
+                  src={product.images[0]}
                   alt={product.title}
                   fill // Add the fill prop
                   // Keep object-cover and transformation classes, remove w-full h-full
@@ -101,7 +101,7 @@ const SimilarProducts = ({
                   </div>
                   <div className="flex items-center space-x-1">
                     <Icon name="MapPin" size={12} className="text-primary" />
-                    <span>{product.distance}mi</span>
+                    <span>{product.distance} {" "}miles</span>
                   </div>
                 </div>
 

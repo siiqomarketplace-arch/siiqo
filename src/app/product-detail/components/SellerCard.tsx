@@ -120,7 +120,7 @@ const SellerCard = ({
           <span className="text-sm">View Profile</span>
         </button>
 
-        <button className="flex items-center gap-1 transition-colors duration-200 text-text-secondary hover:text-text-primary">
+        {/* <button className="flex items-center gap-1 transition-colors duration-200 text-text-secondary hover:text-text-primary">
           <Icon name="Package" size={16} />
           <span className="text-sm">Other Items</span>
         </button>
@@ -132,7 +132,7 @@ const SellerCard = ({
         >
           <Icon name="Flag" size={16} />
           <span className="text-sm">Report</span>
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

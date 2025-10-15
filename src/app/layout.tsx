@@ -7,6 +7,8 @@ import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import MainContentWrapper from "./home/MainContentWrapper";
+import { CartModalProvider } from "@/context/cartModalContext";
+import ToastProvider from "@/context/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Citymart | Roots & Squares",
@@ -27,12 +29,15 @@ export default function RootLayout({
       <body cz-shortcut-listen="true">
         <AuthProvider>
           <CartProvider>
-            <ErrorBoundary>
-              <ConditionalHeader />
-              <MainContentWrapper>{children}</MainContentWrapper>
-              <ConditionalBottomNav />
-              <ScrollToTop />
-            </ErrorBoundary>
+            <CartModalProvider>
+              <ErrorBoundary>
+                <ConditionalHeader />
+                <ToastProvider/>
+                <MainContentWrapper>{children}</MainContentWrapper>
+                <ConditionalBottomNav />
+                <ScrollToTop />
+              </ErrorBoundary>
+            </CartModalProvider>
           </CartProvider>
         </AuthProvider>
       </body>
