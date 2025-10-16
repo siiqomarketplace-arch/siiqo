@@ -77,7 +77,7 @@ const LoginPage = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="buyer@example.com"
                   {...register("email")}
                   disabled={isLoading}
                 />
@@ -116,7 +116,7 @@ const LoginPage = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pb-6">
+              <div className="flex items-center justify-between pb-4">
                 <label className="flex items-center space-x-2 text-sm text-gray-600">
                   <input
                     type="checkbox"

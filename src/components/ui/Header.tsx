@@ -79,40 +79,42 @@ const Header: React.FC = () => {
     setSelectedOption(option);
   };
 
-  const modalOptions: ModalOption[] = [
-    {
-      id: "shopping",
-      title: "Start Shopping",
-      description:
-        "Browse our amazing collection of products and find exactly what you need",
-      icon: ShoppingCart,
-      buttonText: "Start Shopping",
-      gradient: "from-purple-50 to-purple-100",
-      hoverGradient: "hover:border-purple-300",
-      iconColor: "text-purple-600",
-      buttonColor: "bg-purple-600",
-      buttonHoverColor: "group-hover:bg-purple-700",
-      ringColor: "ring-purple-500",
-      pulseColor: "bg-purple-600",
-      route: "/auth/signup",
-    },
-    {
-      id: "vendor",
-      title: "Become a Vendor",
-      description:
-        "Join our marketplace and start selling your products to thousands of customers",
-      icon: Store,
-      buttonText: "Become a Vendor",
-      gradient: "from-blue-50 to-blue-100",
-      hoverGradient: "hover:border-blue-300",
-      iconColor: "text-blue-600",
-      buttonColor: "bg-blue-600",
-      buttonHoverColor: "group-hover:bg-blue-700",
-      ringColor: "ring-blue-500",
-      pulseColor: "bg-blue-600",
-      route: "/vendor/auth",
-    },
-  ];
+const modalOptions: ModalOption[] = [
+  {
+    id: "shopping",
+    title: "Start Shopping",
+    description:
+      "Browse our amazing collection of products and find exactly what you need.",
+    icon: ShoppingCart,
+    buttonText: "Start Shopping",
+    gradient: "from-purple-50 to-purple-100",
+    hoverGradient: "hover:border-purple-300",
+    iconColor: "text-purple-600",
+    buttonColor: "bg-purple-600",
+    buttonHoverColor: "group-hover:bg-purple-700",
+    ringColor: "ring-purple-500",
+    pulseColor: "bg-purple-600",
+    route: "/auth/login",
+  },
+  {
+    id: "vendor",
+    title: "Start Selling",
+    description:
+      "Join our marketplace and grow your business by connecting with thousands of eager buyers.",
+    icon: Store,
+    buttonText: "Start Selling",
+    gradient: "from-blue-50 to-blue-100",
+    hoverGradient: "hover:border-blue-300",
+    iconColor: "text-blue-600",
+    buttonColor: "bg-blue-600",
+    buttonHoverColor: "group-hover:bg-blue-700",
+    ringColor: "ring-blue-500",
+    pulseColor: "bg-blue-600",
+    route: "/vendor/auth",
+  },
+];
+
+
 
   const getPageTitle = (): string => {
     switch (pathname) {
@@ -135,14 +137,14 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(
-        `/search-results?q=${encodeURIComponent(searchQuery.trim())}`
-      );
-    }
-  };
+  // const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   if (searchQuery.trim()) {
+  //     router.push(
+  //       `/search-results?q=${encodeURIComponent(searchQuery.trim())}`
+  //     );
+  //   }
+  // };
 
   const handleBackNavigation = () => {
     if (window.history.length > 1) router.back();
@@ -273,7 +275,7 @@ const Header: React.FC = () => {
                         Choose Your Path
                       </h2>
                       <p className="text-gray-600">
-                        Select how you'd like to get started with our platform
+                        Select how you&apos;d like to get started with our platform
                       </p>
                     </div>
                   </div>

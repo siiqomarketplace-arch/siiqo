@@ -54,110 +54,113 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
     }
   }, [expiryTimer, router]);
 
-  const handleVerify = async () => {
-    if (!email) {
+const handleVerify = async () => {
+  if (!email) {
+    toast({
+      title: "Error",
+      description: "Email not found. Please sign up again.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  if (otp.length !== 6) {
+    toast({
+      title: "Error",
+      description: "Please enter a complete 6-digit OTP.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setIsVerifying(true);
+  try {
+    const verifyResponse = await axios.post(
+      "https://server.bizengo.com/api/auth/verify-email",
+      { email, otp },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    if (verifyResponse.data.status === "success") {
       toast({
-        title: "Error",
-        description: "Email not found. Please sign up again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (otp.length !== 6) {
-      toast({
-        title: "Error",
-        description: "Please enter a complete 6-digit OTP.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      // Step 1: Verify email
-      const verifyResponse = await axios.post(
-        "https://server.bizengo.com/api/auth/verify-email",
-        { email, otp },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      if (verifyResponse.data.status === "success") {
-        toast({
-          title: "Success",
-          description:
-            verifyResponse.data.message || "Email verified successfully!",
-        });
-
-        if (role === "vendor" && password) {
-          try {
-            const loginResponse = await axios.post(
-              "https://server.bizengo.com/api/auth/login",
-              { email, password },
-              { headers: { "Content-Type": "application/json" } }
-            );
-
-            // console.log("Auto-Login Details:", loginResponse.data);
-
-            const { access_token, message, user } = loginResponse.data;
-            // console.log("Auto-Login Token: ", access_token);
-            // console.log("Auto-Login role: ", user.role);
-
-            // Success condition based on actual response
-            if (access_token && message?.toLowerCase().includes("success")) {
-              // Save token and user data
-              sessionStorage.setItem("authToken", access_token);
-              sessionStorage.setItem("user", JSON.stringify(user));
-
-              toast({
-                title: "Login Successful",
-                description: "Redirecting to vendor onboarding...",
-              });
-
-              // Clean up temp data
-              sessionStorage.removeItem("signupRole");
-              sessionStorage.removeItem("signupEmail");
-              sessionStorage.removeItem("signupPassword");
-
-              // Redirect
-              setTimeout(() => {
-                router.replace("/auth/vendor-onboarding");
-              }, 1200);
-            } else {
-              console.error("Unexpected login response:", loginResponse.data);
-              throw new Error("Auto-login failed — token missing.");
-            }
-          } catch (loginError: any) {
-            console.error("Auto-login error:", loginError);
-            toast({
-              title: "Login Error",
-              description:
-                loginError.response?.data?.message ||
-                "Auto-login failed. Please log in manually.",
-              variant: "destructive",
-            });
-            router.push("/auth/login");
-          }
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: verifyResponse.data.message || "Invalid OTP.",
-          variant: "destructive",
-        });
-      }
-    } catch (err: any) {
-      toast({
-        title: "Error",
+        title: "Success",
         description:
-          err.response?.data?.message ||
-          "Failed to verify OTP. Try again later.",
+          verifyResponse.data.message || "Email verified successfully!",
+      });
+
+      console.log("User Role: ", role);
+
+      // Vendor verification flow
+      if (role === "vendor" && password) {
+        try {
+          const loginResponse = await axios.post(
+            "https://server.bizengo.com/api/auth/login",
+            { email, password },
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          const { access_token, message, user } = loginResponse.data;
+
+          if (access_token && message?.toLowerCase().includes("success")) {
+            sessionStorage.setItem("authToken", access_token);
+            sessionStorage.setItem("user", JSON.stringify(user));
+
+            toast({
+              title: "Login Successful",
+              description: "Redirecting to vendor onboarding...",
+            });
+
+            sessionStorage.removeItem("signupRole");
+            sessionStorage.removeItem("signupEmail");
+            sessionStorage.removeItem("signupPassword");
+
+            router.replace("/auth/vendor-onboarding");
+            return;
+          } else {
+            console.error("Unexpected login response:", loginResponse.data);
+            throw new Error("Auto-login failed — token missing.");
+          }
+        } catch (loginError: any) {
+          console.error("Auto-login error:", loginError);
+          toast({
+            title: "Login Error",
+            description:
+              loginError.response?.data?.message ||
+              "Auto-login failed. Please log in manually.",
+            variant: "destructive",
+          });
+          router.push("/auth/login");
+          return;
+        }
+      }
+
+      // Buyer verification flow — redirect after verification
+      toast({
+        title: "Email Verified",
+        description: "Redirecting to login...",
+      });
+
+      router.replace("/auth/login");
+    } else {
+      toast({
+        title: "Error",
+        description: verifyResponse.data.message || "Invalid OTP.",
         variant: "destructive",
       });
-    } finally {
-      setIsVerifying(false);
     }
-  };
+  } catch (err: any) {
+    toast({
+      title: "Error",
+      description:
+        err.response?.data?.message || "Failed to verify OTP. Try again later.",
+      variant: "destructive",
+    });
+  } finally {
+    // only stop spinning after navigation completes
+    setTimeout(() => setIsVerifying(false), 1500);
+  }
+};
+
 
   const handleResend = async () => {
     if (!email) {

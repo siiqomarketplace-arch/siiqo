@@ -130,7 +130,7 @@ const onSubmit = async (data: SignupFormData) => {
       if (emailToStore) {
         // Store key signup details for later automatic login after OTP verification
         sessionStorage.setItem("signupEmail", emailToStore);
-        sessionStorage.setItem("signupPassword", payload.password); // store password temporarily
+        sessionStorage.setItem("signupPassword", payload.password); 
         sessionStorage.setItem("RSUserId", user.user_id);
         sessionStorage.setItem("RSUserRole", user.role);
         sessionStorage.setItem("signupRole", userType); // “buyer” or “vendor”
