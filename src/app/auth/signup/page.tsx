@@ -126,15 +126,18 @@ const onSubmit = async (data: SignupFormData) => {
     const { status, user, message } = response.data;
 
     if (status === "success") {
-      const emailToStore = user.email || payload.email;
-      if (emailToStore) {
-        // Store key signup details for later automatic login after OTP verification
-        sessionStorage.setItem("signupEmail", emailToStore);
-        sessionStorage.setItem("signupPassword", payload.password); 
-        sessionStorage.setItem("RSUserId", user.user_id);
-        sessionStorage.setItem("RSUserRole", user.role);
-        sessionStorage.setItem("signupRole", userType); // “buyer” or “vendor”
-      }
+     const emailToStore = user.email || payload.email;
+
+     if (emailToStore) {
+       sessionStorage.setItem("signupEmail", emailToStore);
+       sessionStorage.setItem("signupRole", userType); // trust userType
+
+       if (userType === "vendor") {
+         sessionStorage.setItem("RSPassword", payload.password);
+         sessionStorage.setItem("RSUserRole", "vendor"); // optional, for tracking
+       }
+     }
+
 
       toast({
         title: `${

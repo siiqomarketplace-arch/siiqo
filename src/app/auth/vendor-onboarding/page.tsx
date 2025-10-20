@@ -16,6 +16,100 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
+const businessTypes = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "retail", label: "Retail Store" },
+  { value: "service", label: "Service Provider" },
+  { value: "healthcare", label: "Healthcare" },
+  { value: "beauty", label: "Beauty & Wellness" },
+  { value: "automotive", label: "Automotive" },
+  { value: "home", label: "Home & Garden" },
+  { value: "entertainment", label: "Entertainment" },
+  { value: "other", label: "Other" },
+];
+
+const businessCategories = [
+  "Electronics",
+  "Fashion & Apparel",
+  "Home & Kitchen",
+  "Beauty & Health",
+  "Automobile",
+  "Food & Groceries",
+  "Other",
+];
+
+const countries = [
+  { value: "Nigeria", label: "Nigeria" },
+  { value: "Ghana", label: "Ghana" },
+  { value: "Kenya", label: "Kenya" },
+  { value: "South Africa", label: "South Africa" },
+  { value: "United States", label: "United States" },
+  { value: "United Kingdom", label: "United Kingdom" },
+  { value: "Canada", label: "Canada" },
+];
+
+const statesByCountry: Record<string, string[]> = {
+  Nigeria: [
+    "Lagos",
+    "Abuja",
+    "Kano",
+    "Rivers",
+    "Oyo",
+    "Delta",
+    "Kaduna",
+    "Edo",
+    "Plateau",
+    "Kwara",
+  ],
+  Ghana: ["Greater Accra", "Ashanti", "Northern", "Western"],
+  Kenya: ["Nairobi", "Mombasa", "Kisumu", "Nakuru"],
+  "South Africa": ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape"],
+  "United States": ["California", "New York", "Texas", "Florida"],
+  "United Kingdom": ["England", "Scotland", "Wales", "Northern Ireland"],
+  Canada: ["Ontario", "Quebec", "British Columbia", "Alberta"],
+};
+
+// API Service
+const vendorOnboardingService = {
+  submit: async (data: VendorOnboardingData, token: string) => {
+    const response = await axios.patch(
+      "https://server.bizengo.com/api/user/switch-to-vendor",
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  },
+};
+
+// Success Screen Component
+const SuccessScreen = () => (
+  <motion.div
+    key="success"
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.4 }}
+    className="flex flex-col items-center justify-center w-full max-w-md p-8 text-center bg-white border border-gray-100 rounded-xl"
+  >
+    <CheckCircle2 className="w-16 h-16 mb-4 text-green-600" />
+    <h2 className="text-2xl font-bold text-gray-800">
+      Registration Successful
+    </h2>
+    <p className="mt-2 text-sm text-gray-600">
+      Your vendor profile has been submitted and is pending admin approval. Once
+      approved, you&apos;ll receive a confirmation email.
+    </p>
+    <p className="mt-4 text-sm text-gray-500">
+      Redirecting you to the vendor login page in 10 seconds...
+    </p>
+  </motion.div>
+);
+
 const VendorOnboarding = () => {
   const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(false);
@@ -33,41 +127,66 @@ const VendorOnboarding = () => {
       store_description: "",
       address: "",
       business_category: "",
+      business_type: "",
+      country: "",
+      state: "",
       logo_url: "",
       banner_url: "",
+      cac_registration_number: "",
+      business_id: "",
+      website: "",
     },
   });
+
+  const selectedCountry = watch("country");
+
+  const handleCountryChange = (value: string) => {
+    setValue("country", value);
+    setValue("state", "");
+  };
 
   const onSubmit = async (data: VendorOnboardingData) => {
     try {
       const token = sessionStorage.getItem("authToken");
-      if (!token) throw new Error("User not authenticated");
+      if (!token) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "User not authenticated. Please login again.",
+        });
+        router.push("/vendor/auth");
+        return;
+      }
 
-      const response = await axios.patch(
-        "https://server.bizengo.com/api/user/switch-to-vendor",
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await vendorOnboardingService.submit(data, token);
 
       toast({
-        title: "🎉 Vendor Onboarding Successful",
+        title: "Vendor Onboarding Successful",
         description:
-          response.data.message ||
-          "Your store profile has been successfully created!",
+          "Your store profile has been successfully created! Redirecting...",
       });
+
+      sessionStorage.removeItem("RSEmail");
+      sessionStorage.removeItem("RSToken");
+      sessionStorage.removeItem("RSUser");
+      sessionStorage.removeItem("RSUserRole");
+      sessionStorage.removeItem("signupRole");
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("user");
 
       setIsCompleted(true);
     } catch (error: any) {
+      console.error("Onboarding error:", error);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong. Try again.";
+
       toast({
         variant: "destructive",
         title: "Onboarding Failed",
-        description:
-          error.response?.data?.message || "Something went wrong. Try again.",
+        description: errorMessage,
       });
     }
   };
@@ -82,7 +201,7 @@ const VendorOnboarding = () => {
   }, [isCompleted, router]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 border lg:p-20 bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 lg:p-20 bg-gradient-to-br from-blue-50 via-white to-green-50">
       <AnimatePresence>
         {!isCompleted ? (
           <motion.form
@@ -92,67 +211,128 @@ const VendorOnboarding = () => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
             onSubmit={handleSubmit(onSubmit)}
-            className="w-full max-w-xl p-8 space-y-6 bg-white border border-gray-100 rounded-2xl"
+            className="w-full max-w-2xl p-8 space-y-6 bg-white border border-gray-100 rounded-2xl"
           >
-            <h3 className="text-2xl font-bold text-center text-gray-800">
-              Vendor Onboarding 🏪
-            </h3>
-            <p className="text-sm text-center text-gray-500">
-              Fill out your store details below to complete your vendor
-              registration.
-            </p>
+            <div className="text-center">
+              <h3 className="text-3xl font-bold text-gray-800">
+                Vendor Onboarding
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Complete your vendor profile to start selling
+              </p>
+            </div>
 
-            <InputField
-              label="Store Name*"
-              placeholder="Enter your store name"
-              {...register("store_name")}
-              error={errors.store_name?.message}
-            />
+            {/* Store Information */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-700">Store Information</h4>
 
-            <InputField
-              label="Store Description*"
-              placeholder="Describe your store"
-              {...register("store_description")}
-              error={errors.store_description?.message}
-            />
+              <InputField
+                label="Store Name*"
+                placeholder="Enter your store name"
+                {...register("store_name")}
+                error={errors.store_name?.message}
+              />
 
-            <InputField
-              label="Store Address*"
-              placeholder="e.g. Abuja, Nigeria"
-              {...register("address")}
-              error={errors.address?.message}
-            />
+              <InputField
+                label="Store Description*"
+                placeholder="Describe what your store offers"
+                {...register("store_description")}
+                error={errors.store_description?.message}
+              />
 
-            <Dropdown
-              label="Business Category*"
-              options={[
-                "Electronics",
-                "Fashion & Apparel",
-                "Home & Kitchen",
-                "Beauty & Health",
-                "Automobile",
-                "Food & Groceries",
-                "Other",
-              ]}
-              selected={watch("business_category")}
-              onSelect={value => setValue("business_category", value)}
-              error={errors.business_category?.message}
-            />
+              <Dropdown
+                label="Business Category*"
+                options={businessCategories}
+                selected={watch("business_category")}
+                onSelect={value => setValue("business_category", value)}
+                error={errors.business_category?.message}
+              />
 
-            <InputField
-              label="Logo URL*"
-              placeholder="https://example.com/logo.png"
-              {...register("logo_url")}
-              error={errors.logo_url?.message}
-            />
+              <Dropdown
+                label="Business Type*"
+                options={businessTypes.map(t => t.label)}
+                selected={watch("business_type")}
+                onSelect={value => setValue("business_type", value)}
+                error={errors.business_type?.message}
+              />
+            </div>
 
-            <InputField
-              label="Banner URL*"
-              placeholder="https://example.com/banner.jpg"
-              {...register("banner_url")}
-              error={errors.banner_url?.message}
-            />
+            {/* Location Information */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-700">Location</h4>
 
+              <Dropdown
+                label="Country*"
+                options={countries.map(c => c.label)}
+                selected={watch("country")}
+                onSelect={handleCountryChange}
+                error={errors.country?.message}
+              />
+
+              <Dropdown
+                label="State/Region*"
+                options={
+                  selectedCountry ? statesByCountry[selectedCountry] || [] : []
+                }
+                selected={watch("state")}
+                onSelect={value => setValue("state", value)}
+                error={errors.state?.message}
+              />
+
+              <InputField
+                label="Business Address*"
+                placeholder="e.g. 123 Main Street"
+                {...register("address")}
+                error={errors.address?.message}
+              />
+            </div>
+
+            {/* Business Documents */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-700">Business Details</h4>
+
+              <InputField
+                label="CAC Registration Number (Optional)"
+                placeholder="e.g. RC1234567"
+                {...register("cac_registration_number")}
+                error={errors.cac_registration_number?.message}
+              />
+
+              <InputField
+                label="Business ID (Optional)"
+                placeholder="e.g. BIZ-0021"
+                {...register("business_id")}
+                error={errors.business_id?.message}
+              />
+
+              <InputField
+                label="Website (Optional)"
+                placeholder="https://example.com"
+                {...register("website")}
+                error={errors.website?.message}
+              />
+            </div>
+
+            {/* Branding */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-700">Branding</h4>
+
+              <InputField
+                label="Logo URL*"
+                placeholder="https://example.com/logo.png"
+                {...register("logo_url")}
+                error={errors.logo_url?.message}
+              />
+
+              <InputField
+                label="Banner URL*"
+                placeholder="https://example.com/banner.jpg"
+                {...register("banner_url")}
+                error={errors.banner_url?.message}
+              />
+            </div>
+
+            {/* Submit Button */}
             <Button
               type="submit"
               className="w-full text-white transition bg-green-600 hover:bg-green-700"
@@ -169,26 +349,7 @@ const VendorOnboarding = () => {
             </Button>
           </motion.form>
         ) : (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex flex-col items-center justify-center w-full max-w-md p-8 text-center bg-white border border-gray-100 rounded-xl"
-          >
-            <CheckCircle2 className="w-16 h-16 mb-4 text-green-600" />
-            <h2 className="text-2xl font-bold text-gray-800">
-              Registration Successful
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Your vendor profile has been submitted and is pending admin
-              approval. Once approved, you&apos;ll receive a confirmation email.
-            </p>
-            <p className="mt-4 text-sm text-gray-500">
-              Redirecting you to the vendor login page in 10 seconds...
-            </p>
-          </motion.div>
+          <SuccessScreen />
         )}
       </AnimatePresence>
     </div>

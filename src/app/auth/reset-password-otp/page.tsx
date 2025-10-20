@@ -94,56 +94,67 @@ export default function ResetPasswordOTPPage() {
     document.getElementById(`otp-${lastIndex}`)?.focus();
   };
 
-const onSubmit = async (data: ResetPasswordForm) => {
-  setIsLoading(true);
+  const onSubmit = async (data: ResetPasswordForm) => {
+    setIsLoading(true);
 
-  const payload = {
-    email,
-    otp: data.otp,
-    new_password: data.confirmPassword,
+    const payload = {
+      email,
+      otp: data.otp,
+      new_password: data.confirmPassword,
+    };
+
+    // console.log("Payload:", payload);
+
+    try {
+      const response = await axios.post(
+        "https://server.bizengo.com/api/auth/reset-password",
+        payload,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      // console.log("Response body:", response.data);
+      // console.log("Response status:", response.status);
+
+      toast({
+        title: "Success!",
+        description:
+          response.data.message || "Your password has been reset successfully.",
+      });
+
+      sessionStorage.removeItem("reset_email");
+
+      // detect where they're coming from and navigate user to the right page.
+      const origin = sessionStorage.getItem("reset_origin");
+      // console.log("reset password role: ", origin);
+
+      setTimeout(() => {
+        if (origin === "vendor") {
+          router.replace("/vendor/auth");
+        } else {
+          router.replace("/auth/login");
+        }
+        sessionStorage.removeItem("reset_origin");
+        sessionStorage.removeItem("reset_email");
+      }, 1500);
+    } catch (error: any) {
+      console.error(
+        "Reset password error:",
+        error.response?.data || error.message
+      );
+
+      const message =
+        error.response?.data?.message ||
+        "Failed to reset password. Please try again.";
+
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  console.log("Payload:", payload);
-
-  try {
-    const response = await axios.post(
-      "https://server.bizengo.com/api/auth/reset-password",
-      payload,
-      { headers: { "Content-Type": "application/json" } }
-    );
-
-    console.log("Response body:", response.data);
-    console.log("Response status:", response.status);
-
-    toast({
-      title: "Success!",
-      description:
-        response.data.message || "Your password has been reset successfully.",
-    });
-
-    sessionStorage.removeItem("reset_email");
-
-    setTimeout(() => router.push("/auth/login"), 1500);
-  } catch (error: any) {
-    console.error(
-      "Reset password error:",
-      error.response?.data || error.message
-    );
-
-    const message =
-      error.response?.data?.message ||
-      "Failed to reset password. Please try again.";
-
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: message,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
 
   const handleResendCode = async () => {
     setIsLoading(true);

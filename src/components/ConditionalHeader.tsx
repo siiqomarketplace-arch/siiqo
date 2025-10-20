@@ -13,6 +13,12 @@ const ConditionalHeader: React.FC = () => {
     localStorage.removeItem("vendorAuth");
     localStorage.removeItem("isVendorLoggedIn");
     localStorage.removeItem("vendorToken");
+
+    sessionStorage.removeItem("RSEmail");
+    sessionStorage.removeItem("RSToken");
+    sessionStorage.removeItem("RSUser");
+    sessionStorage.removeItem("RSUserRole");
+    localStorage.removeItem("authToken");
     router.push("../auth");
   };
 

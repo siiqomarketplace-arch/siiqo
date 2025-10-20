@@ -1,8 +1,10 @@
 "use client";
+
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -15,47 +17,57 @@ import Button from "@/components/Button";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
+import { useEffect } from "react";
+
+// Zod schema validation.
+const formSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .refine(val => val.toLowerCase().endsWith(".com"), {
+      message: "Email must end with .com",
+    }),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const isValidEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!isValidEmail(email)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-      });
-      return;
+  // detect and set users origin for later navigation.
+  useEffect(() => {
+    const origin = searchParams?.get("origin");
+    if (origin) {
+      sessionStorage.setItem("reset_origin", origin);
     }
+  }, [searchParams]);
 
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+  });
 
+  const onSubmit = async (data: FormData) => {
     try {
-      const { data } = await axios.post(
+      const response = await axios.post(
         "https://server.bizengo.com/api/auth/request-password-reset",
-        { email }
+        { email: data.email }
       );
 
       toast({
         title: "Email sent",
         description:
-          data.message || "Please check your inbox for a password reset code.",
+          response.data.message ||
+          "Please check your inbox for a password reset code.",
       });
 
-      // console.log("reset email: ", email);
-      sessionStorage.setItem("reset_email", email);
-
-      // Redirect to verification page
+      sessionStorage.setItem("reset_email", data.email);
       router.push("/auth/reset-password-otp");
-
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
@@ -66,21 +78,36 @@ export default function ForgotPasswordPage() {
         title: "Error",
         description: message,
       });
-      setIsLoading(false);
     }
+  };
+
+  const handleBackToLogin = () => {
+    // detect where they're coming from and navigate user to the right page.
+    const origin = sessionStorage.getItem("reset_origin");
+    // console.log("reset password role: ", origin);
+
+    setTimeout(() => {
+      if (origin === "vendor") {
+        router.replace("/vendor/auth");
+      } else {
+        router.replace("/auth/login");
+      }
+      sessionStorage.removeItem("reset_origin");
+      sessionStorage.removeItem("reset_email");
+    }, 1000);
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="w-full max-w-md">
         <div className="mb-8">
-          <Link
-            href="/auth/login"
+          <button
+            onClick={handleBackToLogin}
             className="inline-flex items-center gap-2 text-sm text-gray-600 transition-colors hover:underline hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Login
-          </Link>
+          </button>
         </div>
 
         <Card className="border bg-white/80 backdrop-blur-sm">
@@ -97,28 +124,31 @@ export default function ForgotPasswordPage() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
+                  {...register("email")}
+                  disabled={isSubmitting}
                   autoComplete="email"
-                  disabled={isLoading}
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <Button
                 variant="navy"
                 type="submit"
                 className="w-full text-sm"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Sending...

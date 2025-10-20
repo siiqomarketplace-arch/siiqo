@@ -151,6 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem("RSEmail");
       sessionStorage.removeItem("RSToken");
       sessionStorage.removeItem("RSUser");
+      sessionStorage.removeItem("RSUserRole");
+      localStorage.removeItem("rememberedEmail");
+      localStorage.removeItem("authToken");
     }
     window.location.href = "/";
   }, []);

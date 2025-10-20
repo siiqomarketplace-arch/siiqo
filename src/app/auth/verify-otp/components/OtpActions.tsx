@@ -19,16 +19,12 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
   const [cooldown, setCooldown] = useState(0);
   const [expiryTimer, setExpiryTimer] = useState(600); // 10 minutes
 
-  const email =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("signupEmail")
-      : null;
-  const role =
-    typeof window !== "undefined" ? sessionStorage.getItem("signupRole") : null;
-  const password =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("signupPassword")
-      : null;
+ const email =
+   typeof window !== "undefined" ? sessionStorage.getItem("signupEmail") : null;
+ const role =
+   typeof window !== "undefined" ? sessionStorage.getItem("signupRole") : null;
+ const password =
+   typeof window !== "undefined" ? sessionStorage.getItem("RSPassword") : null;
 
   // Countdown for resend cooldown
   useEffect(() => {
@@ -105,14 +101,9 @@ const handleVerify = async () => {
             sessionStorage.setItem("authToken", access_token);
             sessionStorage.setItem("user", JSON.stringify(user));
 
-            toast({
-              title: "Login Successful",
-              description: "Redirecting to vendor onboarding...",
-            });
-
-            sessionStorage.removeItem("signupRole");
+            // auto-login for vendor token.
             sessionStorage.removeItem("signupEmail");
-            sessionStorage.removeItem("signupPassword");
+            sessionStorage.removeItem("RSPassword");
 
             router.replace("/auth/vendor-onboarding");
             return;
@@ -139,6 +130,9 @@ const handleVerify = async () => {
         title: "Email Verified",
         description: "Redirecting to login...",
       });
+
+      sessionStorage.removeItem("signupRole");
+      sessionStorage.removeItem("signupEmail");
 
       router.replace("/auth/login");
     } else {

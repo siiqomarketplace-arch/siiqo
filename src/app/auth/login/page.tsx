@@ -248,7 +248,7 @@ const LoginPage = () => {
                   <span>Remember me</span>
                 </label>
                 <Link
-                  href="/auth/forgot-password"
+                  href="/auth/forgot-password?origin=buyer"
                   className="text-sm text-blue-600 hover:underline"
                 >
                   Forgot password?

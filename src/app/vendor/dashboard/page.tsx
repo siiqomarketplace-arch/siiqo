@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Head from "next/head";
-import VendorHeader from "./components/VendorHeader";
 import DashboardStats from "./components/DashboardStats";
 import QuickActions from "./components/QuickActions";
 import RecentOrders from "./components/RecentOrders";
@@ -81,23 +80,27 @@ const VendorDashboard: React.FC = () => {
   );
 
   const [loading, setLoading] = useState<boolean>(true);
-  useEffect(() => {
-    // Check if vendor is authenticated
-    const isLoggedIn = localStorage.getItem("isVendorLoggedIn");
-    if (!isLoggedIn) {
-      router.push("../auth");
-      return;
-    }
 
-    // Load vendor data
-    const vendor = JSON.parse(localStorage.getItem("vendorAuth") || "{}");
-    console.log("Dashboard data: ", vendor);
-    
-    setVendorData(vendor);
+useEffect(() => {
+  // Check if vendor is authenticated
+  const token = sessionStorage.getItem("RSToken");
+  const userRole = sessionStorage.getItem("RSUserRole");
 
-    // Load dashboard data
-    loadDashboardData();
-  }, [router]);
+  if (!token || userRole !== "vendor") {
+    router.push("../auth");
+    return;
+  }
+
+  // Load vendor data from sessionStorage
+  const vendorJson = sessionStorage.getItem("RSUser");
+  const vendor = vendorJson ? JSON.parse(vendorJson) : null;
+
+  console.log("Dashboard vendor data: ", vendor);
+  setVendorData(vendor);
+
+  // Load dashboard data
+  loadDashboardData();
+}, [router]);
 
   const loadDashboardData = async (): Promise<void> => {
     setLoading(true);
