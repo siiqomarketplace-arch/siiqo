@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18 # Or your preferred Node.js version
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+  build:
+    commands:
+      - echo "Running the build..."
+      - npm run build
+  post_build:
+    commands:
+      # Sync the 'build' folder to the S3 bucket
+      # Replace yourdomain.com with your actual S3 bucket name
+      - aws s3 sync build/ s3://siiqo.app --delete
+
+      # Invalidate the CloudFront cache to make changes live
+      # Replace E1234567890ABC with your actual CloudFront Distribution ID
+      - aws cloudfront create-invalidation --distribution-id E2AE0NV4XUX4ZT --paths "/*"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'build'
