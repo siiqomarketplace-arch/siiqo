@@ -159,7 +159,7 @@ const UserProfile: React.FC = () => {
       const token = localStorage.getItem("vendorToken");
 
       const response = await fetch(
-        "https://server.bizengo.com/api/upload-profile-pic",
+        "https://server.siiqo.com/api/upload-profile-pic",
         {
           method: "POST",
           headers: {
@@ -220,7 +220,7 @@ const UserProfile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("https://server.bizengo.com/api/user/profile", {
+        const res = await fetch("https://server.siiqo.com/api/user/profile", {
           headers: {
             accept: "application/json",
             Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,

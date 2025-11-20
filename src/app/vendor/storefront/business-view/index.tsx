@@ -80,7 +80,7 @@ const BusinessStorefrontView: React.FC = () => {
         if (!token) throw new Error("No vendor token found");
 
         const res = await fetch(
-          "https://server.bizengo.com/api/vendor/storefront",
+          "https://server.siiqo.com/api/vendor/storefront",
           {
             headers: {
               accept: "application/json",

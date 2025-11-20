@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-// import AddProductModal from "./components/AddProductModal";
 import { useRouter } from "next/navigation";
+// import AddProductModal from "./components/AddProductModal";
+import {
+  addProduct,
+  editProduct,
+  getMyProducts,
+} from "@/services/api";
 import { RoleProvider } from "@/components/ui/RoleContextNavigation";
 import RoleContextNavigation from "@/components/ui/RoleContextNavigation";
 // Try to parse the error response
@@ -102,7 +107,7 @@ const ToastContainer: React.FC<{
 
   return (
     <div className="fixed z-50 max-w-sm top-4 right-4 w-96">
-      {toasts.map((toast) => (
+      {toasts.map(toast => (
         <ToastNotification key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
     </div>
@@ -196,197 +201,13 @@ interface VendorData {
   isVerified: boolean;
 }
 
-// API Service class for product operations
-
-// Updated ProductApiService class with the new token and proper error handling
-
-class ProductApiService {
-  private static baseUrl = "https://server.bizengo.com/api/vendor";
-
-  // Your NEW token (but you'll need to get an even newer one since this expires Jan 23, 2025)
-  private static async getAuthToken(): Promise<string> {
-    if (typeof window === "undefined") {
-      return ""; // Return empty string on server-side
-    }
-
-    // Check localStorage first
-    const storedToken = window.localStorage.getItem("vendorToken");
-
-    if (storedToken && storedToken !== "null") {
-      try {
-        const tokenPayload = JSON.parse(atob(storedToken.split(".")[1]));
-        const currentTime = Math.floor(Date.now() / 1000);
-
-        if (tokenPayload.exp && tokenPayload.exp > currentTime) {
-          console.log("Using stored token");
-          return storedToken;
-        }
-      } catch (e) {
-        console.log("Invalid stored token");
-      }
-    }
-
-    // Use your NEW token as fallback (but this will also expire)
-    const newToken =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NTg0OTUwMCwianRpIjoiYWNkZmYzNjUtNGVhZC00NDgzLWE3ZjgtZTlkYzk1NTIzNzRhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJpZCI6Miwicm9sZSI6InZlbmRvciJ9LCJuYmYiOjE3NTU4NDk1MDAsImNzcmYiOiJlZmNjNjczZS1mMTdkLTQ5NmMtOWY5Yi1hYjg1NjExYTE4YjEiLCJleHAiOjE3NTU5MzU5MDB9.kBBHDyU8cLXc-A-XJR3CJoi7t9-Bs4YDdaBwuInJFjg";
-
-    // Store it for future use
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("authToken", newToken);
-    }
-    return newToken;
-  }
-
-  // Updated request method with better error handling
-  private static async request(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
-    try {
-      const token = await this.getAuthToken();
-
-      const config: RequestInit = {
-        ...options,
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          ...options.headers,
-        },
-      };
-
-      console.log(`Making request to: ${this.baseUrl}${endpoint}`);
-      console.log("Headers:", config.headers);
-
-      const response = await fetch(`${this.baseUrl}${endpoint}`, config);
-
-      console.log(`Response status: ${response.status}`);
-
-      if (response.status === 401) {
-        console.error("Authentication failed - token might be expired");
-        localStorage.removeItem("authToken");
-        throw new Error(
-          "Authentication failed. Your session has expired. Please log in again."
-        );
-      }
-
-      if (response.status === 403) {
-        throw new Error(
-          "Access denied. You do not have permission for this action."
-        );
-      }
-
-      if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {
-          // If we can't parse error response, use the status message
-        }
-        throw new Error(errorMessage);
-      }
-
-      return response;
-    } catch (error) {
-      console.error("API Request failed:", error);
-
-      // Handle network errors specifically
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error(
-          "Network error. Please check your internet connection and try again."
-        );
-      }
-
-      throw error;
-    }
-  }
-
-  static async addProduct(productData: AddProductRequest): Promise<any> {
-    console.log("Adding product:", productData);
-    const response = await this.request("/add-product", {
-      method: "POST",
-      body: JSON.stringify(productData),
-    });
-    return response.json();
-  }
-
-  static async editProduct(
-    productId: number,
-    productData: EditProductRequest
-  ): Promise<any> {
-    console.log(`Editing product ${productId}:`, productData);
-    const response = await this.request(`/edit-product/${productId}`, {
-      method: "PUT",
-      body: JSON.stringify(productData),
-    });
-    return response.json();
-  }
-
-  static async getMyProducts(): Promise<any> {
-    console.log("Fetching vendor products...");
-    const response = await this.request("/my-products", {
-      method: "GET",
-    });
-    return response.json();
-  }
-
-  // Helper method to convert File to base64
-  static fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
-
-  // Method to manually login and get a fresh token
-  static async login(email: string, password: string): Promise<string> {
-    try {
-      const response = await fetch(
-        "https://server.bizengo.com/api/vendor/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            accept: "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      const data = await response.json();
-      if (data.access_token) {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("authToken", data.access_token);
-        }
-        return data.access_token;
-      } else {
-        throw new Error("No access token received");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
-  }
-}
-
 const ProductManagement: React.FC = () => {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
-  // No redirection here, we'll handle auth in the API calls
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    null
+  );
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -400,23 +221,22 @@ const ProductManagement: React.FC = () => {
 
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
 
-  // Toast management functions
   const addToast = (toast: Omit<Toast, "id">): string => {
     const id = Date.now().toString();
-    setToasts((prev) => [...prev, { ...toast, id }]);
+    setToasts(prev => [...prev, { ...toast, id }]);
     return id;
   };
 
   const removeToast = (id: string): void => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   const updateToast = (
     id: string,
     updates: Partial<Omit<Toast, "id">>
   ): void => {
-    setToasts((prev) =>
-      prev.map((toast) => (toast.id === id ? { ...toast, ...updates } : toast))
+    setToasts(prev =>
+      prev.map(toast => (toast.id === id ? { ...toast, ...updates } : toast))
     );
   };
 
@@ -424,7 +244,7 @@ const ProductManagement: React.FC = () => {
     const fetchVendorProducts = async () => {
       setLoading(true);
       try {
-        const data = await ProductApiService.getMyProducts();
+        const { data } = await getMyProducts();
         console.log("Parsed JSON:", data);
 
         if (data.products) {
@@ -432,7 +252,8 @@ const ProductManagement: React.FC = () => {
             (product: any) => ({
               id: product.id || product._id,
               name: product.product_name,
-              image: product.images?.[0] || "https://via.placeholder.com/150",
+              image:
+                product.images?.[0] || "https://via.placeholder.com/150",
               category: product.category,
               sku: product.sku || `SKU-${product.id}`,
               price: product.product_price,
@@ -462,7 +283,7 @@ const ProductManagement: React.FC = () => {
 
     if (selectedCategory) {
       filtered = filtered.filter(
-        (product) =>
+        product =>
           product.category.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
@@ -470,7 +291,7 @@ const ProductManagement: React.FC = () => {
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (product) =>
+        product =>
           product.name.toLowerCase().includes(lowercasedQuery) ||
           product.sku.toLowerCase().includes(lowercasedQuery)
       );
@@ -487,18 +308,23 @@ const ProductManagement: React.FC = () => {
     productId: number | string,
     isSelected: boolean
   ): void => {
-    setSelectedProducts((prev) =>
+    setSelectedProducts(prev =>
       isSelected
         ? [...prev, Number(productId)]
-        : prev.filter((id) => id !== Number(productId))
+        : prev.filter(id => id !== Number(productId))
     );
   };
 
   const handleSelectAll = (isSelected: boolean): void => {
-    setSelectedProducts(isSelected ? filteredProducts.map((p) => p.id) : []);
+    setSelectedProducts(
+      isSelected ? filteredProducts.map(p => p.id) : []
+    );
   };
 
-  const handleBulkAction = (action: BulkAction, productIds: number[]): void => {
+  const handleBulkAction = (
+    action: BulkAction,
+    productIds: number[]
+  ): void => {
     console.log(`Performing ${action} on products:`, productIds);
     setSelectedProducts([]);
   };
@@ -509,7 +335,7 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleEditProduct = (productId: number | string): void => {
-    const product = products.find((p) => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (product) {
       setEditingProduct(product);
       setShowAddModal(true);
@@ -517,9 +343,8 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleDuplicateProduct = (productId: number | string): void => {
-    const product = products.find((p) => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (product) {
-      // Show loading toast for duplicate action
       const loadingToastId = addToast({
         type: "loading",
         title: "Duplicating product...",
@@ -527,7 +352,6 @@ const ProductManagement: React.FC = () => {
         duration: 0,
       });
 
-      // Simulate duplicate operation
       setTimeout(() => {
         const duplicatedProduct: Product = {
           ...product,
@@ -536,9 +360,8 @@ const ProductManagement: React.FC = () => {
           sku: `${product.sku}-COPY`,
           createdAt: new Date().toISOString(),
         };
-        setProducts((prev) => [duplicatedProduct, ...prev]);
+        setProducts(prev => [duplicatedProduct, ...prev]);
 
-        // Remove loading toast and show success
         removeToast(loadingToastId);
         addToast({
           type: "success",
@@ -555,7 +378,6 @@ const ProductManagement: React.FC = () => {
       typeof window !== "undefined" &&
       window.confirm("Are you sure you want to delete this product?")
     ) {
-      // Show loading toast for delete action
       const loadingToastId = addToast({
         type: "loading",
         title: "Deleting product...",
@@ -563,13 +385,11 @@ const ProductManagement: React.FC = () => {
         duration: 0,
       });
 
-      // Simulate delete operation (replace with actual API call)
       setTimeout(() => {
-        const deletedProduct = products.find((p) => p.id === productId);
-        setProducts((prev) => prev.filter((p) => p.id !== productId));
-        setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+        const deletedProduct = products.find(p => p.id === productId);
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        setSelectedProducts(prev => prev.filter(id => id !== productId));
 
-        // Remove loading toast and show success
         removeToast(loadingToastId);
         addToast({
           type: "success",
@@ -588,8 +408,8 @@ const ProductManagement: React.FC = () => {
     field: string,
     value: string | number
   ): void => {
-    setProducts((prev) =>
-      prev.map((product) => {
+    setProducts(prev =>
+      prev.map(product => {
         if (String(product.id) === productId) {
           const isNumericField = [
             "price",
@@ -608,21 +428,18 @@ const ProductManagement: React.FC = () => {
     );
   };
 
-  // Transform form data to API format
   const transformFormDataToApiRequest = (
     formData: ProductFormData
   ): AddProductRequest => {
-    // Collect URLs from successfully uploaded images
     const imageUrls = formData.images
-      .filter((img: any) => img && img.isUploaded && img.url) // ✅ Guard against undefined items
+      .filter((img: any) => img && img.isUploaded && img.url)
       .map((img: any) => img.url);
 
-    // Format the data according to API expectations
     const apiData: AddProductRequest = {
       product_name: formData.name,
       description: (formData.description || "").trim(),
       category: (formData.category || "Uncategorized").trim(),
-      product_price: Math.round((parseFloat(formData.price) || 0) * 100), // Convert to kobo/cents
+      product_price: Math.round((parseFloat(formData.price) || 0) * 100),
       quantity: parseInt(formData.stock, 10) || 0,
       status: formData.status || "active",
       visibility: formData.visibility === "visible",
@@ -640,12 +457,11 @@ const ProductManagement: React.FC = () => {
     const actionText = isEditing ? "Updating" : "Adding";
     const successText = isEditing ? "updated" : "added";
 
-    // Show loading toast
     const loadingToastId = addToast({
       type: "loading",
       title: `${actionText} product...`,
       message: "Please wait while we save your product.",
-      duration: 0, // Don't auto-remove loading toast
+      duration: 0,
     });
 
     setLoading(true);
@@ -655,15 +471,10 @@ const ProductManagement: React.FC = () => {
       const apiData = transformFormDataToApiRequest(formData);
 
       if (editingProduct) {
-        // Edit existing product
-        const response = await ProductApiService.editProduct(
-          editingProduct.id,
-          apiData
-        );
+        const response = await editProduct(editingProduct.id, apiData);
 
-        // Update local state with the response
-        setProducts((prev) =>
-          prev.map((p) =>
+        setProducts(prev =>
+          prev.map(p =>
             p.id === editingProduct.id
               ? {
                   ...p,
@@ -673,7 +484,6 @@ const ProductManagement: React.FC = () => {
                   price: apiData.product_price,
                   status: apiData.status as ProductStatus,
                   image: apiData.images[0] || p.image,
-                  // Add other fields as needed
                 }
               : p
           )
@@ -681,12 +491,10 @@ const ProductManagement: React.FC = () => {
 
         console.log("Product updated successfully:", response);
       } else {
-        // Add new product
-        const response = await ProductApiService.addProduct(apiData);
+        const response = await addProduct(apiData);
 
-        // Create new product from response and add to local state
         const newProduct: Product = {
-          id: response.id || Date.now(), // Use API response ID if available
+          id: response.data.id || Date.now(),
           name: apiData.product_name,
           description: apiData.description,
           category: apiData.category,
@@ -695,18 +503,16 @@ const ProductManagement: React.FC = () => {
           image:
             apiData.images[0] ||
             "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
-          sku: `SKU-${Date.now()}`, // Generate SKU or get from response
+          sku: `SKU-${Date.now()}`,
           stock: parseInt(formData.stock, 10) || 0,
           createdAt: new Date().toISOString(),
           views: 0,
-          // Add other fields as needed
         };
 
-        setProducts((prev) => [newProduct, ...prev]);
+        setProducts(prev => [newProduct, ...prev]);
         console.log("Product added successfully:", response);
       }
 
-      // Remove loading toast and show success
       removeToast(loadingToastId);
       addToast({
         type: "success",
@@ -722,7 +528,6 @@ const ProductManagement: React.FC = () => {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to save product";
 
-      // Remove loading toast and show error
       removeToast(loadingToastId);
       addToast({
         type: "error",

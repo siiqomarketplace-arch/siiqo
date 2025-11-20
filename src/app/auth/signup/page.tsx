@@ -7,6 +7,7 @@ import { signupSchema, SignupFormData } from "@/lib/Validation/SignupSchema";
 import InputField from "@/components/Input";
 import PasswordStrengthBar from "./components/PasswordStrengthBar";
 import { useLocationDetection } from "./components/useLocationDetection";
+import { signup } from "@/services/api";
 import {
   Eye,
   EyeOff,
@@ -26,7 +27,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 
@@ -97,80 +97,71 @@ const SignupForm = () => {
     }
   }, [locationDetected, location, setValue]);
 
-const onSubmit = async (data: SignupFormData) => {
-  try {
-    const { userType, confirmPassword, ...payload } = data;
+  const onSubmit = async (data: SignupFormData) => {
+    try {
+      const { userType, confirmPassword, ...payload } = data;
 
-    const requestBody = {
-      fullname: payload.fullname,
-      email: payload.email,
-      password: payload.password,
-      phone_number: payload.phone_number,
-      address: {
-        country: payload.address?.country || "",
-        state: payload.address?.state || "",
-      },
-      ...(payload.referral_code && { referral_code: payload.referral_code }),
-    };
-
-    const response = await axios.post<SignupResponse>(
-      "https://server.bizengo.com/api/auth/signup",
-      requestBody,
-      {
-        headers: {
-          "Content-Type": "application/json",
+      const requestBody = {
+        fullname: payload.fullname,
+        email: payload.email,
+        password: payload.password,
+        phone_number: payload.phone_number,
+        address: {
+          country: payload.address?.country || "",
+          state: payload.address?.state || "",
         },
+        ...(payload.referral_code && { referral_code: payload.referral_code }),
+      };
+
+      const response = await signup(requestBody);
+
+      const { status, user, message } = response.data;
+
+      if (status === "success") {
+        const emailToStore = user.email || payload.email;
+
+        if (emailToStore) {
+          sessionStorage.setItem("signupEmail", emailToStore);
+          sessionStorage.setItem("signupRole", userType); // trust userType
+
+          if (userType === "vendor") {
+            sessionStorage.setItem("RSPassword", payload.password);
+            sessionStorage.setItem("RSUserRole", "vendor"); // optional, for tracking
+          }
+        }
+
+        toast({
+          title: `${
+            userType === "vendor" ? "Vendor" : "Buyer"
+          } Signup Successful`,
+          description: message || "Please verify your email with the OTP sent.",
+        });
+
+        // Redirect to OTP verification page
+        router.push("/auth/verify-otp");
+        reset();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Signup Failed",
+          description: message || "Something went wrong. Please try again.",
+        });
       }
-    );
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Unable to complete signup. Please try again later.";
 
-    const { status, user, message } = response.data;
-
-    if (status === "success") {
-     const emailToStore = user.email || payload.email;
-
-     if (emailToStore) {
-       sessionStorage.setItem("signupEmail", emailToStore);
-       sessionStorage.setItem("signupRole", userType); // trust userType
-
-       if (userType === "vendor") {
-         sessionStorage.setItem("RSPassword", payload.password);
-         sessionStorage.setItem("RSUserRole", "vendor"); // optional, for tracking
-       }
-     }
-
-
-      toast({
-        title: `${
-          userType === "vendor" ? "Vendor" : "Buyer"
-        } Signup Successful`,
-        description: message || "Please verify your email with the OTP sent.",
-      });
-
-      // Redirect to OTP verification page
-      router.push("/auth/verify-otp");
-      reset();
-    } else {
       toast({
         variant: "destructive",
         title: "Signup Failed",
-        description: message || "Something went wrong. Please try again.",
+        description: errorMessage,
       });
     }
-  } catch (error: any) {
-    console.error("Signup error:", error);
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Unable to complete signup. Please try again later.";
-
-    toast({
-      variant: "destructive",
-      title: "Signup Failed",
-      description: errorMessage,
-    });
-  }
-};
+  };
 
 
   return (

@@ -8,13 +8,20 @@ import {
   VendorOnboardingData,
 } from "@/lib/Validation/VendorOnboardingSchema";
 import InputField from "@/components/Input";
-import Dropdown from "../signup/components/DropDown";
+import Dropdown from "@/app/auth/signup/components/DropDown";
 import Button from "@/components/Button";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { vendorOnboarding, uploadFile } from "@/services/api";
+import {
+  Loader2,
+  CheckCircle2,
+  MapPin,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocationDetection } from "@/hooks/useLocationDetection";
+import ImageUpload from "@/components/ui/ImageUpload";
 
 const businessTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -69,24 +76,6 @@ const statesByCountry: Record<string, string[]> = {
   Canada: ["Ontario", "Quebec", "British Columbia", "Alberta"],
 };
 
-// API Service
-const vendorOnboardingService = {
-  submit: async (data: VendorOnboardingData, token: string) => {
-    const response = await axios.patch(
-      "https://server.bizengo.com/api/user/switch-to-vendor",
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  },
-};
-
-// Success Screen Component
 const SuccessScreen = () => (
   <motion.div
     key="success"
@@ -145,20 +134,41 @@ const VendorOnboarding = () => {
     setValue("state", "");
   };
 
+  const {
+    location,
+    loading: locationDetecting,
+    detected: locationDetected,
+    refresh: handleLocationRefresh,
+  } = useLocationDetection();
+
+  useEffect(() => {
+    if (locationDetected && location.country && location.state) {
+      setValue("country", location.country);
+      setValue("state", location.state);
+    }
+  }, [locationDetected, location, setValue]);
+
+  const handleImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await uploadFile(formData);
+      return response.data.url;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast({
+        variant: "destructive",
+        title: "Image Upload Failed",
+        description: "Could not upload image. Please try again.",
+      });
+      throw error;
+    }
+  };
+
   const onSubmit = async (data: VendorOnboardingData) => {
     try {
-      const token = sessionStorage.getItem("authToken");
-      if (!token) {
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: "User not authenticated. Please login again.",
-        });
-        router.push("/vendor/auth");
-        return;
-      }
-
-      await vendorOnboardingService.submit(data, token);
+      await vendorOnboarding(data);
 
       toast({
         title: "Vendor Onboarding Successful",
@@ -244,15 +254,15 @@ const VendorOnboarding = () => {
                 label="Business Category*"
                 options={businessCategories}
                 selected={watch("business_category")}
-                onSelect={value => setValue("business_category", value)}
+                onSelect={(value) => setValue("business_category", value)}
                 error={errors.business_category?.message}
               />
 
               <Dropdown
                 label="Business Type*"
-                options={businessTypes.map(t => t.label)}
+                options={businessTypes.map((t) => t.label)}
                 selected={watch("business_type")}
-                onSelect={value => setValue("business_type", value)}
+                onSelect={(value) => setValue("business_type", value)}
                 error={errors.business_type?.message}
               />
             </div>
@@ -261,9 +271,33 @@ const VendorOnboarding = () => {
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-700">Location</h4>
 
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Country *</label>
+                <div className="flex items-center gap-2">
+                  {locationDetected && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <MapPin className="w-3 h-3" />
+                      <span>Auto-detected</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleLocationRefresh}
+                    disabled={locationDetecting}
+                    className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    title="Detect location"
+                  >
+                    <RefreshCw
+                      className={`h-3 w-3 ${
+                        locationDetecting ? "animate-spin" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
               <Dropdown
-                label="Country*"
-                options={countries.map(c => c.label)}
+                label=""
+                options={countries.map((c) => c.label)}
                 selected={watch("country")}
                 onSelect={handleCountryChange}
                 error={errors.country?.message}
@@ -275,7 +309,7 @@ const VendorOnboarding = () => {
                   selectedCountry ? statesByCountry[selectedCountry] || [] : []
                 }
                 selected={watch("state")}
-                onSelect={value => setValue("state", value)}
+                onSelect={(value) => setValue("state", value)}
                 error={errors.state?.message}
               />
 
@@ -317,19 +351,27 @@ const VendorOnboarding = () => {
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-700">Branding</h4>
 
-              <InputField
-                label="Logo URL*"
-                placeholder="https://example.com/logo.png"
-                {...register("logo_url")}
-                error={errors.logo_url?.message}
+              <ImageUpload
+                label="Logo*"
+                onUpload={handleImageUpload}
+                onUrlChange={(url) => setValue("logo_url", url)}
               />
+              {errors.logo_url && (
+                <p className="text-sm text-red-500">
+                  {errors.logo_url.message}
+                </p>
+              )}
 
-              <InputField
-                label="Banner URL*"
-                placeholder="https://example.com/banner.jpg"
-                {...register("banner_url")}
-                error={errors.banner_url?.message}
+              <ImageUpload
+                label="Banner*"
+                onUpload={handleImageUpload}
+                onUrlChange={(url) => setValue("banner_url", url)}
               />
+              {errors.banner_url && (
+                <p className="text-sm text-red-500">
+                  {errors.banner_url.message}
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}

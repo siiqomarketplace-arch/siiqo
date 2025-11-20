@@ -5,7 +5,7 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         const response = await fetch(
-          "https://server.bizengo.com/api/auth/request-password-reset",
+          "https://server.siiqo.com/api/auth/request-password-reset",
           {
             method: "POST",
             headers: {

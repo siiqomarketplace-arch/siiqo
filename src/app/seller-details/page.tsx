@@ -130,7 +130,7 @@ const VendorProfile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("https://server.bizengo.com/api/user/profile", {
+        const res = await fetch("https://server.siiqo.com/api/user/profile", {
           headers: {
             accept: "application/json",
             Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,

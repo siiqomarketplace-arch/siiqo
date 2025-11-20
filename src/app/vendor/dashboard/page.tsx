@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getUserProfile } from "@/services/api";
 import Head from "next/head";
 import DashboardStats from "./components/DashboardStats";
 import QuickActions from "./components/QuickActions";
@@ -81,32 +82,28 @@ const VendorDashboard: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(true);
 
-useEffect(() => {
-  // Check if vendor is authenticated
-  const token = sessionStorage.getItem("RSToken");
-  const userRole = sessionStorage.getItem("RSUserRole");
+  useEffect(() => {
+    const token = sessionStorage.getItem("RSToken");
+    const userRole = sessionStorage.getItem("RSUserRole");
 
-  if (!token || userRole !== "vendor") {
-    router.push("../auth");
-    return;
-  }
+    if (!token || userRole !== "vendor") {
+      router.push("../auth");
+      return;
+    }
 
-  // Load vendor data from sessionStorage
-  const vendorJson = sessionStorage.getItem("RSUser");
-  const vendor = vendorJson ? JSON.parse(vendorJson) : null;
+    const vendorJson = sessionStorage.getItem("RSUser");
+    const vendor = vendorJson ? JSON.parse(vendorJson) : null;
 
-  console.log("Dashboard vendor data: ", vendor);
-  setVendorData(vendor);
+    console.log("Dashboard vendor data: ", vendor);
+    setVendorData(vendor);
 
-  // Load dashboard data
-  loadDashboardData();
-}, [router]);
+    loadDashboardData();
+  }, [router]);
 
   const loadDashboardData = async (): Promise<void> => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const mockDashboardData: DashboardData = {
         stats: {
@@ -230,16 +227,7 @@ useEffect(() => {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch("https://server.bizengo.com/api/user/profile", {
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch profile");
-
-        const data = await res.json();
+        const { data } = await getUserProfile();
         setVendorData(data);
       } catch (err) {
         console.error("Error fetching vendor profile:", err);

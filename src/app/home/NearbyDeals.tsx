@@ -42,7 +42,7 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
     try {
       setError(null);
       const response = await fetch(
-        "https://server.bizengo.com/api/marketplace/popular-products",
+        "https://server.siiqo.com/api/marketplace/popular-products",
         {
           method: "GET",
           headers: {

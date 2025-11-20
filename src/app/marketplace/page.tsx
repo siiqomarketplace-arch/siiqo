@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Heart, ShoppingCart, Star, Filter, RefreshCw, X, LucideCircleArrowOutUpRight, LucideShoppingBag } from "lucide-react";
-import Skeleton from "@/components/skeleton";
-import api_endpoints from "@/hooks/api_endpoints";
+import { fetchProducts, addToCart, fetchCartItems } from "@/services/api";
 import ProductCard, { ProductCardSkeleton } from "./components/ProductCard";
 import Button from "@/components/Button";
+import Skeleton from "@/components/skeleton";
 import { useRouter } from "next/navigation";
 
 interface Product {
@@ -82,51 +82,6 @@ interface Notification {
   message: string;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://server.bizengo.com/api";
-
-// const api_endpoints = {
-//   FETCH_CART_ITEMS: "/cart",
-//   ADD_TO_CART_ITEMS: "/cart/add",
-//   FETCH_POPULAR_PRODUCTS: "/marketplace/popular-products",
-// };
-
-const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  const token =
-    typeof window !== "undefined" ? sessionStorage.getItem("RSToken") : "";
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    accept: "application/json",
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  console.log("popular token: ", token);
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `HTTP ${response.status}: ${errorText || "Request failed"}`
-    );
-  }
-
-  const contentType = response.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return await response.json();
-  }
-  return null;
-};
-
-// ============= MOBILE ACTION BAR COMPONENT =============
 const ActionBar = ({
   product,
   cartQuantity,
@@ -270,7 +225,6 @@ export default function MarketplaceBrowse() {
 
   const [isDisabled, setIsDisabled] = useState(false);
 
-  // Add notification
   const addNotification = (
     type: "success" | "error" | "info",
     message: string
@@ -279,12 +233,10 @@ export default function MarketplaceBrowse() {
     setNotifications(prev => [...prev, { id, type, message }]);
   };
 
-  // Remove notification
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  // Transform API response
   const transformApiProduct = (apiProduct: ApiProduct): Product => {
     return {
       id: apiProduct.id,
@@ -307,13 +259,10 @@ export default function MarketplaceBrowse() {
     };
   };
 
-  // Fetch products
   const fetchProductsFromAPI = async (): Promise<Product[]> => {
     try {
       setFetchError(null);
-      const data: ApiResponse = await apiCall(
-        api_endpoints.FETCH_POPULAR_PRODUCTS
-      );
+      const { data }: { data: ApiResponse } = await fetchProducts();
 
       const transformedProducts = data.products
         .filter(
@@ -337,17 +286,13 @@ export default function MarketplaceBrowse() {
     }
   };
 
-  // Add to cart
-  const addToCart = async (product: Product, quantity: number = 1) => {
+  const handleAddToCart = async (product: Product, quantity: number = 1) => {
     try {
       setIsAddingToCart(prev => ({ ...prev, [product.id]: true }));
 
-      await apiCall(api_endpoints.ADD_TO_CART_ITEMS, {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity: quantity,
-        }),
+      await addToCart({
+        product_id: product.id,
+        quantity: quantity,
       });
 
       setCartQuantities(prev => ({
@@ -369,11 +314,9 @@ export default function MarketplaceBrowse() {
     }
   };
 
-  // Fetch cart quantities
-  // Update fetchCartQuantities to handle errors better
   const fetchCartQuantities = async () => {
     try {
-      const data = await apiCall(api_endpoints.FETCH_CART_ITEMS);
+      const { data } = await fetchCartItems();
 
       const quantities: { [key: number]: number } = {};
       (data.cart_items || []).forEach((item: any) => {
@@ -384,13 +327,11 @@ export default function MarketplaceBrowse() {
     } catch (error: any) {
       console.error("Error fetching cart quantities:", error);
 
-      // Don't show notification for cart fetch errors during initial load
-      // The user might not have any items in cart yet, which could cause 500
       if (error.message.includes("500")) {
         console.log(
           "Cart is empty or endpoint issue - continuing without cart data"
         );
-        setCartQuantities({}); // Set empty cart
+        setCartQuantities({});
       }
     }
   };
@@ -591,7 +532,7 @@ export default function MarketplaceBrowse() {
   };
 
   const handleBuyNow = (product: Product): void => {
-    addToCart(product, 1);
+    addToCart({ product_id: product.id, quantity: 1 });
     addNotification("info", "Redirecting to checkout...");
   };
 

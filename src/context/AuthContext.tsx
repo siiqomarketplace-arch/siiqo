@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = useCallback(async () => {
     try {
       const response = await api.get(
-        "https://server.bizengo.com/api/user/profile"
+        "https://server.siiqo.com/api/user/profile"
       );
       const data = response.data
 

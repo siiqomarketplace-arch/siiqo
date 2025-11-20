@@ -1,34 +1,30 @@
-import axios from "axios";
+import { login } from "@/services/api";
 
-export interface LoginResponse {
-    access_token: string;
-    message: string;
-    user: {
-        email: string;
-        role: "buyer" | "vendor";
-    };
-}
+export const getVendorToken = (): string | null => {
+  return typeof window !== "undefined"
+    ? sessionStorage.getItem("RSToken")
+    : null;
+};
 
 export const loginUser = async (email: string, password: string) => {
-    const response = await axios.post<LoginResponse>(
-        "https://server.bizengo.com/api/auth/login",
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
-    );
-    return response.data;
+  const response = await login({ email, password });
+  return response.data;
 };
 
 export const storeAuthData = (
-    data: LoginResponse,
-    rememberMe: boolean,
-    email: string
+  data: any,
+  rememberMe: boolean,
+  email: string
 ) => {
-    if (typeof window === "undefined") return;
-
-    sessionStorage.setItem("RSEmail", email);
+  if (typeof window !== "undefined") {
     sessionStorage.setItem("RSToken", data.access_token);
-    sessionStorage.setItem("RSUserRole", data.user.role);
     sessionStorage.setItem("RSUser", JSON.stringify(data.user));
+    sessionStorage.setItem("RSEmail", email);
 
-    if (rememberMe) localStorage.setItem("rememberedEmail", email);
+    if (rememberMe) {
+      localStorage.setItem("RSToken", data.access_token);
+      localStorage.setItem("RSUser", JSON.stringify(data.user));
+      localStorage.setItem("RSEmail", email);
+    }
+  }
 };

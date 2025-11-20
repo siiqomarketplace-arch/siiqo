@@ -254,10 +254,10 @@ const Header: React.FC = () => {
             <Button
               type="button"
               variant="navy"
-              onClick={openModal}
+              onClick={() => router.push("/auth/signup")}
               className="px-4 py-2 font-medium"
             >
-              Get Started
+              Profile
             </Button>
           )}
         </div>

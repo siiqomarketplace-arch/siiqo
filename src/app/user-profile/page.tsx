@@ -7,8 +7,12 @@ import PurchaseHistory from "./components/PurchaseHistory";
 import SavedItems from "./components/SavedItems";
 import Settings from "./components/Settings";
 import { useRouter } from "next/navigation";
-import { LucideIconName } from "@/components/ui/AppIcon";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
+import {
+  getUserProfile,
+  uploadProfilePicture,
+  logout,
+} from "@/services/api";
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<string>("listings");
@@ -25,29 +29,10 @@ const UserProfile = () => {
       const formData = new FormData();
       formData.append("profile_pic", file);
 
-      const token = sessionStorage.getItem("RSToken"); // Note: using RSToken here
+      const response = await uploadProfilePicture(formData);
 
-      const response = await fetch(
-        "https://server.bizengo.com/api/upload-profile-pic",
-        {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.profile_pic_url) {
+      if (response.data.profile_pic_url) {
         alert("Profile picture updated successfully!");
-        // Optionally refresh the profile data
         window.location.reload();
       }
     } catch (error) {
@@ -81,10 +66,10 @@ const UserProfile = () => {
     if (!token) {
       console.error("No token found in sessionStorage");
       setLoading(false);
+      router.push("/auth/signup"); // Redirect to create account page if not logged in
       return;
     }
 
-    // First try to load from saved data
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
@@ -95,36 +80,20 @@ const UserProfile = () => {
       }
     }
 
-    // Then fetch fresh data
-    fetch("https://server.bizengo.com/api/user/profile", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        setUser(data);
-        // Update saved data
-        sessionStorage.setItem("RSUser", JSON.stringify(data));
+    getUserProfile()
+      .then(response => {
+        setUser(response.data);
+        sessionStorage.setItem("RSUser", JSON.stringify(response.data));
         setLoading(false);
       })
       .catch(err => {
         console.error("Error fetching profile:", err);
         setLoading(false);
       });
-  }, []);
+  }, [router]);
 
   const handleLogout = (): void => {
-    sessionStorage.removeItem("RSToken");
-    sessionStorage.removeItem("RSUser");
-    sessionStorage.removeItem("RSEmail");
-    window.location.href = "/auth/login";
+    logout();
   };
 
   // Default avatar URL

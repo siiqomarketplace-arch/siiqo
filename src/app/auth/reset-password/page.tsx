@@ -110,7 +110,7 @@ function ResetPasswordContent() {
 
     try {
       const { data } = await axios.post(
-        "https://server.bizengo.com/api/auth/reset-password",
+        "https://server.siiqo.com/api/auth/reset-password",
         {
           email,
           new_password: newPassword,

@@ -74,7 +74,7 @@ const SearchResults = () => {
   const searchParams = useSearchParams();
 
   // API URL
-  const API_URL = "https://server.bizengo.com/api/marketplace/popular-products";
+  const API_URL = "https://server.siiqo.com/api/marketplace/popular-products";
 
   // Function to generate consistent random data based on product ID
   const generateProductExtras = (productId: number) => {

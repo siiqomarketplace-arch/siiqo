@@ -6,7 +6,7 @@ export async function POST(req: Request) {
 
         // Forward request to external API
         const response = await fetch(
-            "https://server.bizengo.com/api/auth/resend-verification",
+            "https://server.siiqo.com/api/auth/resend-verification",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

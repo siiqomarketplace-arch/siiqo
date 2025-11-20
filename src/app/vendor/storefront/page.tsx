@@ -49,7 +49,7 @@ const loadStorefrontData = async () => {
     }
 
     const res = await fetch(
-      "https://server.bizengo.com/api/vendor/storefront",
+      "https://server.siiqo.com/api/vendor/storefront",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -147,7 +147,7 @@ const loadStorefrontData = async () => {
       };
 
       const res = await fetch(
-        "https://server.bizengo.com/api/vendor/storefront",
+        "https://server.siiqo.com/api/vendor/storefront",
         {
           method: "PUT",
           headers: {
@@ -198,7 +198,7 @@ const handlePublishStorefront = async () => {
     };
 
     const res = await fetch(
-      "https://server.bizengo.com/api/vendor/storefront",
+      "https://server.siiqo.com/api/vendor/storefront",
       {
         method: "PUT",
         headers: {

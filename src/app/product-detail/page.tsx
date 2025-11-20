@@ -162,7 +162,7 @@ const ProductDetail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "https://server.bizengo.com/api";
+    process.env.NEXT_PUBLIC_API_URL || "https://server.siiqo.com/api";
 
   // Get auth token from sessionStorage (as specified in your note)
   const getAuthToken = () => {

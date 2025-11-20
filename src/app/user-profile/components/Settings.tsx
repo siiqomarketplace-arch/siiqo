@@ -177,7 +177,7 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
         formData.append("proof_of_address", selectedKycFiles.proofOfAddress);
       }
 
-      const response = await fetch("https://server.bizengo.com/api/user/kyc", {
+      const response = await fetch("https://server.siiqo.com/api/user/kyc", {
         method: "POST",
         headers: {
           accept: "application/json",

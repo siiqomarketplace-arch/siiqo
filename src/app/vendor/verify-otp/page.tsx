@@ -103,7 +103,7 @@ const VerifyOtpPage = () => {
     setIsResending(true);
     try {
       const response = await axios.post(
-        "https://server.bizengo.com/api/auth/resend-otp", // Fixed typo: server not sever
+        "https://server.siiqo.com/api/auth/resend-otp", // Fixed typo: server not sever
         { email: email },
         {
           headers: {
@@ -176,7 +176,7 @@ const VerifyOtpPage = () => {
       try {
         // Try HTTPS first
         response = await axios.post(
-          "https://server.bizengo.com/api/auth/verify-email", // Fixed typo: server not sever
+          "https://server.siiqo.com/api/auth/verify-email", // Fixed typo: server not sever
           requestBody,
           {
             headers: {
@@ -191,7 +191,7 @@ const VerifyOtpPage = () => {
         );
         // Fallback to HTTP for development
         response = await axios.post(
-          "http://server.bizengo.com/api/auth/verify-email",
+          "http://server.siiqo.com/api/auth/verify-email",
           requestBody,
           {
             headers: {

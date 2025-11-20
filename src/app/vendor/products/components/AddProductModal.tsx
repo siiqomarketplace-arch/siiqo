@@ -10,6 +10,7 @@ import Image from "@/components/ui/AppImage";
 import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 import Select from "@/components/ui/new/NewSelect";
+import { getVendorToken } from "@/lib/auth";
 
 // --- Type Definitions ---
 interface ProductDimensions {
@@ -69,11 +70,6 @@ interface Tab {
 }
 
 // --- Helper Functions ---
-const getVendorToken = (): string | null => {
-  return typeof window !== "undefined"
-    ? localStorage.getItem("vendorToken")
-    : null;
-};
 
 const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
   const token = getVendorToken();
@@ -83,7 +79,7 @@ const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
   formData.append("files", file);
 
   const response = await fetch(
-    "https://server.bizengo.com/api/vendor/upload-file",
+    "https://server.siiqo.com/api/vendor/upload-file",
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },

@@ -82,7 +82,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
       throw new Error("No admin token found");
     }
 
-    const response = await fetch(`https://server.bizengo.com/api${endpoint}`, {
+    const response = await fetch(`https://server.siiqo.com/api${endpoint}`, {
       ...options,
       headers: {
         accept: "application/json",

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { resetPassword, resendVerification } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -18,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import Button from "@/components/Button";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import axios from "axios";
 import { resetPasswordSchema } from "@/lib/Validation/ResetPasswordSchema";
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
@@ -103,17 +103,8 @@ export default function ResetPasswordOTPPage() {
       new_password: data.confirmPassword,
     };
 
-    // console.log("Payload:", payload);
-
     try {
-      const response = await axios.post(
-        "https://server.bizengo.com/api/auth/reset-password",
-        payload,
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      // console.log("Response body:", response.data);
-      // console.log("Response status:", response.status);
+      const response = await resetPassword(payload);
 
       toast({
         title: "Success!",
@@ -123,9 +114,7 @@ export default function ResetPasswordOTPPage() {
 
       sessionStorage.removeItem("reset_email");
 
-      // detect where they're coming from and navigate user to the right page.
       const origin = sessionStorage.getItem("reset_origin");
-      // console.log("reset password role: ", origin);
 
       setTimeout(() => {
         if (origin === "vendor") {
@@ -170,14 +159,7 @@ export default function ResetPasswordOTPPage() {
         return;
       }
 
-      // console.log("resend email: ", storedEmail);
-
-      const { data } = await axios.post(
-        "https://server.bizengo.com/api/auth/resend-verification",
-        {
-          email: storedEmail,
-        }
-      );
+      const { data } = await resendVerification(storedEmail);
 
       toast({
         title: "Code resent",

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// import { useRole } from '@/components/ui/RoleContextNavigation';
 import { useRouter } from "next/navigation";
+// import { useRole } from '@/components/ui/RoleContextNavigation';
+import { getVendorOrders } from "@/services/api";
+import { getVendorToken } from "@/lib/auth";
 import OrderFilters from "./components/OrderFilters";
 import OrderStatistics from "./components/OrderStatistics";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
@@ -171,40 +173,28 @@ const OrderManagement: React.FC = () => {
     },
   });
 
-  // Function to get vendor token from localStorage
-  const getVendorToken = (): string | null => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("vendorToken");
-    }
-    return null;
-  };
-
-  // Function to transform API order to component order format
   const transformApiOrderToProductOrder = (
     apiOrder: ApiOrder | ApiOrderDetailsResponse
   ): ProductOrder => {
-    // Calculate totals
     const subtotal = apiOrder.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
-    const shipping = subtotal > 5000 ? 0 : 1000; // Free shipping over ₦50
-    const tax = subtotal * 0.075; // 7.5% VAT
+    const shipping = subtotal > 5000 ? 0 : 1000;
+    const tax = subtotal * 0.075;
     const total = subtotal + shipping + tax;
 
-    // Transform items
     const transformedItems: ProductOrderItem[] = apiOrder.items.map(
       (item, index) => ({
         id: index + 1,
         name: item.product_name,
         image:
-          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", // Default image
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
         quantity: item.quantity,
-        price: item.price / 100, // Convert from kobo to naira if needed
+        price: item.price / 100,
       })
     );
 
-    // Determine status - use order status or derive from items
     let orderStatus: OrderStatus = "pending";
     if ("status" in apiOrder && apiOrder.status) {
       orderStatus = apiOrder.status as OrderStatus;
@@ -218,10 +208,10 @@ const OrderManagement: React.FC = () => {
       customer: {
         name: apiOrder.buyer_name,
         email: apiOrder.buyer_email,
-        phone: undefined, // Not provided in API response
+        phone: undefined,
       },
       items: transformedItems,
-      subtotal: subtotal / 100, // Convert from kobo to naira if needed
+      subtotal: subtotal / 100,
       shipping: shipping / 100,
       tax: tax / 100,
       total: total / 100,
@@ -229,7 +219,7 @@ const OrderManagement: React.FC = () => {
       createdAt: new Date(apiOrder.created_at),
       shippingAddress: {
         name: apiOrder.buyer_name,
-        street: "", // Not provided in API
+        street: "",
         city: "",
         state: "",
         zipCode: "",
@@ -241,40 +231,13 @@ const OrderManagement: React.FC = () => {
     };
   };
 
-  // Function to fetch orders from API
   const fetchOrders = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      const token = getVendorToken();
-      if (!token) {
-        throw new Error("Vendor token not found. Please login again.");
-      }
+      const { data }: { data: ApiOrdersResponse } = await getVendorOrders();
 
-      const response = await fetch(
-        "https://server.bizengo.com/api/vendor/orders",
-        {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Authentication failed. Please login again.");
-        }
-        throw new Error(
-          `Failed to fetch orders: ${response.status} ${response.statusText}`
-        );
-      }
-
-      const data: ApiOrdersResponse = await response.json();
-
-      // Transform API orders to component format
       const transformedOrders = data.orders.map(
         transformApiOrderToProductOrder
       );
@@ -463,7 +426,7 @@ const OrderManagement: React.FC = () => {
       const token = getVendorToken();
       if (token) {
         // Example API call (adjust endpoint as needed):
-        // await fetch(`https://server.bizengo.com/api/vendor/orders/${orderId}/status`, {
+        // await fetch(`https://server.siiqo.com/api/vendor/orders/${orderId}/status`, {
         //   method: 'PUT',
         //   headers: {
         //     'Content-Type': 'application/json',

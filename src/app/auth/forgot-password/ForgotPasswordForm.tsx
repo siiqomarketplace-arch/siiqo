@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { forgotPassword } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -16,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import Button from "@/components/Button";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import axios from "axios";
 import { useEffect } from "react";
 
 // Zod schema validation.
@@ -54,10 +54,7 @@ export default function ForgotPasswordForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await axios.post(
-        "https://server.bizengo.com/api/auth/request-password-reset",
-        { email: data.email }
-      );
+      const response = await forgotPassword(data.email);
 
       toast({
         title: "Email sent",

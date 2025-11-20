@@ -75,7 +75,7 @@ interface UserRoleResponse {
   message?: string;
 }
 
-const API_BASE_URL = "https://server.bizengo.com/api";
+const API_BASE_URL = "https://server.siiqo.com/api";
 
 // API Service
 const vendorAuthService = {

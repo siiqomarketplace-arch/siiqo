@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const vendorApiBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "https://server.bizengo.com/api";
+    process.env.NEXT_PUBLIC_API_BASE_URL || "https://server.siiqo.com/api";
 
 const vendorApi = axios.create({
     baseURL: vendorApiBaseUrl,

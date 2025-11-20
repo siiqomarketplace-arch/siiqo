@@ -8,7 +8,7 @@ export async function POST(req: Request) {
 
         // Forward to Mockwave signup API
         const response = await fetch(
-            "https://server.bizengo.com/api/auth/reset-password",
+            "https://server.siiqo.com/api/auth/reset-password",
             {
                 method: "POST",
                 headers: {
