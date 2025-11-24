@@ -33,6 +33,15 @@ export const useLogin = (options?: { onRoleMismatch?: () => void }) => {
             if (data.user.role === "buyer") {
                 storeAuthData(data, values.rememberMe ?? false, values.email);
                 handleRedirect();
+            } else if (data.user.role === "vendor") {
+                storeAuthData(data, values.rememberMe ?? false, values.email);
+                toast({
+                    title: "Login Successful!",
+                    description: "Redirecting to your dashboard...",
+                });
+                setTimeout(() => {
+                    window.location.href = "/vendor/dashboard";
+                }, 1000);
             } else {
                 // If a Vendor tried to login here
                 options?.onRoleMismatch?.();

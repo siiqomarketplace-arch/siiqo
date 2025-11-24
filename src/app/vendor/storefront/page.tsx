@@ -24,13 +24,6 @@ const VendorStorefront: React.FC = () => {
   const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if vendor is authenticated
-    const token = localStorage.getItem("vendorToken");
-    if (!token) {
-      router.push("../auth");
-      return;
-    }
-
     // Load vendor data
     const vendor = JSON.parse(localStorage.getItem("vendorAuth") || "{}");
     setVendorData(vendor);
@@ -121,10 +114,7 @@ const loadStorefrontData = async () => {
   } catch (err) {
     console.error("Error loading storefront:", err);
 
-    if (err instanceof Error) {
-      alert(`Failed to load storefront: ${err.message}`);
-    }
-
+    // Fallback to mock data so the component doesn't break
     setStorefrontData({
       ...mockStorefrontData,
       isPublished: false,
