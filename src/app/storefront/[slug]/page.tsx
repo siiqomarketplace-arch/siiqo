@@ -8,39 +8,10 @@ import ContactSection from "./components/ContactSection";
 import ReviewsSection from "./components/ReviewSection";
 import Icon from "@/components/AppIcon";
 import Image from "@/components/ui/alt/AppImageAlt";
-import { baseURL } from "@/hooks/api_endpoints";
 import NotificationToast from "@/components/ui/NotificationToast";
-
-interface Review {
-  id: number;
-  reviewername: string;
-  revieweremail: string;
-  feedback: string;
-  rating: number;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  images?: string[];
-  rating: number;
-  stock: number;
-  status: string;
-  category: string;
-}
-
-interface VendorInfo {
-  name: string;
-  address: string;
-  banner?: string;
-  phone_number: string;
-  is_verified: string;
-  average_rating: number;
-  open_hours?: string;
-  profile_pic?: string | null;
-  reviews?: Review[];
-}
+import { userService } from "@/services/userService";
+import { productService } from "@/services/productService";
+import { Review, Product, VendorInfo } from "@/types/seller-profile";
 
 type TabId = "products" | "about" | "reviews" | "contact";
 
@@ -65,7 +36,7 @@ const VendorDetails = () => {
   const getValidImageUrl = (url?: string | null) => {
     if (!url) return "/placeholder.jpg";
     if (url.startsWith("http")) return url;
-    return `${baseURL}${url}`;
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}${url}`;
   };
 
   useEffect(() => {
@@ -79,19 +50,25 @@ const VendorDetails = () => {
     const fetchVendorData = async () => {
       try {
         const [vendorRes, productRes] = await Promise.all([
-          fetch(`${baseURL}/user/${email}`),
-          fetch(`${baseURL}/vendor-products/${email}`),
+          userService.getVendorByEmail(email),
+          productService.getProductsByVendorEmail(email),
         ]);
 
-        if (!vendorRes.ok) throw new Error("Failed to load vendor data");
-        if (!productRes.ok) throw new Error("Failed to load product data");
-
-        const vendorData = await vendorRes.json();
-        const productData = await productRes.json();
-
-        setVendorInformation(vendorData);
-        setProducts(productData.products || []);
-        setBusiness(productData.storefront || productData);
+        setVendorInformation(vendorRes);
+        setProducts(productRes.products || []);
+        // Assuming business data can be derived or is part of vendorRes
+        // For now, setting a mock or partial Storefront based on available data
+        setBusiness({
+          id: 0, // Placeholder
+          business_name: vendorRes.name,
+          description: "", // Placeholder
+          established_at: "", // Placeholder
+          ratings: vendorRes.average_rating,
+          business_banner: vendorRes.banner || null,
+          vendor: null, // Placeholder
+          address: "", // Placeholder
+          extended: null, // Placeholder
+        });
       } catch (error) {
         console.error("Error fetching vendor details:", error);
       } finally {
@@ -138,7 +115,6 @@ const VendorDetails = () => {
     bio: "Passionate about sustainable living and finding great deals on quality items...",
   };
 
-  // Add notification
   const addNotification = (
     type: "success" | "error" | "info",
     message: string
@@ -147,12 +123,10 @@ const VendorDetails = () => {
     setNotifications(prev => [...prev, { id, type, message }]);
   };
 
-  // Remove notification
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  // submit contact form
   const handleSubmitContactForm = async (data: {
     name: string;
     email: string;
@@ -165,19 +139,15 @@ const VendorDetails = () => {
     }
 
     try {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Simulated success
       setIsSent(true);
       addNotification("success", "Your message has been sent successfully!");
 
-      // Log message for debugging
       console.log("Simulated message data:", {
         ...data,
       });
 
-      // Reset send state after 2 seconds
       setTimeout(() => setIsSent(false), 2000);
     } catch (error) {
       console.error("Simulated error sending message:", error);
@@ -197,19 +167,15 @@ const VendorDetails = () => {
     }
 
     try {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Simulated success
       setIsSent(true);
       addNotification("success", "Your message has been sent successfully!");
 
-      // Log message for debugging
       console.log("Review Submitted: ", {
         ...data,
       });
 
-      // Reset send state after 2 seconds
       setTimeout(() => setIsSent(false), 2000);
     } catch (error) {
       console.error("Simulated error sending message:", error);
@@ -268,7 +234,6 @@ const VendorDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Notifications */}
       {notifications.map(notification => (
         <NotificationToast
           key={notification.id}
@@ -277,7 +242,6 @@ const VendorDetails = () => {
         />
       ))}
 
-      {/* Banner Section */}
       <div className="relative flex w-full h-48 mb-8 overflow-hidden sm:h-64 lg:h-72">
         {userProfile?.banner_image &&
         userProfile?.banner_image !== "/banner.jpg" ? (
@@ -298,10 +262,8 @@ const VendorDetails = () => {
         )}
       </div>
 
-      {/* Main Content */}
       <div className="px-4 mt-6 mb-28">
         <div className="grid grid-cols-1 gap-6 mx-auto md:grid-cols-12 max-w-7xl">
-          {/* Left - Vendor Info */}
           <section className="space-y-6 md:col-span-4">
             <div className="col-span-4">
               <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
@@ -326,7 +288,6 @@ const VendorDetails = () => {
                   </p>
                 </div>
 
-                {/* Verification Badges */}
                 <div className="mb-6 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -345,29 +306,8 @@ const VendorDetails = () => {
                       </span>
                     )}
                   </div>
-                  
-                  {/* <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Icon
-                        name="Shield"
-                        size={16}
-                        className="text-text-secondary"
-                      />
-                      <span className="text-sm text-text-secondary">
-                        Identity
-                      </span>
-                    </div>
-                    {userProfile.isVerified.identity ? (
-                      <span className="text-sm">{userProfile.identity}</span>
-                    ) : (
-                      <div className="text-xs text-primary hover:underline">
-                        Not verified.
-                      </div>
-                    )}
-                  </div> */}
                 </div>
 
-                {/* Bio */}
                 <div className="mb-6">
                   <h3 className="mb-2 text-sm font-medium text-text-primary">
                     About
@@ -378,7 +318,6 @@ const VendorDetails = () => {
                 </div>
               </div>
 
-              {/* Stats Card */}
               <div className="p-6 border rounded-lg bg-surface border-border">
                 <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
                   Activity Stats
@@ -420,7 +359,6 @@ const VendorDetails = () => {
             </div>
           </section>
 
-          {/* Right - Tabs and Content */}
           <section className="max-h-screen px-4 md:col-span-8 lg:overflow-y-auto custom-scrollbar">
             <TabNavigation
               activeTab={activeTab}

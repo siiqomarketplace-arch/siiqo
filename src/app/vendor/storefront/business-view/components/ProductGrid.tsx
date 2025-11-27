@@ -4,11 +4,11 @@ import Image from '@/components/ui/alt/AppImageAlt';
 import Button from '@/components/ui/new/Button';
 
 interface Product {
-	id: number;
+	id: string;
 	name: string;
 	description: string;
-	price: number;
-	image: string;
+	product_price: number;
+	images: string[];
 	stock: number;
 	status?: string;
 	category?: string;
@@ -71,7 +71,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, onProductClick, onA
                         {/* Product Image */}
                         <div className="relative overflow-hidden aspect-square">
                             <Image
-                                src={product.image}
+                                src={product.images[0]}
                                 alt={product.name}
                                 className="object-cover w-full h-full"
                             />
@@ -125,7 +125,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, onProductClick, onA
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-2">
                                     <span className="font-semibold text-text-primary">
-                                        {formatPrice(product.price)}
+                                        {formatPrice(product.product_price)}
                                     </span>
                                     {product.originalPrice && (
                                         <span className="text-xs line-through text-text-secondary">

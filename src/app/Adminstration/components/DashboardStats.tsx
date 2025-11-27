@@ -26,127 +26,9 @@ interface StatCard {
   iconBg: string;
 }
 
-class ProductApiService {
-  private static baseUrl = "https://server.bizengo.com/api/vendor";
+import { adminService } from "@/services/adminService";
 
-  private static async getAuthToken(): Promise<string> {
-    if (typeof window === "undefined") {
-      return ""; // Return empty string on server-side
-    }
-
-    // Check localStorage first
-    const storedToken = window.localStorage.getItem("vendorToken");
-
-    if (storedToken && storedToken !== "null") {
-      try {
-        const tokenPayload = JSON.parse(atob(storedToken.split(".")[1]));
-        const currentTime = Math.floor(Date.now() / 1000);
-
-        if (tokenPayload.exp && tokenPayload.exp > currentTime) {
-          console.log("Using stored token");
-          return storedToken;
-        }
-      } catch (e) {
-        console.log("Invalid stored token");
-      }
-    }
-
-    // Use your NEW token as fallback (but this will also expire)
-    const newToken =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NTg0OTUwMCwianRpIjoiYWNkZmYzNjUtNGVhZC00NDgzLWE3ZjgtZTlkYzk1NTIzNzRhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJpZCI6Miwicm9sZSI6InZlbmRvciJ9LCJuYmYiOjE3NTU4NDk1MDAsImNzcmYiOiJlZmNjNjczZS1mMTdkLTQ5NmMtOWY5Yi1hYjg1NjExYTE4YjEiLCJleHAiOjE3NTU5MzU5MDB9.kBBHDyU8cLXc-A-XJR3CJoi7t9-Bs4YDdaBwuInJFjg";
-
-    // Store it for future use
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("authToken", newToken);
-    }
-    return newToken;
-  }
-
-  // Updated request method with better error handling
-  private static async request(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
-    const token = await this.getAuthToken();
-
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response;
-  }
-
-  static async getMyProducts(): Promise<any> {
-    console.log("Fetching vendor products...");
-    try {
-      const response = await this.request("/my-products", {
-        method: "GET",
-      });
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      return { products: [] }; // Return empty array as fallback
-    }
-  }
-
-  // Helper method to convert File to base64
-  static fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
-
-  // Method to manually login and get a fresh token
-  static async login(email: string, password: string): Promise<string> {
-    try {
-      const response = await fetch(
-        "https://server.bizengo.com/api/vendor/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            accept: "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      const data = await response.json();
-      if (data.access_token) {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("authToken", data.access_token);
-        }
-        return data.access_token;
-      } else {
-        throw new Error("No access token received");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
-  }
-}
+// ... (imports)
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
   const [products, setProducts] = useState<any[]>([]);
@@ -159,7 +41,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
       try {
         setLoading(true);
         setError(null);
-        const response = await ProductApiService.getMyProducts();
+        const response = await adminService.getMyProducts();
 
         // Handle different response structures
         if (response && Array.isArray(response.products)) {

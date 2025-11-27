@@ -57,8 +57,8 @@ export const vendorOnboardingSchema = z.object({
         .or(z.literal("")),
 
     // Branding
-    logo_url: z.any(),
-    banner_url: z.any(),
+    logo_url: z.any().optional(),
+    banner_url: z.any().optional(),
 });
 
 export type VendorOnboardingData = z.infer<typeof vendorOnboardingSchema>;

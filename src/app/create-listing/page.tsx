@@ -2,9 +2,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Icon from '@/components/ui/AppIcon';
+import Icon, { LucideIconName } from '@/components/ui/AppIcon';
+
+interface Step {
+    id: number;
+    title: string;
+    icon: LucideIconName;
+}
 import Image from '@/components/ui/AppImage';
-import { LucideIconName } from '@/components/ui/AppIcon'; // Adjust path if needed
+import { listingService } from '@/services/listingService';
 
 interface FormData {
     images: { id: number; file: File; url: string; isMain: boolean }[];
@@ -70,15 +76,6 @@ const CreateListing = () => {
     ];
 
     const conditions: string[] = ['New', 'Like New', 'Good', 'Fair', 'For Parts'];
-
-
-    interface Step {
-        id: number;
-        title: string;
-        icon: LucideIconName; // <--- This is the key change!
-        // Add other properties of your step object here
-    }
-
 
     const steps: Step[] = [
         { id: 1, title: 'Photos', icon: 'Camera' },
@@ -235,13 +232,28 @@ const CreateListing = () => {
 
         setIsPublishing(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        const data = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+            if (key === 'images') {
+                (value as any[]).forEach(image => {
+                    data.append('images', image.file);
+                });
+            } else {
+                data.append(key, JSON.stringify(value));
+            }
+        });
+
+        try {
+            await listingService.createListing(data);
             localStorage.removeItem('createListingDraft');
-            setIsPublishing(false);
             alert('Listing published successfully!');
             router.push('/');
-        }, 2000);
+        } catch (error) {
+            console.error('Failed to publish listing:', error);
+            alert('Failed to publish listing. Please try again.');
+        } finally {
+            setIsPublishing(false);
+        }
     };
 
     const handleSaveDraft = () => {

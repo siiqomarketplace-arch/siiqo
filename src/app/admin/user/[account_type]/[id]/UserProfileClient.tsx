@@ -1,4 +1,3 @@
-// app/admin/user/[account_type]/[id]/UserProfileClient.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -27,28 +26,8 @@ import {
   MoreVertical,
   Calendar,
 } from "lucide-react";
-
-// Types
-interface UserDetails {
-  id: number;
-  email: string;
-  name: string;
-  phone: string;
-  role: string;
-  account_type: string;
-  referral_code: string;
-  referred_by: string | null;
-  business_name?: string;
-  business_type?: string;
-  kyc_status?: string;
-  created_at: string;
-  last_login?: string;
-  total_orders?: number;
-  total_spent?: number;
-  total_products?: number;
-  total_sales?: number;
-  status: string;
-}
+import { UserDetails } from "@/types/admin";
+import { adminService } from "@/services/adminService";
 
 interface UserProfileClientProps {
   params: {
@@ -66,76 +45,41 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
   >("overview");
   const [alerts, setAlerts] = useState<string[]>([]);
 
-  // Get admin token
-  const getAdminToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("adminToken");
-    }
-    return null;
-  };
-
-  // API call helper
-  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const token = getAdminToken();
-    if (!token) {
-      router.push("/auth");
-      throw new Error("No admin token found");
-    }
-
-    const response = await fetch(`https://server.bizengo.com/api${endpoint}`, {
-      ...options,
-      headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
-    }
-
-    return response.json();
-  };
-
-  // Load user data
-  const loadUserData = async () => {
-    try {
-      const data = await apiCall(
-        `/admin/users/${params.account_type}/${params.id}`
-      );
-      setUser(data);
-    } catch (error) {
-      console.error("Failed to load user data:", error);
-      setAlerts((prev) => [...prev, "Failed to load user data"]);
-      // Mock data for testing
-      setUser({
-        id: Number(params.id),
-        name: "John Doe",
-        email: "john.doe@example.com",
-        phone: "+1234567890",
-        role: params.account_type as string,
-        account_type: params.account_type as string,
-        referral_code: "JD123456",
-        referred_by: null,
-        business_name:
-          params.account_type === "vendor" ? "John's Store" : undefined,
-        business_type: params.account_type === "vendor" ? "retail" : undefined,
-        kyc_status: params.account_type === "vendor" ? "verified" : undefined,
-        created_at: "2024-01-15T10:30:00Z",
-        last_login: "2024-09-01T14:20:00Z",
-        total_orders: 25,
-        total_spent: 1250.0,
-        total_products: params.account_type === "vendor" ? 15 : undefined,
-        total_sales: params.account_type === "vendor" ? 5000.0 : undefined,
-        status: "active",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const data = await adminService.getUserDetails(params.account_type, params.id);
+        setUser(data);
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+        setAlerts((prev) => [...prev, "Failed to load user data"]);
+        // Mock data for testing
+        setUser({
+          id: Number(params.id),
+          name: "John Doe",
+          email: "john.doe@example.com",
+          phone: "+1234567890",
+          role: params.account_type as string,
+          account_type: params.account_type as string,
+          referral_code: "JD123456",
+          referred_by: null,
+          business_name:
+            params.account_type === "vendor" ? "John's Store" : undefined,
+          business_type: params.account_type === "vendor" ? "retail" : undefined,
+          kyc_status: params.account_type === "vendor" ? "verified" : undefined,
+          created_at: "2024-01-15T10:30:00Z",
+          last_login: "2024-09-01T14:20:00Z",
+          total_orders: 25,
+          total_spent: 1250.0,
+          total_products: params.account_type === "vendor" ? 15 : undefined,
+          total_sales: params.account_type === "vendor" ? 5000.0 : undefined,
+          status: "active",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (params.account_type && params.id) {
       loadUserData();
     }
@@ -202,7 +146,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
       <header className="bg-white/90 backdrop-blur-md shadow-lg border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -247,7 +190,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
         </div>
       </header>
 
-      {/* Alerts */}
       {alerts.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           {alerts.map((alert, index) => (
@@ -274,9 +216,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
         </div>
       )}
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* User Header Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-8 text-white">
             <div className="flex items-center gap-6">
@@ -321,7 +261,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
             </div>
           </div>
 
-          {/* Stats Row */}
           <div className="p-6 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {user.role === "vendor" ? (
@@ -388,7 +327,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="p-6">
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
@@ -411,13 +349,17 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-white/20">
           <nav className="flex space-x-2">
-            {[
-              { key: "overview", label: "Overview", icon: User },
-              { key: "activity", label: "Activity", icon: Activity },
-              { key: "settings", label: "Settings", icon: MoreVertical },
+            {[{
+              key: "overview", label: "Overview", icon: User
+            },
+            {
+              key: "activity", label: "Activity", icon: Activity
+            },
+            {
+              key: "settings", label: "Settings", icon: MoreVertical
+            },
             ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -435,10 +377,8 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
           </nav>
         </div>
 
-        {/* Tab Content */}
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Personal Information */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <User className="h-6 w-6 text-blue-600" />
@@ -484,7 +424,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
               </div>
             </div>
 
-            {/* Business Information (for vendors) or Account Details */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 {user.role === "vendor" ? (
@@ -596,32 +535,30 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
             </h3>
 
             <div className="space-y-4">
-              {/* Mock activity items */}
-              {[
-                {
-                  action: "Product listed",
-                  time: "2 hours ago",
-                  icon: Package,
-                  color: "green",
-                },
-                {
-                  action: "Order received",
-                  time: "1 day ago",
-                  icon: DollarSign,
-                  color: "blue",
-                },
-                {
-                  action: "Profile updated",
-                  time: "3 days ago",
-                  icon: Edit,
-                  color: "purple",
-                },
-                {
-                  action: "Account created",
-                  time: new Date(user.created_at).toLocaleDateString(),
-                  icon: UserCheck,
-                  color: "gray",
-                },
+              {[{
+                action: "Product listed",
+                time: "2 hours ago",
+                icon: Package,
+                color: "green",
+              },
+              {
+                action: "Order received",
+                time: "1 day ago",
+                icon: DollarSign,
+                color: "blue",
+              },
+              {
+                action: "Profile updated",
+                time: "3 days ago",
+                icon: Edit,
+                color: "purple",
+              },
+              {
+                action: "Account created",
+                time: new Date(user.created_at).toLocaleDateString(),
+                icon: UserCheck,
+                color: "gray",
+              },
               ].map((activity, index) => (
                 <div
                   key={index}
@@ -660,7 +597,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
             </h3>
 
             <div className="space-y-6">
-              {/* Account Status */}
               <div className="p-6 border border-gray-200 rounded-xl">
                 <h4 className="font-bold text-gray-900 mb-4">Account Status</h4>
                 <div className="flex items-center justify-between">
@@ -682,7 +618,6 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
                 </div>
               </div>
 
-              {/* Danger Zone */}
               <div className="p-6 border-2 border-red-200 rounded-xl bg-gradient-to-r from-red-50 to-pink-50">
                 <h4 className="font-bold text-red-900 mb-4 flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
@@ -709,3 +644,4 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
 };
 
 export default UserProfileClient;
+

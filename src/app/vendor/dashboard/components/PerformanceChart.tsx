@@ -11,22 +11,10 @@ import {
   Bar,
 } from 'recharts';
 import Icon from '@/components/AppIcon';
-
-interface PerformanceData {
-  name: string;
-  sales: number;
-  orders: number;
-}
+import { PerformanceData } from "@/types/dashboard";
 
 type ChartType = 'sales' | 'orders';
 type ViewType = 'line' | 'bar';
-
-// interface PerformanceData {
-//   name: string;
-//   sales: number;
-//   orders: number;
-//   [key: string]: string | number;
-// }
 
 interface PerformanceChartProps {
   data: PerformanceData[];

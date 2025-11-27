@@ -9,17 +9,10 @@ import {
   ChevronDown,
 } from "lucide-react";
 import LandingPage from "./LandingPage";
-// import { categories } from "@/constants/landingPage";
 
 const Homepage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
-  // const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  // const [distance, setDistance] = useState<string>("2 km");
-  // const [sortBy, setSortBy] = useState<string>("Popularity");
-  // const [openOnly, setOpenOnly] = useState<boolean>(false);
-  // const [verifiedOnly, setVerifiedOnly] = useState<boolean>(false);
-  // const [activeTab, setActiveTab] = useState<string>("Popular Categories");
 
   const router = useRouter();
 
@@ -255,50 +248,7 @@ const Homepage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Navigation Tabs
-      <section className="bg-orange-500 backdrop-blur-sm">
-        <div className="px-4 mx-auto max-w-7xl">
-          <div className="flex py-4 space-x-8 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`text-[10px] sm:text-[12px] md:text-[14px] lg:text-[16px] font-medium transition-colors border-b-2 pb-2 ${
-                  activeTab === tab
-                    ? "text-white border-[#001d3b]"
-                    : "text-white border-transparent hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
-      {/* Categories Section */}
-      {/* <section className="py-8 bg-gray-50">
-        <div className="px-4 mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 lg:grid-cols-10">
-            {categories.map(category => (
-              <button
-                key={category.name}
-                className="flex flex-col items-center p-4 space-y-2 transition-shadow bg-white rounded-lg shadow-sm hover:shadow-md group"
-              >
-                <div className="text-gray-600 transition-colors group-hover:text-orange-500">
-                  {category.icon}
-                </div>
-                <span className="text-xs font-medium text-center text-gray-700">
-                  {category.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section> */}
       <LandingPage />
-      {/* <LandingPage /> */}
     </div>
   );
 };

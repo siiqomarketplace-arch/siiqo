@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/input-otp";
 import { toast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
+import { authService } from "@/services/authService";
 import { Button } from "@/components/ui/button";
 
 const VerifyOtpPage = () => {
@@ -102,17 +102,9 @@ const VerifyOtpPage = () => {
 
     setIsResending(true);
     try {
-      const response = await axios.post(
-        "https://server.bizengo.com/api/auth/resend-otp", // Fixed typo: server not sever
-        { email: email },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await authService.resendOtp(email);
 
-      if (response.data.status === "success") {
+      if (response.status === "success") {
         toast({
           title: "OTP Sent",
           description: "A new OTP has been sent to your email.",
@@ -122,7 +114,7 @@ const VerifyOtpPage = () => {
         setIsOtpExpired(false); // Reset expiry status
         setOtp(""); // Clear current OTP
       } else {
-        throw new Error(response.data.message || "Failed to resend OTP");
+        throw new Error(response.message || "Failed to resend OTP");
       }
     } catch (error: any) {
       toast({
@@ -167,44 +159,10 @@ const VerifyOtpPage = () => {
     setIsLoading(true);
 
     try {
-      const requestBody = {
-        email: email,
-        otp: otp,
-      };
-
-      let response;
-      try {
-        // Try HTTPS first
-        response = await axios.post(
-          "https://server.bizengo.com/api/auth/verify-email", // Fixed typo: server not sever
-          requestBody,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      } catch (httpsError) {
-        console.log(
-          "HTTPS failed due to SSL issue, trying HTTP...",
-          httpsError
-        );
-        // Fallback to HTTP for development
-        response = await axios.post(
-          "http://server.bizengo.com/api/auth/verify-email",
-          requestBody,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      }
-
-      const data = response.data;
+      const data = await authService.verifyEmail(email, otp);
       console.log("OTP verification response:", data);
 
-      if (data.status === "success" || response.status === 200) {
+      if (data.status === "success") {
         toast({
           title: "Success",
           description: data.message || "OTP verified successfully!",
@@ -214,7 +172,7 @@ const VerifyOtpPage = () => {
         sessionStorage.removeItem("RSEmail");
 
         // Redirect to login or dashboard
-        router.push("/vendor/auth");
+        router.push("/auth/login");
       } else {
         toast({
           title: "Error",

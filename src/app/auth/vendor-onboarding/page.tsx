@@ -10,7 +10,7 @@ import {
 import InputField from "@/components/Input";
 import Dropdown from "@/app/auth/signup/components/DropDown";
 import Button from "@/components/Button";
-import { vendorOnboarding } from "@/services/api";
+import { vendorOnboarding, uploadFile } from "@/services/api";
 import {
   Loader2,
   CheckCircle2,
@@ -105,6 +105,7 @@ const VendorOnboarding = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
 
+
   const {
     register,
     handleSubmit,
@@ -129,6 +130,15 @@ const VendorOnboarding = () => {
     },
   });
 
+  useEffect(() => {
+    if (isCompleted) {
+      const timer = setTimeout(() => {
+        router.push("/auth/login");
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCompleted, router]);
+
   const selectedCountry = watch("country");
 
   const handleCountryChange = (value: string) => {
@@ -149,6 +159,24 @@ const VendorOnboarding = () => {
       setValue("state", location.state);
     }
   }, [locationDetected, location, setValue]);
+
+  const handleImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await uploadFile(formData);
+      return response.data.url;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast({
+        variant: "destructive",
+        title: "Image Upload Failed",
+        description: "Could not upload image. Please try again.",
+      });
+      throw error;
+    }
+  };
 
   const onSubmit = async (data: VendorOnboardingData) => {
     const formData = new FormData();
@@ -188,22 +216,23 @@ const VendorOnboarding = () => {
         error.message ||
         "Something went wrong. Try again.";
 
-      toast({
-        variant: "destructive",
-        title: "Onboarding Failed",
-        description: errorMessage,
-      });
+      if (errorMessage.toLowerCase().includes("already a seller")) {
+        toast({
+          variant: "default",
+          title: "Onboarding Already Completed",
+          description: "This account is already a vendor. Redirecting to login...",
+        });
+        router.push("/auth/login");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Onboarding Failed",
+          description: errorMessage,
+        });
+      }
     }
   };
 
-  useEffect(() => {
-    if (isCompleted) {
-      const timer = setTimeout(() => {
-        router.push("/vendor/auth");
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [isCompleted, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 lg:p-20 bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -347,28 +376,28 @@ const VendorOnboarding = () => {
               <h4 className="font-semibold text-gray-700">Branding</h4>
 
               <ImageUpload
-                label="Logo*"
+                label="Logo"
                 onFileChange={(file) => {
                   setLogoFile(file);
                   setValue("logo_url", file.name);
                 }}
               />
-              {errors.logo_url?.message && (
+              {errors.logo_url && errors.logo_url.message && (
                 <p className="text-sm text-red-500">
-                  {errors.logo_url.message as string}
+                  {errors.logo_url.message.toString()}
                 </p>
               )}
 
               <ImageUpload
-                label="Banner*"
+                label="Banner"
                 onFileChange={(file) => {
                   setBannerFile(file);
                   setValue("banner_url", file.name);
                 }}
               />
-              {errors.banner_url?.message && (
+              {errors.banner_url && errors.banner_url.message && (
                 <p className="text-sm text-red-500">
-                  {errors.banner_url.message as string}
+                  {errors.banner_url.message.toString()}
                 </p>
               )}
             </div>

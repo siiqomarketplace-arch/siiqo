@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { verifyEmail, resendOtp, login } from "@/services/api";
+import { authService } from "@/services/authService";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -71,7 +71,7 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
 
     setIsVerifying(true);
     try {
-      const verifyResponse = await verifyEmail({ email, otp });
+      const verifyResponse = await authService.verifyEmail(email, otp);
 
       if (verifyResponse.data.status === "success") {
         toast({
@@ -84,9 +84,9 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
 
         if (role === "vendor" && password) {
           try {
-            const loginResponse = await login({ email, password });
+            const loginResponse = await authService.login(email, password);
 
-            const { access_token, message, user } = loginResponse.data;
+            const { access_token, message, user } = loginResponse;
 
             if (access_token && message?.toLowerCase().includes("success")) {
               sessionStorage.setItem("authToken", access_token);
@@ -98,7 +98,7 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
               router.replace("/auth/vendor-onboarding");
               return;
             } else {
-              console.error("Unexpected login response:", loginResponse.data);
+              console.error("Unexpected login response:", loginResponse);
               throw new Error("Auto-login failed — token missing.");
             }
           } catch (loginError: any) {
@@ -158,7 +158,7 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
 
     setIsResending(true);
     try {
-      const response = await resendOtp(email);
+      const response = await authService.resendOtp(email);
 
       if (response.data.status === "success") {
         toast({

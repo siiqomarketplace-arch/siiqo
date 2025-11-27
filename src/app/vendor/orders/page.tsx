@@ -2,9 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-// import { useRole } from '@/components/ui/RoleContextNavigation';
-import { getVendorOrders } from "@/services/api";
-import { getVendorToken } from "@/lib/auth";
+import { vendorService } from "@/services/vendorService";
+import {
+  Customer,
+  ProductOrderItem,
+  ShippingAddress,
+  OrderStatus,
+  ProductOrder,
+  ApiOrderItem,
+  ApiOrder,
+  ApiOrdersResponse,
+  ApiOrderDetailsResponse,
+  DateRange,
+  AmountRange,
+  SortOption,
+  Filters,
+  Statistics,
+  ActivityType,
+  Activity,
+  ExportFormat,
+  VendorData,
+} from "@/types/orders";
 import OrderFilters from "./components/OrderFilters";
 import OrderStatistics from "./components/OrderStatistics";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
@@ -13,143 +31,7 @@ import OrderDetailModal from "./components/OrderDetailModal";
 import RecentActivityFeed from "./components/RecentActivityFeed";
 import QuickActions from "./components/QuickActions";
 
-// Type definitions
-interface Customer {
-  name: string;
-  email: string;
-  phone?: string;
-}
-
-interface ProductOrderItem {
-  id: number;
-  name: string;
-  image: string;
-  quantity: number;
-  price: number;
-}
-
-interface ShippingAddress {
-  name: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  phone?: string;
-}
-
-type OrderStatus =
-  | "pending"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled"
-  | "refunded";
-
-interface ProductOrder {
-  id: string;
-  orderNumber: string;
-  customer: Customer;
-  items: ProductOrderItem[] | any[];
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
-  status: OrderStatus;
-  createdAt: Date;
-  shippingAddress: ShippingAddress;
-  customerNotes?: string | null;
-  trackingNumber?: string | null;
-}
-
-// API Response types
-interface ApiOrderItem {
-  price: number;
-  product_name: string;
-  quantity: number;
-  status?: string;
-}
-
-interface ApiOrder {
-  buyer_email: string;
-  buyer_id: number;
-  buyer_name: string;
-  created_at: string;
-  items: ApiOrderItem[];
-  order_id: number;
-  status: string;
-}
-
-interface ApiOrdersResponse {
-  orders: ApiOrder[];
-}
-
-// API response type for single order details
-interface ApiOrderDetailsResponse {
-  buyer_email: string;
-  buyer_id: number;
-  buyer_name: string;
-  created_at: string;
-  items: ApiOrderItem[];
-  order_id: number;
-}
-
-interface DateRange {
-  from: string;
-  to: string;
-}
-
-interface AmountRange {
-  min: string;
-  max: string;
-}
-
-type SortOption = "newest" | "oldest" | "amount_high" | "amount_low" | string;
-
-interface Filters {
-  search: string;
-  status: string;
-  sort: SortOption;
-  dateRange: DateRange;
-  amountRange: AmountRange;
-}
-
-interface Statistics {
-  totalOrders: number;
-  ordersChange: number;
-  pendingOrders: number;
-  pendingChange: number;
-  revenueToday: number;
-  revenueChange: number;
-  avgOrderValue: number;
-  avgOrderChange: number;
-}
-
-type ActivityType =
-  | "order_placed"
-  | "status_updated"
-  | "payment_received"
-  | "message_received";
-
-interface Activity {
-  id: number;
-  type: ActivityType;
-  title: string;
-  description: string;
-  orderNumber: string;
-  status?: OrderStatus;
-  timestamp: string;
-}
-
-type ExportFormat = "csv" | "xlsx" | "pdf";
-
-interface VendorData {
-  businessName?: string;
-  [key: string]: any;
-}
-
 const OrderManagement: React.FC = () => {
-  // const { userRole } = useRole();
   const router = useRouter();
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [orders, setOrders] = useState<ProductOrder[]>([]);
@@ -236,9 +118,9 @@ const OrderManagement: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const { data }: { data: ApiOrdersResponse } = await getVendorOrders();
+      const response: ApiOrdersResponse = await vendorService.getVendorOrders();
 
-      const transformedOrders = data.orders.map(
+      const transformedOrders = response.orders.map(
         transformApiOrderToProductOrder
       );
 
@@ -254,7 +136,6 @@ const OrderManagement: React.FC = () => {
     }
   };
 
-  // Calculate statistics from real data
   const calculateStatistics = (orders: ProductOrder[]): Statistics => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -275,17 +156,16 @@ const OrderManagement: React.FC = () => {
 
     return {
       totalOrders: orders.length,
-      ordersChange: 0, // Would need historical data to calculate
+      ordersChange: 0,
       pendingOrders: pendingOrders.length,
-      pendingChange: 0, // Would need historical data to calculate
+      pendingChange: 0,
       revenueToday: revenueToday,
-      revenueChange: 0, // Would need historical data to calculate
+      revenueChange: 0,
       avgOrderValue: avgOrderValue,
-      avgOrderChange: 0, // Would need historical data to calculate
+      avgOrderChange: 0,
     };
   };
 
-  // Generate activities from orders
   const generateActivities = (orders: ProductOrder[]): Activity[] => {
     const activities: Activity[] = [];
 
@@ -304,16 +184,13 @@ const OrderManagement: React.FC = () => {
     return activities;
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  // Filter effect
   useEffect(() => {
     let filtered = [...orders];
 
-    // Search filter
     if (filters.search) {
       filtered = filtered.filter(
         (order) =>
@@ -329,12 +206,10 @@ const OrderManagement: React.FC = () => {
       );
     }
 
-    // Status filter
     if (filters.status && filters.status !== "all") {
       filtered = filtered.filter((order) => order.status === filters.status);
     }
 
-    // Date range filter
     if (filters.dateRange.from) {
       filtered = filtered.filter(
         (order) => new Date(order.createdAt) >= new Date(filters.dateRange.from)
@@ -346,7 +221,6 @@ const OrderManagement: React.FC = () => {
       );
     }
 
-    // Amount range filter
     if (filters.amountRange.min) {
       filtered = filtered.filter(
         (order) => order.total >= parseFloat(filters.amountRange.min)
@@ -358,7 +232,6 @@ const OrderManagement: React.FC = () => {
       );
     }
 
-    // Sort
     filtered.sort((a, b) => {
       switch (filters.sort) {
         case "oldest":
@@ -415,30 +288,15 @@ const OrderManagement: React.FC = () => {
     newStatus: OrderStatus
   ): Promise<void> => {
     try {
-      // Update local state immediately for better UX
+      await vendorService.updateOrderStatus(orderId, newStatus);
       setOrders(
         orders.map((order) =>
           order.id === orderId ? { ...order, status: newStatus } : order
         )
       );
-
-      // Here you would typically make an API call to update the status on the server
-      const token = getVendorToken();
-      if (token) {
-        // Example API call (adjust endpoint as needed):
-        // await fetch(`https://server.bizengo.com/api/vendor/orders/${orderId}/status`, {
-        //   method: 'PUT',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //     'Authorization': `Bearer ${token}`
-        //   },
-        //   body: JSON.stringify({ status: newStatus })
-        // });
-      }
     } catch (error) {
       console.error("Error updating order status:", error);
-      // Revert the local change if API call fails
-      fetchOrders(); // Refresh data
+      fetchOrders();
     }
   };
 
@@ -455,7 +313,6 @@ const OrderManagement: React.FC = () => {
 
   const handleBulkExport = (format: ExportFormat): void => {
     console.log(`Exporting ${selectedOrders.length} orders as ${format}`);
-    // Implementation would handle actual export
   };
 
   const handleViewOrder = (order: ProductOrder): void => {
@@ -465,13 +322,13 @@ const OrderManagement: React.FC = () => {
 
   const handleSendMessage = (orderId: string, message: string): void => {
     console.log(`Sending message to order ${orderId}: ${message}`);
-    // Implementation would handle sending message
   };
 
   const handleQuickAction = (actionId: string): void => {
     if (actionId === "refresh") {
       fetchOrders();
-    } else {
+    }
+    else {
       console.log(`Quick action: ${actionId}`);
     }
   };
@@ -480,7 +337,6 @@ const OrderManagement: React.FC = () => {
     fetchOrders();
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -497,7 +353,6 @@ const OrderManagement: React.FC = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -517,14 +372,12 @@ const OrderManagement: React.FC = () => {
     );
   }
 
-  // Calculate dynamic statistics and activities
   const statistics = calculateStatistics(orders);
   const activities = generateActivities(orders);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[85vw] mx-auto py-6 px-0 md:px-4">
-        {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -555,17 +408,14 @@ const OrderManagement: React.FC = () => {
           </button>
         </div>
 
-        {/* Statistics */}
         <OrderStatistics statistics={statistics} />
 
-        {/* Filters */}
         <OrderFilters
           filters={filters}
           onFiltersChange={handleFiltersChange}
           onClearFilters={handleClearFilters}
         />
 
-        {/* Bulk Actions */}
         <BulkActionsToolbar
           selectedCount={selectedOrders.length}
           onBulkStatusUpdate={handleBulkStatusUpdate}
@@ -574,7 +424,6 @@ const OrderManagement: React.FC = () => {
         />
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Main Content */}
           <div className="xl:col-span-3">
             {orders.length === 0 ? (
               <div className="bg-card rounded-lg border p-8 text-center">
@@ -613,14 +462,12 @@ const OrderManagement: React.FC = () => {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <QuickActions onAction={handleQuickAction} />
             <RecentActivityFeed activities={activities} />
           </div>
         </div>
 
-        {/* Order Detail Modal */}
         <OrderDetailModal
           order={selectedOrder}
           isOpen={isModalOpen}

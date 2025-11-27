@@ -1,3 +1,4 @@
+
 "use client";
 
 import { ArrowLeft, Loader2, Sparkles, Eye, EyeOff } from "lucide-react";
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import Button from "@/components/Button";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import axios from "axios";
 import { resetPasswordSchema } from "@/lib/Validation/ResetPasswordSchema";
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
@@ -118,7 +120,7 @@ export default function ResetPasswordOTPPage() {
 
       setTimeout(() => {
         if (origin === "vendor") {
-          router.replace("/vendor/auth");
+          router.replace("/auth/login");
         } else {
           router.replace("/auth/login");
         }
@@ -144,6 +146,7 @@ export default function ResetPasswordOTPPage() {
       setIsLoading(false);
     }
   };
+
 
   const handleResendCode = async () => {
     setIsLoading(true);

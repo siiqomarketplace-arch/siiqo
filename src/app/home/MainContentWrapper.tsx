@@ -15,7 +15,7 @@ const MainContentWrapper: React.FC<MainContentWrapperProps> = ({
 
   // Check if we're on a vendor page to apply sidebar padding
   const isVendorPage =
-    pathname.startsWith("/vendor") && !pathname.startsWith("/vendor/auth");
+    pathname.startsWith("/vendor") && !pathname.startsWith("/auth/login");
 
   useEffect(() => {
     if (!isVendorPage) return;

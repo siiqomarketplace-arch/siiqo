@@ -29,13 +29,9 @@
     }
   },
   "include": [
+    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "next-env.d.ts",
-    "next.config.js",
-    "src/app/vendor/products/components/AddProductModal.tsx",
-    "src/app/vendor/storefront/components/StorefrontPreview.jsx",
-    "src/components/AppIcon.jsx",
     ".next/types/**/*.ts"
   ],
   "exclude": [

@@ -51,7 +51,7 @@ export const getVendorOrders = () => {
 };
 
 export const fetchProducts = () => {
-  return apiClient.get("/marketplace/popular-products");
+  return axios.get(`${API_BASE_URL}/marketplace/products`);
 };
 
 export const addToCart = (data: any) => {
@@ -60,6 +60,10 @@ export const addToCart = (data: any) => {
 
 export const fetchCartItems = () => {
   return apiClient.get("/cart");
+};
+
+export const fetchStorefronts = () => {
+  return axios.get(`${API_BASE_URL}/marketplace/storefronts`);
 };
 
 export const vendorOnboarding = (data: any) => {

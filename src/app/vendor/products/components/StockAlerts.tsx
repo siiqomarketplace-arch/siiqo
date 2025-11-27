@@ -2,34 +2,17 @@ import React from 'react';
 import Icon from '@/components/AppIcon';
 import Image from '@/components/ui/AppImage';
 import Button from '@/components/ui/new/Button';
+import { Product } from "@/types/vendor/products";
 
-// --- Start of TypeScript Conversion ---
-
-// Interface for the component's props
-interface StockAlertsProps {
-	onClose: () => void;
+export interface Urgency {
+  level: "critical" | "high" | "medium" | "low";
+  color: string;
+  bg: string;
 }
 
-// Interface for a single product
-interface Product {
-	id: number;
-	name: string;
-	image: string;
-	sku: string;
-	currentStock: number;
-	threshold?: number; // Optional as out-of-stock products don't have it
-	category: string;
-	price: number;
+export interface StockAlertsProps {
+  onClose: () => void;
 }
-
-// Interface for the urgency level object
-interface Urgency {
-	level: 'critical' | 'high' | 'medium' | 'low';
-	color: string;
-	bg: string;
-}
-
-// --- End of TypeScript Conversion ---
 
 const StockAlerts: React.FC<StockAlertsProps> = ({ onClose }) => {
 	const lowStockProducts: Product[] = [
@@ -38,30 +21,39 @@ const StockAlerts: React.FC<StockAlertsProps> = ({ onClose }) => {
 			name: "iPhone 15 Pro Max",
 			image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400",
 			sku: "IPH15PM-256",
-			currentStock: 3,
-			threshold: 10,
+			stock: 3,
+			lowStockThreshold: 10,
 			category: "Electronics",
-			price: 1199.99
+			price: 1199.99,
+			status: "active",
+			createdAt: "2023-10-27T10:00:00Z",
+			views: 1500
 		},
 		{
 			id: 2,
 			name: "Nike Air Max 270",
 			image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
 			sku: "NAM270-BLK-42",
-			currentStock: 5,
-			threshold: 15,
+			stock: 5,
+			lowStockThreshold: 15,
 			category: "Footwear",
-			price: 149.99
+			price: 149.99,
+			status: "active",
+			createdAt: "2023-10-27T10:00:00Z",
+			views: 2500
 		},
 		{
 			id: 3,
 			name: "MacBook Pro 16-inch",
 			image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400",
 			sku: "MBP16-M3-512",
-			currentStock: 1,
-			threshold: 5,
+			stock: 1,
+			lowStockThreshold: 5,
 			category: "Electronics",
-			price: 2499.99
+			price: 2499.99,
+			status: "active",
+			createdAt: "2023-10-27T10:00:00Z",
+			views: 3500
 		}
 	];
 
@@ -71,24 +63,30 @@ const StockAlerts: React.FC<StockAlertsProps> = ({ onClose }) => {
 			name: "Samsung Galaxy S24 Ultra",
 			image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400",
 			sku: "SGS24U-512-TIT",
-			currentStock: 0,
+			stock: 0,
 			category: "Electronics",
-			price: 1299.99
+			price: 1299.99,
+			status: "out-of-stock",
+			createdAt: "2023-10-27T10:00:00Z",
+			views: 4500
 		},
 		{
 			id: 5,
 			name: "Adidas Ultraboost 22",
 			image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400",
 			sku: "AUB22-WHT-43",
-			currentStock: 0,
+			stock: 0,
 			category: "Footwear",
-			price: 179.99
+			price: 179.99,
+			status: "out-of-stock",
+			createdAt: "2023-10-27T10:00:00Z",
+			views: 5500
 		}
 	];
 
-	const getUrgencyLevel = (currentStock: number, threshold: number): Urgency => {
-		const percentage = (currentStock / threshold) * 100;
-		if (currentStock === 0) return { level: 'critical', color: 'text-error', bg: 'bg-error/10' };
+	const getUrgencyLevel = (stock: number, lowStockThreshold: number): Urgency => {
+		const percentage = (stock / lowStockThreshold) * 100;
+		if (stock === 0) return { level: 'critical', color: 'text-error', bg: 'bg-error/10' };
 		if (percentage <= 30) return { level: 'high', color: 'text-error', bg: 'bg-error/10' };
 		if (percentage <= 60) return { level: 'medium', color: 'text-warning', bg: 'bg-warning/10' };
 		return { level: 'low', color: 'text-success', bg: 'bg-success/10' };
@@ -179,9 +177,9 @@ const StockAlerts: React.FC<StockAlertsProps> = ({ onClose }) => {
 							<div className="space-y-3">
 								{lowStockProducts.map((product) => {
 									// Type guard to ensure threshold is defined
-									if (typeof product.threshold === 'undefined') return null;
+									if (typeof product.lowStockThreshold === 'undefined') return null;
 
-									const urgency = getUrgencyLevel(product.currentStock, product.threshold);
+									const urgency = getUrgencyLevel(product.stock, product.lowStockThreshold);
 									return (
 										<div key={product.id} className="flex items-center space-x-4 p-4 bg-warning/5 border border-warning/20 rounded-lg">
 											<div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -202,20 +200,20 @@ const StockAlerts: React.FC<StockAlertsProps> = ({ onClose }) => {
 												<p className="font-semibold text-foreground">${product.price}</p>
 												<div className="flex items-center space-x-2 mt-1">
 													<span className={`px-2 py-1 rounded-full text-xs font-medium ${urgency.bg} ${urgency.color}`}>
-														{product.currentStock} left
+														{product.stock} left
 													</span>
 												</div>
 											</div>
 
 											<div className="text-right">
-												<p className="text-sm text-muted-foreground">Threshold: {product.threshold}</p>
+												<p className="text-sm text-muted-foreground">Threshold: {product.lowStockThreshold}</p>
 												<div className="w-24 bg-muted rounded-full h-2 mt-1">
 													<div
-														className={`h-2 rounded-full ${product.currentStock === 0 ? 'bg-error' :
-															product.currentStock <= product.threshold * 0.3 ? 'bg-error' :
-																product.currentStock <= product.threshold * 0.6 ? 'bg-warning' : 'bg-success'
+														className={`h-2 rounded-full ${product.stock === 0 ? 'bg-error' :
+															product.stock <= product.lowStockThreshold * 0.3 ? 'bg-error' :
+																product.stock <= product.lowStockThreshold * 0.6 ? 'bg-warning' : 'bg-success'
 															}`}
-														style={{ width: `${Math.min((product.currentStock / product.threshold) * 100, 100)}%` }}
+														style={{ width: `${Math.min((product.stock / product.lowStockThreshold) * 100, 100)}%` }}
 													/>
 												</div>
 											</div>

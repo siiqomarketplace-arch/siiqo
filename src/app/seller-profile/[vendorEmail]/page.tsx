@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
-import { baseURL } from "@/hooks/api_endpoints";
+import { useRouter } from "next/navigation";
 import { Storefront } from "@/types/storeFront";
 import ProductGrid from "./components/ProductGrid";
 import ContactSection from "./components/ContactSection";
@@ -10,34 +10,9 @@ import ReviewsSection from "./components/ReviewSection";
 import TabNavigation from "./components/TabNavigation";
 import { useSearchParams } from "next/navigation";
 import NotificationToast from "@/components/ui/NotificationToast";
-
-interface Review {
-  id: number;
-  reviewername: string;
-  revieweremail: string;
-  feedback: string;
-  rating: number;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  images?: string[];
-  rating: number;
-}
-
-interface VendorInfo {
-  name: string;
-  address: string;
-  phone_number: string;
-  banner?: string;
-  is_verified: string;
-  average_rating: number;
-  open_hours?: string;
-  profile_pic?: string | null;
-  reviews?: Review[];
-}
+import { userService } from "@/services/userService";
+import { productService } from "@/services/productService";
+import { Review, Product, VendorInfo } from "@/types/seller-profile";
 
 type TabId = "products" | "reviews" | "contact";
 
@@ -47,7 +22,6 @@ interface Notification {
   message: string;
 }
 
-// Star Rating Component
 const StarRating = ({
   rating,
   size = 16,
@@ -71,34 +45,6 @@ const StarRating = ({
   );
 };
 
-// Review Card Component
-// const ReviewCard = ({ review }: { review: Review }) => {
-//   return (
-//     <div className="p-4 transition-shadow border rounded-lg bg-surface border-border hover:shadow-sm">
-//       <div className="flex items-start justify-between mb-3">
-//         <div className="flex items-center gap-3">
-//           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-//             <span className="text-sm font-semibold text-primary">
-//               {review.reviewername.charAt(0).toUpperCase()}
-//             </span>
-//           </div>
-//           <div>
-//             <h4 className="font-medium text-text-primary">
-//               {review.reviewername}
-//             </h4>
-//             <p className="text-xs text-text-tertiary">{review.revieweremail}</p>
-//           </div>
-//         </div>
-//         <StarRating rating={review.rating} size={14} />
-//       </div>
-
-//       <p className="text-sm leading-relaxed text-text-secondary">
-//         {review.feedback || "No feedback provided"}
-//       </p>
-//     </div>
-//   );
-// };
-
 const VendorDetails = () => {
   const [vendorInformation, setVendorInformation] = useState<VendorInfo | null>(
     null
@@ -113,7 +59,7 @@ const VendorDetails = () => {
   const getValidImageUrl = (url?: string | null) => {
     if (!url) return "/placeholder.jpg";
     if (url.startsWith("http")) return url;
-    return `${baseURL}${url}`;
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}${url}`;
   };
 
   const searchParams = useSearchParams();
@@ -136,19 +82,25 @@ const VendorDetails = () => {
     const fetchVendorData = async () => {
       try {
         const [vendorRes, productRes] = await Promise.all([
-          fetch(`${baseURL}/user/${email}`),
-          fetch(`${baseURL}/vendor-products/${email}`),
+          userService.getVendorByEmail(email),
+          productService.getProductsByVendorEmail(email),
         ]);
 
-        if (!vendorRes.ok) throw new Error("Failed to load vendor data");
-        if (!productRes.ok) throw new Error("Failed to load product data");
-
-        const vendorData = await vendorRes.json();
-        const productData = await productRes.json();
-
-        setVendorInformation(vendorData);
-        setProducts(productData.products || []);
-        setBusiness(productData.products || []);
+        setVendorInformation(vendorRes);
+        setProducts(productRes.products || []);
+        // Assuming business data can be derived or is part of vendorRes
+        // For now, setting a mock or partial Storefront based on available data
+        setBusiness({
+          id: 0, // Placeholder
+          business_name: vendorRes.name,
+          description: "", // Placeholder
+          established_at: "", // Placeholder
+          ratings: vendorRes.average_rating,
+          business_banner: vendorRes.banner || null,
+          vendor: null, // Placeholder
+          address: "", // Placeholder
+          extended: null, // Placeholder
+        });
       } catch (error) {
         console.error("Error fetching vendor details:", error);
       } finally {
@@ -194,7 +146,6 @@ const VendorDetails = () => {
     bio: "Passionate about sustainable living and finding great deals on quality items...",
   };
 
-  // Add notification
   const addNotification = (
     type: "success" | "error" | "info",
     message: string
@@ -203,12 +154,10 @@ const VendorDetails = () => {
     setNotifications(prev => [...prev, { id, type, message }]);
   };
 
-  // Remove notification
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  // submit contact form
   const handleSubmitContactForm = async (data: {
     name: string;
     email: string;
@@ -221,19 +170,15 @@ const VendorDetails = () => {
     }
 
     try {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Simulated success
       setIsSent(true);
       addNotification("success", "Your message has been sent successfully!");
 
-      // Log message for debugging
       console.log("Simulated message data:", {
         ...data,
       });
 
-      // Reset send state after 2 seconds
       setTimeout(() => setIsSent(false), 2000);
     } catch (error) {
       console.error("Simulated error sending message:", error);
@@ -253,19 +198,15 @@ const VendorDetails = () => {
       }
 
       try {
-        // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Simulated success
         setIsSent(true);
         addNotification("success", "Your message has been sent successfully!");
 
-        // Log message for debugging
         console.log("Review Submitted: ", {
           ...data,
         });
 
-        // Reset send state after 2 seconds
         setTimeout(() => setIsSent(false), 2000);
       } catch (error) {
         console.error("Simulated error sending message:", error);
@@ -315,7 +256,6 @@ const VendorDetails = () => {
 
   return (
     <div className="min-h-screen mb-28 bg-background">
-      {/* Notifications */}
       {notifications.map(notification => (
         <NotificationToast
           key={notification.id}
@@ -324,7 +264,6 @@ const VendorDetails = () => {
         />
       ))}
 
-      {/* Banner Section */}
       <div className="relative flex w-full h-48 mb-8 overflow-hidden sm:h-64 lg:h-72">
         {userProfile?.banner_image &&
         userProfile?.banner_image !== "/banner.jpg" ? (
@@ -346,7 +285,6 @@ const VendorDetails = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 px-4 mx-auto md:grid-cols-12 max-w-7xl">
-        {/* Left - Vendor Info */}
         <section className="space-y-6 md:col-span-4">
           <div className="col-span-4">
             <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
@@ -371,7 +309,6 @@ const VendorDetails = () => {
                 </p>
               </div>
 
-              {/* Verification Badges */}
               <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -390,29 +327,8 @@ const VendorDetails = () => {
                     </span>
                   )}
                 </div>
-
-                {/* <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Icon
-                      name="Shield"
-                      size={16}
-                      className="text-text-secondary"
-                    />
-                    <span className="text-sm text-text-secondary">
-                      Identity
-                    </span>
-                  </div>
-                  {userProfile.isVerified.identity ? (
-                    <span className="text-sm">{userProfile.identity}</span>
-                  ) : (
-                    <div className="text-xs text-primary hover:underline">
-                      Not verified.
-                    </div>
-                  )}
-                </div> */}
               </div>
 
-              {/* Bio */}
               <div className="mb-6">
                 <h3 className="mb-2 text-sm font-medium text-text-primary">
                   About
@@ -423,7 +339,6 @@ const VendorDetails = () => {
               </div>
             </div>
 
-            {/* Stats Card */}
             <div className="p-6 border rounded-lg bg-surface border-border">
               <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
                 Activity Stats
@@ -465,7 +380,6 @@ const VendorDetails = () => {
           </div>
         </section>
 
-        {/* Right - Tabs and Content */}
         <section className="max-h-screen px-4 md:col-span-8 lg:overflow-y-auto custom-scrollbar">
           <TabNavigation
             activeTab={activeTab}

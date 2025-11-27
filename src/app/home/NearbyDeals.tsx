@@ -4,28 +4,8 @@ import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
 import Button from "@/components/Button";
 import Skeleton from "@/components/skeleton";
-
-// Updated interface to match API response
-interface Product {
-  id: number;
-  product_name: string;
-  product_price: number;
-  description: string;
-  category: string;
-  images: string[];
-  status: string;
-  visibility: boolean;
-  vendor: {
-    business_name: string;
-    email: string;
-    id: number;
-  };
-}
-
-interface ApiResponse {
-  count: number;
-  products: Product[];
-}
+import { productService } from "@/services/productService";
+import { Product, APIResponse } from "@/types/products";
 
 interface NearbyDealsProps {
   onRefresh: () => Promise<void>;
@@ -37,25 +17,10 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch products from API
   const fetchProducts = async () => {
     try {
       setError(null);
-      const response = await fetch(
-        "https://server.bizengo.com/api/marketplace/popular-products",
-        {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ApiResponse = await response.json();
+      const data: APIResponse = await productService.getProducts();
       setProducts(data.products);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -63,14 +28,11 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // Generate mock values for missing API data
   const generateDealData = (product: Product) => {
-    // Generate consistent random values based on product ID
     const seed = product.id;
     const random = (min: number, max: number) =>
       Math.floor((Math.sin(seed * 9999) * 10000) % (max - min + 1)) + min;
@@ -141,7 +103,6 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
       <div className="overflow-x-auto scrollbar-hide custom-scrollbar custom-scrollbar-height">
         <div className="flex pb-4 space-x-4">
           {isLoading && products.length === 0 ? (
-            // Loading skeleton
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}

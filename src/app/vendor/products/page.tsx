@@ -2,15 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-// import AddProductModal from "./components/AddProductModal";
-import {
-  addProduct,
-  editProduct,
-  getMyProducts,
-} from "@/services/api";
-import { RoleProvider } from "@/components/ui/RoleContextNavigation";
-import RoleContextNavigation from "@/components/ui/RoleContextNavigation";
-// Try to parse the error response
+import { productService } from "@/services/productService";
 
 import Icon from "@/components/AppIcon";
 import Button from "@/components/ui/new/Button";
@@ -20,11 +12,22 @@ import ProductTable from "@/app/vendor/products/components/ProductTable";
 import ProductGrid from "@/app/vendor/products/components/ProductGrid";
 import AddProductModal from "@/app/vendor/products/components/AddProductModal";
 import StockAlerts from "@/app/vendor/products/components/StockAlerts";
+import {
+  ProductStatus,
+  ViewMode,
+  BulkAction,
+  Product,
+  AddProductRequest,
+  EditProductRequest,
+  ApiErrorResponse,
+  ProductImage,
+  ProductFormData,
+  VendorData,
+} from "@/types/vendor/products";
 
-// Toast Notification Component
-interface Toast {
+export interface Toast {
   id: string;
-  type: "success" | "error" | "info" | "loading";
+  type: "success" | "error" | "loading" | "info";
   title: string;
   message?: string;
   duration?: number;
@@ -98,7 +101,6 @@ const ToastNotification: React.FC<{
   );
 };
 
-// Toast Container Component
 const ToastContainer: React.FC<{
   toasts: Toast[];
   onRemove: (id: string) => void;
@@ -113,93 +115,6 @@ const ToastContainer: React.FC<{
     </div>
   );
 };
-
-// --- START OF TYPESCRIPT CONVERSION ---
-
-// Define specific string literal types for controlled vocabularies
-type ProductStatus = "active" | "draft" | "inactive" | "out-of-stock";
-type ViewMode = "table" | "grid";
-type BulkAction = "activate" | "deactivate" | "duplicate" | "delete" | "export";
-
-// The single source of truth for a product's data structure
-export interface Product {
-  id: number;
-  name: string;
-  image: string;
-  images?: ProductImage[];
-  category: string;
-  sku: string;
-  price: number;
-  comparePrice?: number;
-  cost?: number;
-  stock: number;
-  lowStockThreshold?: number;
-  status: ProductStatus;
-  createdAt: string;
-  views: number;
-  description?: string;
-  barcode?: string;
-  weight?: number;
-  dimensions?: { length?: number; width?: number; height?: number };
-  seoTitle?: string;
-  seoDescription?: string;
-  tags?: string[];
-}
-
-interface AddProductRequest {
-  product_name: string;
-  description: string;
-  category: string;
-  product_price: number;
-  status: string;
-  visibility: boolean;
-  images: string[];
-  quantity: number; // ✅ added
-}
-
-interface EditProductRequest extends Partial<AddProductRequest> {}
-
-interface ApiErrorResponse {
-  message?: string;
-  error?: string;
-  status?: string;
-}
-export interface ProductImage {
-  id: number; // must always exist
-  url: string;
-  alt: string;
-  file?: File; // optional (only used during upload)
-}
-
-// Data type from the AddProductModal form
-interface ProductFormData {
-  name: string;
-  description: string;
-  category: string;
-  price: string;
-  comparePrice: string;
-  cost: string;
-  sku: string;
-  barcode: string;
-  stock: string;
-  lowStockThreshold: string;
-  weight: string;
-  dimensions: { length: string; width: string; height: string };
-  status: ProductStatus;
-  visibility: "visible" | "hidden";
-  seoTitle: string;
-  seoDescription: string;
-  tags: string[];
-  images: ProductImage[]; // ✅ unified
-}
-
-interface VendorData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  businessName?: string;
-  isVerified: boolean;
-}
 
 const ProductManagement: React.FC = () => {
   const router = useRouter();
@@ -244,7 +159,7 @@ const ProductManagement: React.FC = () => {
     const fetchVendorProducts = async () => {
       setLoading(true);
       try {
-        const { data } = await getMyProducts();
+        const { data } = await productService.getMyProducts();
         console.log("Parsed JSON:", data);
 
         if (data.products) {
@@ -257,7 +172,7 @@ const ProductManagement: React.FC = () => {
               category: product.category,
               sku: product.sku || `SKU-${product.id}`,
               price: product.product_price,
-              stock: product.stock || 0,
+              stock: product.quantity || 0,
               status: product.status || "active",
               createdAt: product.createdAt || new Date().toISOString(),
               views: product.views || 0,
@@ -266,7 +181,7 @@ const ProductManagement: React.FC = () => {
           );
           setProducts(formattedProducts);
         } else {
-          throw new Error(data.message || "Unexpected response format");
+          throw new Error("Unexpected response format");
         }
       } catch (err) {
         console.error("Error fetching vendor products:", err);
@@ -317,7 +232,7 @@ const ProductManagement: React.FC = () => {
 
   const handleSelectAll = (isSelected: boolean): void => {
     setSelectedProducts(
-      isSelected ? filteredProducts.map(p => p.id) : []
+      isSelected ? filteredProducts.map(p => Number(p.id)) : []
     );
   };
 
@@ -404,7 +319,7 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleQuickEdit = (
-    productId: string,
+    productId: string | number,
     field: string,
     value: string | number
   ): void => {
@@ -471,7 +386,7 @@ const ProductManagement: React.FC = () => {
       const apiData = transformFormDataToApiRequest(formData);
 
       if (editingProduct) {
-        const response = await editProduct(editingProduct.id, apiData);
+        const response = await productService.editProduct(editingProduct.id, apiData);
 
         setProducts(prev =>
           prev.map(p =>
@@ -482,6 +397,7 @@ const ProductManagement: React.FC = () => {
                   description: apiData.description,
                   category: apiData.category,
                   price: apiData.product_price,
+                  stock: apiData.quantity,
                   status: apiData.status as ProductStatus,
                   image: apiData.images[0] || p.image,
                 }
@@ -491,7 +407,7 @@ const ProductManagement: React.FC = () => {
 
         console.log("Product updated successfully:", response);
       } else {
-        const response = await addProduct(apiData);
+        const response = await productService.addProduct(apiData);
 
         const newProduct: Product = {
           id: response.data.id || Date.now(),
@@ -552,214 +468,210 @@ const ProductManagement: React.FC = () => {
 
   return (
     <>
-      <RoleProvider>
-        <RoleContextNavigation>
-          {/* Toast Container */}
-          <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-          <div className="min-h-screen bg-background">
-            <div className="max-w-[85vw] mx-auto py-6 px-0 md:px-4">
-              {/* Error Display */}
-              {error && (
-                <div className="p-4 mb-4 border rounded-lg bg-error/10 border-error/20">
-                  <div className="flex items-center space-x-2">
-                    <Icon name="AlertCircle" size={20} className="text-error" />
-                    <p className="font-medium text-error">{error}</p>
-                  </div>
-                  <button
-                    onClick={() => setError(null)}
-                    className="mt-2 text-sm text-error hover:underline"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-[85vw] mx-auto py-6 px-0 md:px-4">
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 mb-4 border rounded-lg bg-error/10 border-error/20">
+              <div className="flex items-center space-x-2">
+                <Icon name="AlertCircle" size={20} className="text-error" />
+                <p className="font-medium text-error">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="mt-2 text-sm text-error hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-[12px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-bold text-foreground">
+                Product Management
+              </h1>
+              <p className="mt-1 text-muted-foreground">
+                Manage your product catalog and inventory
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {(lowStockCount > 0 || outOfStockCount > 0) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowStockAlerts(true)}
+                  iconName="AlertTriangle"
+                  iconPosition="left"
+                >
+                  Stock Alerts ({lowStockCount + outOfStockCount})
+                </Button>
               )}
+              <Button
+                variant="outline"
+                iconName="Download"
+                iconPosition="left"
+              >
+                Export
+              </Button>
+            </div>
+          </div>
 
-              {/* Header */}
-              <div className="flex items-center justify-between mb-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-4">
+            <div className="p-6 border rounded-lg bg-card border-border">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-[12px] sm:text-[14px] md:text-[16px] lg:text-[18px] font-bold text-foreground">
-                    Product Management
-                  </h1>
-                  <p className="mt-1 text-muted-foreground">
-                    Manage your product catalog and inventory
+                  <p className="text-sm text-muted-foreground">
+                    Total Products
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {products.length}
                   </p>
                 </div>
-
-                <div className="flex items-center space-x-3">
-                  {(lowStockCount > 0 || outOfStockCount > 0) && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowStockAlerts(true)}
-                      iconName="AlertTriangle"
-                      iconPosition="left"
-                    >
-                      Stock Alerts ({lowStockCount + outOfStockCount})
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    iconName="Download"
-                    iconPosition="left"
-                  >
-                    Export
-                  </Button>
-                </div>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-4">
-                <div className="p-6 border rounded-lg bg-card border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Total Products
-                      </p>
-                      <p className="text-2xl font-bold text-foreground">
-                        {products.length}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
-                      <Icon name="Package" size={24} className="text-primary" />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 border rounded-lg bg-card border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Active Products
-                      </p>
-                      <p className="text-2xl font-bold text-foreground">
-                        {activeProductsCount}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-success/10">
-                      <Icon
-                        name="CheckCircle"
-                        size={24}
-                        className="text-success"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 border rounded-lg bg-card border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Low Stock</p>
-                      <p className="text-2xl font-bold text-warning">
-                        {lowStockCount}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-warning/10">
-                      <Icon
-                        name="AlertTriangle"
-                        size={24}
-                        className="text-warning"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 border rounded-lg bg-card border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Out of Stock
-                      </p>
-                      <p className="text-2xl font-bold text-error">
-                        {outOfStockCount}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-error/10">
-                      <Icon
-                        name="AlertCircle"
-                        size={24}
-                        className="text-error"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-3">
-                  <CategoryTree
-                    onCategorySelect={handleCategorySelect}
-                    selectedCategory={selectedCategory}
-                  />
-                </div>
-
-                <div className="lg:col-span-9">
-                  <ProductToolbar
-                    onAddProduct={handleAddProduct}
-                    onBulkAction={handleBulkAction}
-                    onViewToggle={setViewMode}
-                    viewMode={viewMode}
-                    selectedProducts={selectedProducts}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                  />
-
-                  {loading ? (
-                    <div className="flex items-center justify-center w-full h-64">
-                      <div className="flex flex-col items-center space-y-4">
-                        <div className="animate-spin">
-                          <Icon
-                            name="Loader2"
-                            size={40}
-                            className="text-primary"
-                          />
-                        </div>
-                        <p className="text-muted-foreground">
-                          Loading products...
-                        </p>
-                      </div>
-                    </div>
-                  ) : viewMode === "table" ? (
-                    <ProductTable
-                      products={filteredProducts}
-                      selectedProducts={selectedProducts}
-                      onProductSelect={handleProductSelect}
-                      onSelectAll={handleSelectAll}
-                      onEditProduct={handleEditProduct}
-                      onDuplicateProduct={handleDuplicateProduct}
-                      onDeleteProduct={handleDeleteProduct}
-                      onQuickEdit={handleQuickEdit}
-                    />
-                  ) : (
-                    <ProductGrid
-                      products={filteredProducts}
-                      selectedProducts={selectedProducts}
-                      onProductSelect={handleProductSelect}
-                      onEditProduct={handleEditProduct}
-                      onDuplicateProduct={handleDuplicateProduct}
-                      onDeleteProduct={handleDeleteProduct}
-                    />
-                  )}
+                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+                  <Icon name="Package" size={24} className="text-primary" />
                 </div>
               </div>
             </div>
-
-            {/* Modals */}
-            <AddProductModal
-              isOpen={showAddModal}
-              onClose={() => {
-                if (!loading) {
-                  setShowAddModal(false);
-                  setEditingProduct(null);
-                }
-              }}
-              onSave={handleSaveProduct}
-              editingProduct={editingProduct}
-            />
-
-            {showStockAlerts && (
-              <StockAlerts onClose={() => setShowStockAlerts(false)} />
-            )}
+            <div className="p-6 border rounded-lg bg-card border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Active Products
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {activeProductsCount}
+                  </p>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-success/10">
+                  <Icon
+                    name="CheckCircle"
+                    size={24}
+                    className="text-success"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border rounded-lg bg-card border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Low Stock</p>
+                  <p className="text-2xl font-bold text-warning">
+                    {lowStockCount}
+                  </p>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-warning/10">
+                  <Icon
+                    name="AlertTriangle"
+                    size={24}
+                    className="text-warning"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border rounded-lg bg-card border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Out of Stock
+                  </p>
+                  <p className="text-2xl font-bold text-error">
+                    {outOfStockCount}
+                  </p>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-error/10">
+                  <Icon
+                    name="AlertCircle"
+                    size={24}
+                    className="text-error"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </RoleContextNavigation>
-      </RoleProvider>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-3">
+              <CategoryTree
+                onCategorySelect={handleCategorySelect}
+                selectedCategory={selectedCategory}
+              />
+            </div>
+
+            <div className="lg:col-span-9">
+              <ProductToolbar
+                onAddProduct={handleAddProduct}
+                onBulkAction={handleBulkAction}
+                onViewToggle={setViewMode}
+                viewMode={viewMode}
+                selectedProducts={selectedProducts}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
+
+              {loading ? (
+                <div className="flex items-center justify-center w-full h-64">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin">
+                      <Icon
+                        name="Loader2"
+                        size={40}
+                        className="text-primary"
+                      />
+                    </div>
+                    <p className="text-muted-foreground">
+                      Loading products...
+                    </p>
+                  </div>
+                </div>
+              ) : viewMode === "table" ? (
+                <ProductTable
+                  products={filteredProducts}
+                  selectedProducts={selectedProducts}
+                  onProductSelect={handleProductSelect}
+                  onSelectAll={handleSelectAll}
+                  onEditProduct={handleEditProduct}
+                  onDuplicateProduct={handleDuplicateProduct}
+                  onDeleteProduct={handleDeleteProduct}
+                  onQuickEdit={handleQuickEdit}
+                />
+              ) : (
+                <ProductGrid
+                  products={filteredProducts}
+                  selectedProducts={selectedProducts}
+                  onProductSelect={handleProductSelect}
+                  onEditProduct={handleEditProduct}
+                  onDuplicateProduct={handleDuplicateProduct}
+                  onDeleteProduct={handleDeleteProduct}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Modals */}
+        <AddProductModal
+          isOpen={showAddModal}
+          onClose={() => {
+            if (!loading) {
+              setShowAddModal(false);
+              setEditingProduct(null);
+            }
+          }}
+          onSave={handleSaveProduct}
+          editingProduct={editingProduct}
+        />
+
+        {showStockAlerts && (
+          <StockAlerts onClose={() => setShowStockAlerts(false)} />
+        )}
+      </div>
     </>
   );
 };

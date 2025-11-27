@@ -2,85 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Heart, ShoppingCart, Star, Filter, RefreshCw, X, LucideCircleArrowOutUpRight, LucideShoppingBag } from "lucide-react";
-import { fetchProducts, addToCart, fetchCartItems } from "@/services/api";
+import { productService } from "@/services/productService";
+import { cartService } from "@/services/cartService";
 import ProductCard, { ProductCardSkeleton } from "./components/ProductCard";
 import Button from "@/components/Button";
 import Skeleton from "@/components/skeleton";
 import { useRouter } from "next/navigation";
-
-interface Product {
-  id: any;
-  name: string;
-  vendor: string;
-  price: number;
-  salePrice?: number;
-  originalPrice?: any;
-  rating: number;
-  reviewCount: number;
-  image: string;
-  images?: string[];
-  stock: number;
-  category: string;
-  isWishlisted?: boolean;
-  description: string;
-}
-
-interface PriceRange {
-  min: string;
-  max: string;
-}
-
-interface AvailabilityFilters {
-  inStock: boolean;
-  onSale: boolean;
-  freeShipping: boolean;
-}
-
-interface Filters {
-  categories: string[];
-  vendors: string[];
-  priceRange: PriceRange;
-  minRating: number;
-  availability: AvailabilityFilters;
-}
-
-type SortOption =
-  | "relevance"
-  | "price-low"
-  | "price-high"
-  | "rating"
-  | "newest"
-  | "popular"
-  | "category";
-
-interface ApiVendor {
-  business_name: string;
-  email: string;
-  id: number;
-}
-
-interface ApiProduct {
-  category: string;
-  id: number;
-  images: string[];
-  product_name: string;
-  product_price: number;
-  vendor: ApiVendor;
-  description?: string;
-  status?: string;
-  visibility?: boolean;
-}
-
-interface ApiResponse {
-  count: number;
-  products: ApiProduct[];
-}
-
-interface Notification {
-  id: string;
-  type: "success" | "error" | "info";
-  message: string;
-}
+import { Product as ProductCardType } from "@/types/products";
+import { Product, PriceRange, AvailabilityFilters, Filters, SortOption, ApiVendor, ApiProduct, ApiResponse, Notification } from "@/types/marketplace";
 
 const ActionBar = ({
   product,
@@ -90,7 +19,7 @@ const ActionBar = ({
   onWishlistToggle,
   isWishlisted,
 }: {
-  product: Product;
+  product: ProductCardType;
   cartQuantity: number;
   onAddToCart: () => void;
   onBuyNow: () => void;
@@ -102,10 +31,10 @@ const ActionBar = ({
       <div className="flex items-center justify-between p-4">
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">
-            {product.name}
+            {product.product_name}
           </h3>
           <p className="text-lg font-bold text-gray-900">
-            ₦{product.price.toLocaleString()}
+            ₦{product.product_price.toLocaleString()}
           </p>
         </div>
 
@@ -188,13 +117,13 @@ const NotificationToast = ({
 };
 
 export default function MarketplaceBrowse() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductCardType[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductCardType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -237,34 +166,33 @@ export default function MarketplaceBrowse() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const transformApiProduct = (apiProduct: ApiProduct): Product => {
+  const transformApiProduct = (apiProduct: ApiProduct): ProductCardType => {
     return {
       id: apiProduct.id,
-      name: apiProduct.product_name,
-      vendor: apiProduct.vendor.business_name,
-      price: apiProduct.product_price,
+      product_name: apiProduct.product_name,
+      vendor: apiProduct.vendor,
+      product_price: apiProduct.product_price,
       salePrice: undefined,
       originalPrice: apiProduct.product_price,
       rating: 4.5,
       reviewCount: Math.floor(Math.random() * 200) + 10,
-      image:
-        apiProduct.images && apiProduct.images.length > 0
-          ? apiProduct.images[0]
-          : "https://via.placeholder.com/400x400?text=No+Image",
       images: apiProduct.images || [],
-      stock: 10,
       category: apiProduct.category.toLowerCase(),
       isWishlisted: false,
       description: apiProduct.description || "No description available",
+      status: apiProduct.status,
+      visibility: apiProduct.visibility,
     };
   };
 
-  const fetchProductsFromAPI = async (): Promise<Product[]> => {
+
+
+  const fetchProductsFromAPI = async (): Promise<ProductCardType[]> => {
     try {
       setFetchError(null);
-      const { data }: { data: ApiResponse } = await fetchProducts();
+      const response: ApiResponse = await productService.getProducts();
 
-      const transformedProducts = data.products
+      const transformedProducts = response.products
         .filter(
           product =>
             product.product_name &&
@@ -286,21 +214,19 @@ export default function MarketplaceBrowse() {
     }
   };
 
-  const handleAddToCart = async (product: Product, quantity: number = 1) => {
+
+  const handleAddToCart = async (product: ProductCardType, quantity: number = 1) => {
     try {
       setIsAddingToCart(prev => ({ ...prev, [product.id]: true }));
 
-      await addToCart({
-        product_id: product.id,
-        quantity: quantity,
-      });
+      await cartService.addToCart(product.id, quantity);
 
       setCartQuantities(prev => ({
         ...prev,
         [product.id]: (prev[product.id] || 0) + quantity,
       }));
 
-      addNotification("success", `${product.name} added to cart!`);
+      addNotification("success", `${product.product_name} added to cart!`);
     } catch (error: any) {
       console.error("Error adding to cart:", error);
 
@@ -316,7 +242,7 @@ export default function MarketplaceBrowse() {
 
   const fetchCartQuantities = async () => {
     try {
-      const { data } = await fetchCartItems();
+      const { data } = await cartService.fetchCartItems();
 
       const quantities: { [key: number]: number } = {};
       (data.cart_items || []).forEach((item: any) => {
@@ -336,22 +262,18 @@ export default function MarketplaceBrowse() {
     }
   };
 
-  // Update your initial load to not break if cart fails
   useEffect(() => {
     const initializeData = async () => {
       setLoading(true);
 
-      // Fetch products first
       const fetchedProducts = await fetchProductsFromAPI();
       setAllProducts(fetchedProducts);
 
-      // Try to fetch cart, but don't fail if it errors
       if (typeof window !== "undefined" && sessionStorage.getItem("RSToken")) {
         try {
           await fetchCartQuantities();
         } catch (error) {
           console.log("Could not load cart - user may not have cart yet");
-          // Continue without cart data
         }
       }
 
@@ -362,7 +284,6 @@ export default function MarketplaceBrowse() {
     initializeData();
   }, []);
 
-  // Detect mobile
   useEffect(() => {
     const handleResize = (): void => {
       setIsMobile(window.innerWidth < 768);
@@ -373,25 +294,8 @@ export default function MarketplaceBrowse() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Initial load
-  useEffect(() => {
-    const initializeData = async () => {
-      setLoading(true);
-      const fetchedProducts = await fetchProductsFromAPI();
-      setAllProducts(fetchedProducts);
 
-      if (typeof window !== "undefined" && sessionStorage.getItem("RSToken")) {
-        await fetchCartQuantities();
-      }
 
-      setLoading(false);
-      setInitialLoadComplete(true);
-    };
-
-    initializeData();
-  }, []);
-
-  // Filter and sort
   useEffect(() => {
     loadProducts(true);
   }, [filters, sortBy, searchQuery, allProducts]);
@@ -407,8 +311,8 @@ export default function MarketplaceBrowse() {
       if (searchQuery) {
         filteredProducts = filteredProducts.filter(
           product =>
-            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.vendor.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             product.description
               .toLowerCase()
               .includes(searchQuery.toLowerCase())
@@ -424,7 +328,7 @@ export default function MarketplaceBrowse() {
       if (filters.vendors.length > 0) {
         filteredProducts = filteredProducts.filter(product =>
           filters.vendors.includes(
-            product.vendor.toLowerCase().replace(/\s+/g, "")
+            product.vendor.business_name.toLowerCase().replace(/\s+/g, "")
           )
         );
       }
@@ -433,20 +337,20 @@ export default function MarketplaceBrowse() {
         const min = parseFloat(filters.priceRange.min) || 0;
         const max = parseFloat(filters.priceRange.max) || Infinity;
         filteredProducts = filteredProducts.filter(product => {
-          const price = product.salePrice || product.price;
+          const price = product.salePrice || product.product_price;
           return price >= min && price <= max;
         });
       }
 
       if (filters.minRating > 0) {
         filteredProducts = filteredProducts.filter(
-          product => product.rating >= filters.minRating
+          product => (product.rating || 0) >= filters.minRating
         );
       }
 
       if (filters.availability.inStock) {
         filteredProducts = filteredProducts.filter(
-          product => product.stock > 0
+          product => (product.stock || 0) > 0
         );
       }
 
@@ -459,22 +363,22 @@ export default function MarketplaceBrowse() {
       switch (sortBy) {
         case "price-low":
           filteredProducts.sort(
-            (a, b) => (a.salePrice || a.price) - (b.salePrice || b.price)
+            (a, b) => (a.salePrice || a.product_price) - (b.salePrice || b.product_price)
           );
           break;
         case "price-high":
           filteredProducts.sort(
-            (a, b) => (b.salePrice || b.price) - (a.salePrice || a.price)
+            (a, b) => (b.salePrice || b.product_price) - (a.salePrice || a.product_price)
           );
           break;
         case "rating":
-          filteredProducts.sort((a, b) => b.rating - a.rating);
+          filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
           break;
         case "newest":
           filteredProducts.sort((a, b) => b.id - a.id);
           break;
         case "popular":
-          filteredProducts.sort((a, b) => b.reviewCount - a.reviewCount);
+          filteredProducts.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
           break;
         case "category":
           filteredProducts.sort((a, b) => a.category.localeCompare(b.category));
@@ -526,13 +430,13 @@ export default function MarketplaceBrowse() {
     );
   };
 
-  const handleQuickView = (product: Product): void => {
+  const handleQuickView = (product: ProductCardType): void => {
     setSelectedProduct(product);
     setIsQuickViewOpen(true);
   };
 
-  const handleBuyNow = (product: Product): void => {
-    addToCart({ product_id: product.id, quantity: 1 });
+  const handleBuyNow = (product: ProductCardType): void => {
+    cartService.addToCart(product.id, 1);
     addNotification("info", "Redirecting to checkout...");
   };
 
@@ -547,10 +451,9 @@ export default function MarketplaceBrowse() {
     }
   };
 
-  // Navigate to details page
   const router = useRouter();
 
-  const handleNavigateToDetailPage = (item: Product) => {
+  const handleNavigateToDetailPage = (item: ProductCardType) => {
     router.push(`/product-detail?id=${item.id}`);
   };
 
@@ -650,7 +553,6 @@ export default function MarketplaceBrowse() {
                   )}
                 </div>
               </div>
-              {/* price section */}
               <div className="mb-6">
                 <h3 className="mb-3 font-medium">Price Range</h3>
                 <div className="flex space-x-2">
@@ -755,7 +657,6 @@ export default function MarketplaceBrowse() {
 
           <div className="flex-1 p-4 overflow-y-auto">
             {!initialLoadComplete ? (
-              // Show skeleton during initial load
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[...Array(12)].map((_, i) => (
                   <ProductCardSkeleton key={i} />
@@ -776,7 +677,7 @@ export default function MarketplaceBrowse() {
                     <ProductCard
                       key={product.id}
                       product={product}
-                      onAddToCart={addToCart}
+                      onAddToCart={handleAddToCart}
                       onQuickView={handleQuickView}
                       onAddToWishlist={handleAddToWishlist}
                       cartQuantities={cartQuantities}
@@ -785,7 +686,6 @@ export default function MarketplaceBrowse() {
                   ))}
                 </div>
 
-                {/* load more */}
                 {hasMore && (
                   <div className="mt-8 text-center">
                     <button
@@ -809,7 +709,6 @@ export default function MarketplaceBrowse() {
           </div>
         </div>
 
-        {/* mobile filter */}
         {isMobile && isFilterPanelOpen && (
           <div
             className="fixed inset-0 z-50 bg-black bg-opacity-50"
@@ -858,7 +757,6 @@ export default function MarketplaceBrowse() {
                   </div>
                 </div>
 
-                {/* price range */}
                 <div className="mb-6">
                   <h3 className="mb-3 font-medium">Price Range</h3>
                   <div className="flex space-x-2">
@@ -906,7 +804,6 @@ export default function MarketplaceBrowse() {
           </div>
         )}
 
-        {/* quick view */}
         {isQuickViewOpen && selectedProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -924,18 +821,18 @@ export default function MarketplaceBrowse() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="overflow-hidden bg-gray-100 rounded-lg aspect-square">
                     <img
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
+                      src={selectedProduct.images[0]}
+                      alt={selectedProduct.product_name}
                       className="object-cover w-full h-full"
                     />
                   </div>
 
                   <div>
                     <h3 className="mb-2 text-xl font-semibold">
-                      {selectedProduct.name}
+                      {selectedProduct.product_name}
                     </h3>
                     <p className="mb-2 text-gray-600">
-                      {selectedProduct.vendor}
+                      {selectedProduct.vendor.business_name}
                     </p>
 
                     <div className="flex items-center mb-4 space-x-2">
@@ -944,7 +841,7 @@ export default function MarketplaceBrowse() {
                           <Star
                             key={i}
                             className={`w-4 h-4 ${
-                              i < Math.floor(selectedProduct.rating)
+                              i < Math.floor(selectedProduct.rating || 0)
                                 ? "text-yellow-400 fill-current"
                                 : "text-gray-300"
                             }`}
@@ -958,7 +855,7 @@ export default function MarketplaceBrowse() {
 
                     <div className="mb-4">
                       <span className="text-2xl font-bold text-gray-900">
-                        ₦{selectedProduct.price.toLocaleString()}
+                        ₦{selectedProduct.product_price.toLocaleString()}
                       </span>
                     </div>
 
@@ -972,7 +869,7 @@ export default function MarketplaceBrowse() {
                           type="button"
                           variant="navy"
                           onClick={() => {
-                            addToCart(selectedProduct);
+                            handleAddToCart(selectedProduct);
                             setIsQuickViewOpen(false);
                           }}
                           disabled={isAddingToCart[selectedProduct.id]}
@@ -1021,12 +918,11 @@ export default function MarketplaceBrowse() {
           </div>
         )}
 
-        {/* mobile action bar */}
         {isMobile && selectedProduct && (
           <ActionBar
             product={selectedProduct}
             cartQuantity={cartQuantities[selectedProduct.id] || 0}
-            onAddToCart={() => addToCart(selectedProduct)}
+            onAddToCart={() => handleAddToCart(selectedProduct)}
             onBuyNow={() => handleBuyNow(selectedProduct)}
             onWishlistToggle={() =>
               handleAddToWishlist(

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { ArrowLeft, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -16,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import api_endpoints, { baseURL } from "@/hooks/api_endpoints";
+import api_endpoints from "@/hooks/api_endpoints";
 
 // ============================
 // Password Validation Helper

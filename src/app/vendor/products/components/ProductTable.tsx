@@ -7,28 +7,18 @@ import { Checkbox } from "@/components/ui/new/Checkbox";
 
 // Type definitions
 
-interface Product {
-  id: any;
-  name: string;
-  sku: string;
-  image: string;
-  category: string;
-  price: number;
-  stock: number;
-  status: "active" | "draft" | "out-of-stock" | "inactive";
-  createdAt: string;
-}
+import { Product } from '@/types/vendor/products';
 
 interface ProductTableProps {
   products: Product[];
-  selectedProducts: string[] | any;
-  onProductSelect: (productId: string, selected: boolean) => void;
+  selectedProducts: number[];
+  onProductSelect: (productId: string | number, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
-  onEditProduct: (productId: string) => void;
-  onDuplicateProduct: (productId: string) => void;
-  onDeleteProduct: (productId: string) => void;
+  onEditProduct: (productId: string | number) => void;
+  onDuplicateProduct: (productId: string | number) => void;
+  onDeleteProduct: (productId: string | number) => void;
   onQuickEdit: (
-    productId: string,
+    productId: string | number,
     field: string,
     value: string | number
   ) => void;
@@ -81,10 +71,6 @@ const ProductTable: React.FC<ProductTableProps> = ({
     setEditingCell(null);
     setEditValue("");
   };
-
-	const handleDeleteProduct = () => {
-		
-	}
 
   const getStatusBadge = (status: Product["status"]): JSX.Element => {
     const statusConfig: Record<Product["status"], StatusConfig> = {
@@ -166,7 +152,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                 >
                   <td className="px-4 py-4">
                     <Checkbox
-                      checked={selectedProducts.includes(product.id)}
+                      checked={selectedProducts.includes(Number(product.id))}
                       onChange={e =>
                         onProductSelect(product.id, e.target.checked)
                       }
@@ -210,7 +196,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                           step="0.01"
                         />
                         <button
-                          onClick={() => saveQuickEdit(product.id, "price")}
+                          onClick={() => saveQuickEdit(String(product.id), "price")}
                           className="text-success hover:text-success/80"
                         >
                           <Icon name="Check" size={16} />
@@ -225,7 +211,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     ) : (
                       <button
                         onClick={() =>
-                          handleQuickEdit(product.id, "price", product.price)
+                          handleQuickEdit(String(product.id), "price", product.price)
                         }
                         className="text-sm font-medium text-foreground hover:text-primary transition-smooth"
                       >
@@ -251,7 +237,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                             min="0"
                           />
                           <button
-                            onClick={() => saveQuickEdit(product.id, "stock")}
+                            onClick={() => saveQuickEdit(String(product.id), "stock")}
                             className="text-success hover:text-success/80"
                           >
                             <Icon name="Check" size={16} />
@@ -266,7 +252,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                       ) : (
                         <button
                           onClick={() =>
-                            handleQuickEdit(product.id, "stock", product.stock)
+                            handleQuickEdit(String(product.id), "stock", product.stock)
                           }
                           className={`text-sm font-medium transition-smooth ${stockStatus.color} hover:opacity-80`}
                         >

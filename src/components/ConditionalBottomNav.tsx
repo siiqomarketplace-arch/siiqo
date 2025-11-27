@@ -8,7 +8,7 @@ const ConditionalBottomNav: React.FC = () => {
   const pathname = usePathname();
 
   // Routes where bottom nav should be hidden
-  const hiddenRoutes = ["/Administration", "/auth", "/vendor/auth"];
+  const hiddenRoutes = ["/Administration", "/auth", "/auth/login"];
 
   const shouldHide =
     pathname.startsWith("/vendor") ||

@@ -11,20 +11,15 @@ const vendorApi = axios.create({
     },
 });
 
-// Attach vendor token automatically
 vendorApi.interceptors.request.use(
     (config) => {
         if (typeof window !== "undefined") {
-            const token =
-                localStorage.getItem("vendorToken") ||
-                JSON.parse(localStorage.getItem("vendorAuth") || "{}")?.token;
+            const token = sessionStorage.getItem("RSToken");
 
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
-                // Uncomment for debugging:
-                console.log("Vendor Token attached:", token);
             } else {
-                console.warn("No vendor token found");
+                console.warn("No vendor token found in sessionStorage");
             }
         }
         return config;
@@ -32,22 +27,9 @@ vendorApi.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Handle vendor 401 errors safely
 vendorApi.interceptors.response.use(
     (response) => response.data,
     (error) => {
-        const status = error.response?.status;
-
-        if (status === 401) {
-            console.error("🚫 Vendor unauthorized — redirecting to vendor login...");
-            if (typeof window !== "undefined") {
-                localStorage.removeItem("vendorToken");
-                localStorage.removeItem("vendorAuth");
-                localStorage.removeItem("isVendorLoggedIn");
-                window.location.href = "/vendor/login";
-            }
-        }
-
         return Promise.reject(error);
     }
 );

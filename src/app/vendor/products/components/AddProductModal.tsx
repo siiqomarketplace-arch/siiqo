@@ -10,7 +10,7 @@ import Image from "@/components/ui/AppImage";
 import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 import Select from "@/components/ui/new/NewSelect";
-import { getVendorToken } from "@/lib/auth";
+import { vendorService } from "@/services/vendorService";
 
 // --- Type Definitions ---
 interface ProductDimensions {
@@ -72,35 +72,15 @@ interface Tab {
 // --- Helper Functions ---
 
 const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
-  const token = getVendorToken();
-  if (!token) throw new Error("Authentication token not found.");
-
-  const formData = new FormData();
-  formData.append("files", file);
-
-  const response = await fetch(
-    "https://server.bizengo.com/api/vendor/upload-file",
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+  try {
+    const response = await vendorService.uploadImage(file);
+    if (!response.urls || response.urls.length === 0) {
+      throw new Error("API did not return an image URL.");
     }
-  );
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: "Upload failed" }));
-    throw new Error(
-      errorData.message || `Upload failed with status: ${response.status}`
-    );
+    return { url: response.urls[0] };
+  } catch (error: any) {
+    throw new Error(error.message || "Upload failed");
   }
-
-  const result = await response.json();
-  if (!result.urls || result.urls.length === 0) {
-    throw new Error("API did not return an image URL.");
-  }
-  return { url: result.urls[0] };
 };
 
 const initialFormData: ProductFormData = {

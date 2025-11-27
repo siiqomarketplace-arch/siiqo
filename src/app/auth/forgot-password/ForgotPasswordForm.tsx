@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { forgotPassword } from "@/services/api";
+import { authService } from "@/services/authService";
 import {
   Card,
   CardContent,
@@ -54,7 +54,7 @@ export default function ForgotPasswordForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await forgotPassword(data.email);
+      const response = await authService.requestPasswordReset(data.email);
 
       toast({
         title: "Email sent",
@@ -85,7 +85,7 @@ export default function ForgotPasswordForm() {
 
     setTimeout(() => {
       if (origin === "vendor") {
-        router.replace("/vendor/auth");
+        router.replace("/auth/login");
       } else {
         router.replace("/auth/login");
       }

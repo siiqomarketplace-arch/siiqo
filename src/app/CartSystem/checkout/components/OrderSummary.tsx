@@ -46,33 +46,6 @@ export default function OrderSummary({
     <div className="p-4 bg-white border border-gray-100 rounded-lg">
       <h3 className="mb-4 text-lg font-semibold">Order Summary</h3>
 
-      {/* Items Preview */}
-      {/* <div className="mb-4 space-y-2">
-        {cartItems.slice(0, 3).map(item => (
-          <div key={item.id} className="flex items-center gap-3">
-            <img
-              src={item.product.images[0] || "https://via.placeholder.com/50"}
-              alt={item.product.product_name}
-              className="object-cover w-12 h-12 border rounded"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {item.product.product_name}
-              </p>
-              <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-            </div>
-            <span className="text-sm font-semibold text-orange-500">
-              ₦{(item.quantity * item.product.unit_price).toLocaleString()}
-            </span>
-          </div>
-        ))}
-        {cartItems.length > 3 && (
-          <p className="text-xs text-gray-500">
-            +{cartItems.length - 3} more item(s)
-          </p>
-        )}
-      </div> */}
-
       {/* Price Breakdown */}
       <div className="pt-4 space-y-3 border-t border-gray-200">
         <div className="flex justify-between text-sm text-gray-600">

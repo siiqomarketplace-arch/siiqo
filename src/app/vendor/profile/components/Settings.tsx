@@ -69,37 +69,14 @@ interface SettingsState {
     };
 }
 
-// Mock user data - replace with actual API data
-const mockUserProfile: UserProfileData = {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    location: "San Francisco, CA",
-    joinDate: "2023-01-15",
-    isVerified: {
-        email: true,
-        phone: false,
-        identity: false
-    },
-    stats: {
-        itemsListed: 24,
-        purchasesMade: 12,
-        sellerRating: 4.8,
-        totalReviews: 156
-    },
-    bio: "Tech enthusiast and collector. Always looking for unique gadgets and vintage electronics."
-};
-
 const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => {
-    const [userProfile] = useState<UserProfileData>(propUserProfile || mockUserProfile);
+    const [userProfile] = useState<UserProfileData | undefined>(propUserProfile);
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [locationError, setLocationError] = useState<string | null>(null);
     
     const [settings, setSettings] = useState<SettingsState>({
         location: {
-            homeAddress: userProfile.location || "Not set",
+            homeAddress: userProfile?.location || "Not set",
             searchRadius: 10,
             autoLocation: true,
             showExactLocation: false,
@@ -121,8 +98,8 @@ const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => 
         },
         account: {
             twoFactorAuth: false,
-            emailVerified: userProfile.isVerified.email,
-            phoneVerified: userProfile.isVerified.phone
+            emailVerified: userProfile?.isVerified.email || false,
+            phoneVerified: userProfile?.isVerified.phone || false
         }
     });
 
@@ -379,15 +356,15 @@ const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => 
             <div className="p-4 rounded-lg bg-gray-50">
                 <div className="flex items-center space-x-4">
                     <img
-                        src={userProfile.avatar}
-                        alt={userProfile.name}
+                        src={userProfile?.avatar}
+                        alt={userProfile?.name}
                         className="object-cover w-16 h-16 rounded-full"
                     />
                     <div>
-                        <h4 className="font-semibold text-gray-900">{userProfile.name}</h4>
-                        <p className="text-sm text-gray-600">{userProfile.email}</p>
-                        <p className="text-sm text-gray-600">{userProfile.phone}</p>
-                        <p className="text-xs text-gray-500">Member since {new Date(userProfile.joinDate).toLocaleDateString()}</p>
+                        <h4 className="font-semibold text-gray-900">{userProfile?.name}</h4>
+                        <p className="text-sm text-gray-600">{userProfile?.email}</p>
+                        <p className="text-sm text-gray-600">{userProfile?.phone}</p>
+                        <p className="text-xs text-gray-500">Member since {userProfile?.joinDate ? new Date(userProfile.joinDate).toLocaleDateString() : "N/A"}</p>
                     </div>
                 </div>
             </div>
@@ -395,19 +372,19 @@ const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => 
             {/* User Stats */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 text-center rounded-lg bg-blue-50">
-                    <div className="text-2xl font-bold text-blue-600">{userProfile.stats.itemsListed}</div>
+                    <div className="text-2xl font-bold text-blue-600">{userProfile?.stats.itemsListed}</div>
                     <div className="text-sm text-blue-800">Items Listed</div>
                 </div>
                 <div className="p-3 text-center rounded-lg bg-green-50">
-                    <div className="text-2xl font-bold text-green-600">{userProfile.stats.purchasesMade}</div>
+                    <div className="text-2xl font-bold text-green-600">{userProfile?.stats.purchasesMade}</div>
                     <div className="text-sm text-green-800">Purchases Made</div>
                 </div>
                 <div className="p-3 text-center rounded-lg bg-yellow-50">
-                    <div className="text-2xl font-bold text-yellow-600">{userProfile.stats.sellerRating}</div>
+                    <div className="text-2xl font-bold text-yellow-600">{userProfile?.stats.sellerRating}</div>
                     <div className="text-sm text-yellow-800">Seller Rating</div>
                 </div>
                 <div className="p-3 text-center rounded-lg bg-purple-50">
-                    <div className="text-2xl font-bold text-purple-600">{userProfile.stats.totalReviews}</div>
+                    <div className="text-2xl font-bold text-purple-600">{userProfile?.stats.totalReviews}</div>
                     <div className="text-sm text-purple-800">Total Reviews</div>
                 </div>
             </div>
@@ -419,7 +396,7 @@ const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => 
                         <Mail className="w-5 h-5 text-gray-500" />
                         <div>
                             <h4 className="text-sm font-medium text-gray-900">Email Verification</h4>
-                            <p className="text-xs text-gray-500">{userProfile.email}</p>
+                            <p className="text-xs text-gray-500">{userProfile?.email}</p>
                         </div>
                     </div>
                     {settings.account.emailVerified ? (
@@ -442,7 +419,7 @@ const Settings: React.FC<SettingsProps> = ({ userProfile: propUserProfile }) => 
                         <Phone className="w-5 h-5 text-gray-500" />
                         <div>
                             <h4 className="text-sm font-medium text-gray-900">Phone Verification</h4>
-                            <p className="text-xs text-gray-500">{userProfile.phone}</p>
+                            <p className="text-xs text-gray-500">{userProfile?.phone}</p>
                         </div>
                     </div>
                     {settings.account.phoneVerified ? (

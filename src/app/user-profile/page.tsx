@@ -8,11 +8,7 @@ import SavedItems from "./components/SavedItems";
 import Settings from "./components/Settings";
 import { useRouter } from "next/navigation";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
-import {
-  getUserProfile,
-  uploadProfilePicture,
-  logout,
-} from "@/services/api";
+import { userService } from "@/services/userService";
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<string>("listings");
@@ -29,7 +25,7 @@ const UserProfile = () => {
       const formData = new FormData();
       formData.append("profile_pic", file);
 
-      const response = await uploadProfilePicture(formData);
+      const response = await userService.uploadProfilePicture(formData);
 
       if (response.data.profile_pic_url) {
         alert("Profile picture updated successfully!");
@@ -80,10 +76,10 @@ const UserProfile = () => {
       }
     }
 
-    getUserProfile()
+    userService.getUserProfile()
       .then(response => {
-        setUser(response.data);
-        sessionStorage.setItem("RSUser", JSON.stringify(response.data));
+        setUser(response);
+        sessionStorage.setItem("RSUser", JSON.stringify(response));
         setLoading(false);
       })
       .catch(err => {
@@ -93,33 +89,31 @@ const UserProfile = () => {
   }, [router]);
 
   const handleLogout = (): void => {
-    logout();
+    userService.logout();
   };
 
-  // Default avatar URL
   const defaultAvatar =
     "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face";
 
-  // Create user profile object with fetched data or defaults
   const userProfile = user
     ? {
         id: user.id,
         name: user.name || user.business_name || "User",
         email: user.email,
         phone: user.phone || "Not provided",
-        avatar: defaultAvatar, // You can add avatar field to API response later
+        avatar: defaultAvatar,
         location:
           user.state && user.country
             ? `${user.state}, ${user.country}`
             : user.country || "Location not set",
-        joinDate: "March 2023", // You can add this field to API response
+        joinDate: "March 2023",
         isVerified: {
-          email: true, // You can determine this from API response
+          email: true,
           phone: !!user.phone,
           identity: false,
         },
         stats: {
-          itemsListed: 24, // These should come from API
+          itemsListed: 24,
           purchasesMade: 18,
           sellerRating: 4.8,
           totalReviews: 32,
@@ -192,7 +186,6 @@ const UserProfile = () => {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -204,7 +197,6 @@ const UserProfile = () => {
     );
   }
 
-  // Error state - no user data
   if (!userProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -255,7 +247,6 @@ const UserProfile = () => {
                     <Icon name="Check" size={12} className="text-white" />
                   </div>
                 )}
-                {/* Upload overlay */}
                 <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 bg-black bg-opacity-0 rounded-full group-hover:bg-opacity-50">
                   <Icon
                     name="Camera"
@@ -293,7 +284,6 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="text-center">
               <div className="text-lg font-semibold text-text-primary">
@@ -324,7 +314,6 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="grid grid-cols-3 gap-3">
             {quickActions.map(action => (
               <button
@@ -346,7 +335,6 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="border-b bg-surface border-border">
           <div className="flex overflow-x-auto">
             {tabs.map(tab => (
@@ -377,14 +365,11 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="p-4">{renderTabContent()}</div>
       </div>
 
-      {/* Desktop Layout */}
       <div className="hidden px-6 py-8 mx-auto md:block max-w-7xl">
         <div className="grid grid-cols-12 gap-8">
-          {/* Left Sidebar - Profile Info */}
           <div className="col-span-4">
             <div className="p-6 mb-6 border rounded-lg bg-surface border-border">
               <div className="mb-6 text-center">
@@ -422,7 +407,6 @@ const UserProfile = () => {
                 )}
               </div>
 
-              {/* Verification Badges */}
               <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -488,7 +472,6 @@ const UserProfile = () => {
                 </div>
               </div>
 
-              {/* Bio */}
               <div className="mb-6">
                 <h3 className="mb-2 text-sm font-medium text-text-primary">
                   About
@@ -505,7 +488,6 @@ const UserProfile = () => {
                 )}
               </div>
 
-              {/* Quick Actions */}
               <div className="space-y-3">
                 {quickActions.map(action => (
                   <button
@@ -525,7 +507,6 @@ const UserProfile = () => {
               </div>
             </div>
 
-            {/* Stats Card */}
             <div className="p-6 border rounded-lg bg-surface border-border">
               <h3 className="mb-4 text-lg font-semibold font-heading text-text-primary">
                 Activity Stats
@@ -581,9 +562,7 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {/* Right Content Area */}
           <div className="col-span-8">
-            {/* Tab Navigation */}
             <div className="mb-6 border rounded-lg bg-surface border-border">
               <div className="flex border-b border-border">
                 {tabs.map(tab => (
@@ -613,13 +592,11 @@ const UserProfile = () => {
                 ))}
               </div>
 
-              {/* Tab Content */}
               <div className="p-6">{renderTabContent()}</div>
             </div>
           </div>
         </div>
       </div>
-      {/* Hidden file input */}
       <input
         id="profile-pic-input"
         type="file"

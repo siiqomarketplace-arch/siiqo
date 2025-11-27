@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Icon from "@/components/AppIcon";
 import { LucidePanelLeftClose, LucidePanelRightClose } from "lucide-react";
+import { vendorService } from "@/services/vendorService";
 
 interface VendorData {
   business_name?: string;
@@ -42,7 +43,7 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
   const isAuthPage = () => {
     const authPatterns = [
       "/auth/",
-      "/vendor/auth",
+      "/auth/login",
       "/vendor/signup",
       "/vendor/verify-otp",
       "/vendor/forgot-password",
@@ -69,18 +70,8 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
     if (!propVendorData) {
       const fetchProfile = async () => {
         try {
-          const res = await fetch(
-            "https://server.bizengo.com/api/user/profile",
-            {
-              headers: {
-                accept: "application/json",
-                Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,
-              },
-            }
-          );
-          if (!res.ok) throw new Error("Failed to fetch profile");
-          const data = await res.json();
-          setVendorData(data);
+          const res = await vendorService.getVendorProfile();
+          setVendorData(res.data);
         } catch (err) {
           console.error("Error fetching vendor profile:", err);
         }

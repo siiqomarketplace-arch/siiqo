@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import CustomerBottomTabs from "@/components/ui/CustomerBottomTabs";
 import LocationHeader from "@/components/ui/LocationHeader";
@@ -9,115 +10,47 @@ import ProductGrid from "./components/ProductGrid";
 import AboutSection from "./components/AboutSection";
 import ReviewsSection from "./components/ReviewSection";
 import ContactSection from "./components/ContactSection";
+import Button from "@/components/ui/alt/ButtonAlt";
+import Icon from "@/components/AppIcon";
+import { vendorService } from "@/services/vendorService";
+import { StorefrontData } from "@/types/vendor/storefront";
+
+interface MyProductsResponse {
+  products: any[];
+}
 
 // Types
 interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  price: number;
-  image: string;
+  product_price: number;
+  images: string[];
   stock: number;
   status: string;
   category: string;
 }
 
-interface Storefront {
-  id: number;
-  business_name: string;
-  country: string;
-  description: string;
-  email: string;
-  phone: string;
-  state: string;
-  name?: string;
-  story?: string;
-  established?: number | string;
-  teamSize?: number | string;
-  specialties?: string[];
-  hours?: Array<{
-    day: string;
-    hours: string;
-    isToday: boolean;
-  }>;
-  gallery?: Array<{
-    url: string;
-    caption?: string;
-  }>;
-  team?: Array<{
-    name: string;
-    role: string;
-    photo: string;
-  }>;
-  // Additional properties to match Business interface for ContactSection
-  address?: string;
-  website?: string;
-  socialMedia?: {
-    facebook?: string;
-    instagram?: string;
-    twitter?: string;
-  };
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
+interface Props {
+  storefrontData: StorefrontData | null;
+  products: Product[];
 }
 
 type TabId = "products" | "about" | "reviews" | "contact";
 
-const BusinessStorefrontView: React.FC = () => {
+const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products }) => {
   const { businessId } = useParams<{ businessId: string }>();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("products");
-  const [business, setBusiness] = useState<Storefront | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [business, setBusiness] = useState<StorefrontData | null>(storefrontData);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStorefront = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("vendorToken");
-        if (!token) throw new Error("No vendor token found");
-
-        const res = await fetch(
-          "https://server.bizengo.com/api/vendor/storefront",
-          {
-            headers: {
-              accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-        console.log("Storefront API response:", data);
-
-        if (data.storefront) {
-          setBusiness(data.storefront);
-
-          const formattedProducts: Product[] =
-            data.products?.map((p: any) => ({
-              id: p.id,
-              name: p.product_name,
-              description: p.description,
-              price: p.product_price,
-              image: p.images?.[0] || "https://via.placeholder.com/300",
-              stock: p.stock || 0,
-              status: p.status,
-              category: p.category,
-            })) || [];
-
-          setProducts(formattedProducts);
-        }
-      } catch (err) {
-        console.error("Failed to fetch storefront:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStorefront();
-  }, [businessId]);
+    if (storefrontData) {
+      setBusiness(storefrontData);
+      setLoading(false);
+    }
+  }, [storefrontData]);
 
   // Tab UI
   const tabs = [
@@ -131,25 +64,37 @@ const BusinessStorefrontView: React.FC = () => {
     switch (activeTab) {
       case "products":
         return (
-          <ProductGrid
-            products={products}
-            onProductClick={(p) => console.log("Clicked", p)}
-            onAddToCart={(p) => alert(`${p.name} added to cart`)}
-          />
+          <div>
+            <ProductGrid
+              products={products}
+              onProductClick={(p) => console.log("Clicked", p)}
+              onAddToCart={(p) => alert(`${p.name} added to cart`)}
+            />
+            <div className="flex justify-center mt-8">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => router.push('/create-listing')}
+              >
+                <Icon name="Plus" size={16} className="mr-2" />
+                Add Product
+              </Button>
+            </div>
+          </div>
         );
       case "about":
         return business ? (
           <AboutSection
             business={{
-              name: business.business_name,
+              name: business.businessName,
               description: business.description,
-              story: business.story,
-              established: business.established || "N/A",
-              teamSize: business.teamSize || "N/A",
-              specialties: business.specialties || [],
-              hours: business.hours || [],
-              gallery: business.gallery,
-              team: business.team,
+              story: "",
+              established: "",
+              teamSize: "",
+              specialties: [],
+              hours: [],
+              gallery: [],
+              team: [],
             }}
           />
         ) : null;
@@ -165,14 +110,13 @@ const BusinessStorefrontView: React.FC = () => {
         return business ? (
           <ContactSection
             business={{
-              name: business.business_name,
-              phone: business.phone,
-              email: business.email,
-              address:
-                business.address || `${business.state}, ${business.country}`,
-              website: business.website,
-              socialMedia: business.socialMedia,
-              coordinates: business.coordinates || { lat: 0, lng: 0 }, // Default coordinates if not provided
+              name: business.businessName,
+              phone: business.contact.phone,
+              email: business.contact.email,
+              address: business.contact.address,
+              website: business.contact.website,
+              socialMedia: {},
+              coordinates: { lat: 0, lng: 0 }, // Default coordinates if not provided
             }}
             onSendMessage={async (data) => {
               alert("Message sent");
@@ -215,16 +159,16 @@ const BusinessStorefrontView: React.FC = () => {
 
       <BusinessHero
         business={business}
-        onContactClick={() => (window.location.href = `tel:${business.phone}`)}
+        onContactClick={() => (window.location.href = `tel:${business.contact.phone}`)}
         onDirectionsClick={() =>
           window.open(
-            `https://www.google.com/maps/search/?api=1&query=${business.state},${business.country}`,
+            `https://www.google.com/maps/search/?api=1&query=${business.contact.address}`,
             "_blank"
           )
         }
         onShareClick={() =>
           navigator.share?.({
-            title: business.business_name,
+            title: business.businessName,
             url: window.location.href,
           })
         }

@@ -30,6 +30,9 @@ export interface Storefront {
     business_banner: string | null;
     ratings: number;
     vendor: Vendor | null;
+    vendor_info?: {
+        member_since: string;
+    };
     extended: StorefrontExtension | null;
 }
 

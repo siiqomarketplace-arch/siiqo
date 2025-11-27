@@ -6,6 +6,8 @@ import MyListings from "./components/MyListings";
 import Settings from "./components/Settings";
 import { useRouter } from "next/navigation";
 import { LucideIconName } from "@/components/ui/AppIcon";
+import { vendorService } from "@/services/vendorService";
+import { useAuth } from "@/context/AuthContext";
 
 // --- Interfaces ---
 interface Tab {
@@ -14,7 +16,6 @@ interface Tab {
   icon: LucideIconName;
   count?: number;
 }
-
 interface QuickAction {
   id: string;
   label: string;
@@ -23,16 +24,22 @@ interface QuickAction {
   action?: () => void;
   badge?: number;
 }
-
 interface VendorData {
   business_name?: string;
+  name?: string;
   first_name?: string;
   last_name?: string;
   email?: string;
   isVerified?: boolean;
   phone?: string;
+  created_at?: string;
+  address?: string;
+  bio?: string;
+  profile_pic?: string;
+  kyc_status?: string;
+  state?: string;
+  country?: string;
 }
-
 interface LocationData {
   latitude: number;
   longitude: number;
@@ -41,11 +48,11 @@ interface LocationData {
   country?: string;
   fullAddress?: string;
 }
-
 interface LocationError {
   code: number;
   message: string;
 }
+import { locationService } from "@/services/locationService";
 
 // --- Hook for location ---
 const useAutoLocation = () => {
@@ -55,10 +62,7 @@ const useAutoLocation = () => {
 
   const getAddressFromCoordinates = async (lat: number, lon: number) => {
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`
-      );
-      const data = await res.json();
+      const data = await locationService.getAddressFromCoordinates(lat, lon);
       const address = data.address;
       const city = address.city || address.town || address.village || "";
       const state = address.state || address.region || "";
@@ -140,11 +144,14 @@ const useAutoLocation = () => {
 
   return { location, loading, error, getCurrentLocation, clearLocation };
 };
+interface UploadProfilePicResponse {
+  profile_pic_url: string;
+}
 
 // --- Main Component ---
 const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState("listings");
-  const [vendorData, setVendorData] = useState<VendorData | null>(null);
+  const { user: vendorData } = useAuth();
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
 
@@ -153,31 +160,11 @@ const UserProfile: React.FC = () => {
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("profile_pic", file);
-
-      const token = localStorage.getItem("vendorToken");
-
-      const response = await fetch(
-        "https://server.bizengo.com/api/upload-profile-pic",
-        {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const response = await vendorService.uploadProfilePicture(file);
+      const data = response.data as UploadProfilePicResponse;
 
       // Update the user profile with new avatar URL if returned
-      if (result.profile_pic_url) {
+      if (data.profile_pic_url) {
         // Update your userProfile state or refetch profile data
         // You might want to update vendorData state here
         alert("Profile picture updated successfully!");
@@ -217,41 +204,28 @@ const UserProfile: React.FC = () => {
     clearLocation,
   } = useAutoLocation();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch("https://server.bizengo.com/api/user/profile", {
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch profile");
-        const data = await res.json();
-        setVendorData(data);
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-      }
-    };
-    fetchProfile();
-  }, []);
+
 
   // --- Profile Fallback ---
   const userProfile = {
     id: 1,
     name:
       vendorData?.business_name ||
-      `${vendorData?.first_name || "Sarah"} ${
-        vendorData?.last_name || "Johnson"
-      }`,
-    email: vendorData?.email || "sarah.johnson@email.com",
-    phone: vendorData?.phone || "+1 (555) 123-4567",
-    avatar:
+      vendorData?.name ||
+      "",
+    email: vendorData?.email || "",
+    phone: vendorData?.phone || "",
+    avatar: vendorData?.profile_pic ||
       "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-    location: location?.fullAddress || "San Francisco, CA",
-    joinDate: "March 2023",
+    location: `${vendorData?.state || ""}${vendorData?.state && vendorData?.country ? ", " : ""}${vendorData?.country || ""}` || location?.fullAddress || "Not set",
+    joinDate: vendorData?.created_at
+      ? new Date(vendorData.created_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+        })
+      : "Not set",
     isVerified: {
-      email: vendorData?.isVerified ?? true,
+      email: vendorData?.kyc_status === "verified",
       phone: true,
       identity: false,
     },
@@ -261,7 +235,7 @@ const UserProfile: React.FC = () => {
       sellerRating: 4.8,
       totalReviews: 32,
     },
-    bio: "Passionate about sustainable living and finding great deals on quality items...",
+    bio: vendorData?.bio || "No bio yet.",
   };
 
   const tabs: Tab[] = [

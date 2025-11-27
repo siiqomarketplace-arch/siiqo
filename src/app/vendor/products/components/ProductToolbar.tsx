@@ -3,27 +3,31 @@ import Icon from '@/components/AppIcon';
 import Button from '@/components/ui/new/Button';
 import Input from '@/components/ui/new/Input';
 import Select from '@/components/ui/new/NewSelect';
+import { ViewMode, BulkAction } from "@/types/vendor/products";
 
-// Define specific types for props to ensure type safety
-type ViewMode = 'table' | 'grid';
-type BulkAction = 'activate' | 'deactivate' | 'duplicate' | 'delete' | 'export';
-type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'created-desc' | 'created-asc';
+export type SortOption =
+  | "name-asc"
+  | "name-desc"
+  | "price-asc"
+  | "price-desc"
+  | "stock-asc"
+  | "stock-desc"
+  | "created-desc"
+  | "created-asc";
 
-// Interface for the component's props
-interface ProductToolbarProps {
-	onAddProduct: () => void;
-	onBulkAction: (action: BulkAction, selectedProducts: string[] | any) => void;
-	onViewToggle: (mode: ViewMode) => void;
-	onSearchChange: (query: string) => void;
-	viewMode: ViewMode;
-	selectedProducts: string[] | any;
-	searchQuery: string;
+export interface ProductToolbarProps {
+  onAddProduct: () => void;
+  onBulkAction: (action: BulkAction, selectedProducts: number[]) => void;
+  onViewToggle: (mode: ViewMode) => void;
+  viewMode: ViewMode;
+  selectedProducts: number[];
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-// Interface for select options
-interface SelectOption<T> {
-	value: T;
-	label: string;
+export interface SelectOption<T> {
+  value: T;
+  label: string;
 }
 
 const ProductToolbar: React.FC<ProductToolbarProps> = ({
@@ -50,7 +54,7 @@ const ProductToolbar: React.FC<ProductToolbarProps> = ({
 		{ value: 'name-desc', label: 'Name (Z-A)' },
 		{ value: 'price-asc', label: 'Price (Low to High)' },
 		{ value: 'price-desc', label: 'Price (High to Low)' },
-		{ value: 'stock-asc', label: 'Stock (Low to High)' },
+		{ value: 'stock-asc', label: 'Stock (Low to High)' },		
 		{ value: 'stock-desc', label: 'Stock (High to Low)' },
 		{ value: 'created-desc', label: 'Newest First' },
 		{ value: 'created-asc', label: 'Oldest First' }

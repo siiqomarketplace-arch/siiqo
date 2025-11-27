@@ -109,7 +109,7 @@ const Header: React.FC = () => {
       buttonHoverColor: "group-hover:bg-blue-700",
       ringColor: "ring-blue-500",
       pulseColor: "bg-blue-600",
-      route: "/vendor/auth",
+route: "/auth/login",
     },
   ];
 
@@ -254,10 +254,10 @@ const Header: React.FC = () => {
             <Button
               type="button"
               variant="navy"
-              onClick={() => router.push("/auth/signup")}
+              onClick={() => router.push("/auth/login")}
               className="px-4 py-2 font-medium"
             >
-              Profile
+              Login
             </Button>
           )}
         </div>

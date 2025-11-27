@@ -3,28 +3,8 @@
 import React, { useState } from "react";
 import Icon from "@/components/ui/AppIcon";
 import { LucideIconName } from "@/components/ui/AppIcon";
-
-interface UserProfileData {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  location: string;
-  joinDate: string;
-  isVerified: {
-    email: boolean;
-    phone: boolean;
-    identity: boolean;
-  };
-  stats: {
-    itemsListed: number;
-    purchasesMade: number;
-    sellerRating: number;
-    totalReviews: number;
-  };
-  bio: string;
-}
+import { userService } from "@/services/userService";
+import { UserProfileData } from "@/types/userProfile";
 
 interface SettingsState {
   location: {
@@ -49,13 +29,11 @@ interface SettingsState {
   };
   account: {
     twoFactorAuth: boolean;
-    emailVerified: boolean;
-    phoneVerified: boolean;
   };
 }
 
 interface SettingsProps {
-  userProfile: UserProfileData;
+  userProfile: UserProfileData | null;
   onUpdateProfile?: (updates: Partial<UserProfileData>) => Promise<any>;
 }
 
@@ -65,7 +43,9 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
   const [settings, setSettings] = useState<SettingsState>({
     location: {
       homeAddress:
-        userProfile.location || "123 Main St, San Francisco, CA 94102",
+        userProfile?.state && userProfile?.country
+          ? `${userProfile.state}, ${userProfile.country}`
+          : "123 Main St, San Francisco, CA 94102",
       searchRadius: 10,
       autoLocation: true,
       showExactLocation: false,
@@ -86,8 +66,6 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
     },
     account: {
       twoFactorAuth: false,
-      emailVerified: userProfile.isVerified.email,
-      phoneVerified: userProfile.isVerified.phone,
     },
   });
 
@@ -134,7 +112,7 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
     setUpdateLoading((prev) => ({ ...prev, address: true }));
     try {
       await onUpdateProfile({
-        location: settings.location.homeAddress,
+        address: settings.location.homeAddress,
       });
     } catch (error) {
       console.error("Error updating address:", error);
@@ -164,12 +142,6 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
     setUpdateLoading((prev) => ({ ...prev, kyc: true }));
 
     try {
-      const token = getAuthToken();
-
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
       const formData = new FormData();
       formData.append("id_document", selectedKycFiles.idDocument);
 
@@ -177,20 +149,7 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
         formData.append("proof_of_address", selectedKycFiles.proofOfAddress);
       }
 
-      const response = await fetch("https://server.bizengo.com/api/user/kyc", {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const result = await userService.submitKyc(formData);
       alert(
         "KYC documents submitted successfully! Your identity verification is under review."
       );
@@ -528,126 +487,9 @@ const Settings = ({ userProfile, onUpdateProfile }: SettingsProps) => {
   const renderAccountSettings = () => (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-          <div className="flex items-center space-x-3">
-            <Icon name="Mail" size={20} className="text-text-secondary" />
-            <div>
-              <h4 className="text-sm font-medium text-text-primary">
-                Email Verification
-              </h4>
-              <p className="text-xs text-text-secondary">{userProfile.email}</p>
-            </div>
-          </div>
-          {settings.account.emailVerified ? (
-            <div className="flex items-center space-x-1 text-success">
-              <Icon name="Check" size={16} />
-              <span className="text-sm">Verified</span>
-            </div>
-          ) : (
-            <button className="text-primary hover:underline text-sm">
-              Verify Now
-            </button>
-          )}
-        </div>
 
-        <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-          <div className="flex items-center space-x-3">
-            <Icon name="Phone" size={20} className="text-text-secondary" />
-            <div>
-              <h4 className="text-sm font-medium text-text-primary">
-                Phone Verification
-              </h4>
-              <p className="text-xs text-text-secondary">{userProfile.phone}</p>
-            </div>
-          </div>
-          {settings.account.phoneVerified ? (
-            <div className="flex items-center space-x-1 text-success">
-              <Icon name="Check" size={16} />
-              <span className="text-sm">Verified</span>
-            </div>
-          ) : (
-            <button className="text-primary hover:underline text-sm">
-              Verify Now
-            </button>
-          )}
-        </div>
 
-        {/* KYC Identity Verification */}
-        <div className="p-4 border border-border rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Icon name="Shield" size={20} className="text-text-secondary" />
-              <div>
-                <h4 className="text-sm font-medium text-text-primary">
-                  Identity Verification (KYC)
-                </h4>
-                <p className="text-xs text-text-secondary">
-                  Verify your identity to increase trust
-                </p>
-              </div>
-            </div>
-            {userProfile.isVerified.identity ? (
-              <div className="flex items-center space-x-1 text-success">
-                <Icon name="Check" size={16} />
-                <span className="text-sm">Verified</span>
-              </div>
-            ) : (
-              <span className="text-xs text-warning">Not verified</span>
-            )}
-          </div>
 
-          {!userProfile.isVerified.identity && (
-            <div className="space-y-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  ID Document (Required) *
-                </label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    handleKycFileChange(
-                      "idDocument",
-                      e.target.files?.[0] || null
-                    )
-                  }
-                  className="block w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-700"
-                />
-                <p className="text-xs text-text-secondary mt-1">
-                  Upload your passport, driver's license, or national ID
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Proof of Address (Optional)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    handleKycFileChange(
-                      "proofOfAddress",
-                      e.target.files?.[0] || null
-                    )
-                  }
-                  className="block w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-secondary file:text-white hover:file:bg-secondary-700"
-                />
-                <p className="text-xs text-text-secondary mt-1">
-                  Upload a utility bill or bank statement
-                </p>
-              </div>
-
-              <button
-                onClick={handleKycSubmission}
-                disabled={!selectedKycFiles.idDocument || updateLoading.kyc}
-                className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                {updateLoading.kyc ? "Submitting..." : "Submit KYC Documents"}
-              </button>
-            </div>
-          )}
-        </div>
 
         <div className="flex items-center justify-between p-4 border border-border rounded-lg">
           <div className="flex items-center space-x-3">

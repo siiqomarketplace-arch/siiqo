@@ -4,18 +4,10 @@ import React from 'react';
 import { useRouter } from 'next/navigation'
 import Icon from '@/components/AppIcon';
 import Button from '@/components/ui/alt/ButtonAlt'
+import { Order } from "@/types/dashboard";
+
 type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 type DeliveryType = 'delivery' | 'pickup' | 'in-store';
-
-interface Order {
-  id: string;
-  customerName: string;
-  items: string[];
-  total: number;
-  status: OrderStatus;
-  orderDate: string;
-  deliveryType: DeliveryType;
-}
 
 interface RecentOrdersProps {
   orders: Order[];

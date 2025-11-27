@@ -4,30 +4,7 @@ import Image from '@/components/ui/AppImage';
 import Button from '@/components/ui/new/Button';
 import { Checkbox } from '@/components/ui/new/Checkbox';
 
-type ProductStatus = 'active' | 'draft' | 'out-of-stock' | 'inactive';
-interface Product {
-    id: any;
-    name: string;
-    image: string;
-    images?: { id: number; url: string; alt: string }[];
-    category: string;
-    sku: string;
-    price: number;
-    comparePrice?: number;
-    cost?: number;
-    stock: number;
-    lowStockThreshold?: number;
-    status: ProductStatus;
-    createdAt: string; // ISO Date string
-    views: number;
-    description?: string;
-    barcode?: string;
-    weight?: number;
-    dimensions?: { length?: number; width?: number; height?: number };
-    seoTitle?: string;
-    seoDescription?: string;
-    tags?: string[];
-}
+import { Product, ProductStatus } from '@/types/vendor/products';
 
 interface StatusConfig {
     bg: string;
@@ -42,11 +19,11 @@ interface StockStatusConfig {
 
 interface ProductGridProps {
     products: Product[];
-    selectedProducts: string[] | any;
-    onProductSelect: (productId: string, selected: boolean) => void;
+    selectedProducts: number[];
+    onProductSelect: (productId: string | number, selected: boolean) => void;
     onEditProduct: (productId: any) => void;
-    onDuplicateProduct: (productId: string) => void;
-    onDeleteProduct: (productId: string) => void;
+    onDuplicateProduct: (productId: string | number) => void;
+    onDeleteProduct: (productId: string | number) => void;
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({
@@ -114,7 +91,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                             <div className="absolute top-3 left-3">
                                 <div className="bg-background/80 backdrop-blur-sm rounded-md p-1">
                                     <Checkbox
-                                        checked={selectedProducts.includes(product.id)}
+                                        checked={selectedProducts.includes(Number(product.id))}
                                         onChange={(e) => onProductSelect(product.id, e.target.checked)}
                                     />
                                 </div>

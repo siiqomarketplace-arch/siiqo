@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, ShoppingBag, AlertCircle } from "lucide-react";
-import api from "@/lib/api_client";
-import api_endpoints from "@/hooks/api_endpoints";
+import { storefrontService } from "@/services/storefrontService";
 import { Storefront, APIResponse } from "@/types/storeFront";
 import {
   StorefrontCard,
@@ -24,11 +23,14 @@ const LandingPage: React.FC = () => {
       setError(null);
 
       try {
-        const data: APIResponse = await api.get(
-          api_endpoints.FETCH_STOREFRONTS
-        );
-
-        setStorefronts(data.storefronts);
+        const data: APIResponse = await storefrontService.getStorefronts();
+        console.log("Storefronts response:", data);
+        if (data && data.storefronts) {
+          setStorefronts(data.storefronts);
+        } else {
+          setStorefronts([]);
+          setError("Failed to load storefronts due to unexpected response.");
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load storefronts");
         console.error("Error fetching storefronts:", err);

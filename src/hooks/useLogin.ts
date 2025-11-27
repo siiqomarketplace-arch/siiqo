@@ -1,23 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
-import { loginUser, storeAuthData } from "@/lib/auth";
+import { storeAuthData } from "@/lib/auth";
+import { authService } from "@/services/authService";
 
-export const useLogin = (options?: { onRoleMismatch?: () => void }) => {
+export const useLogin = () => {
     const [isLoading, setIsLoading] = useState(false);
-
-    const handleRedirect = () => {
-        toast({
-            title: "Login Successful!",
-            description: "Redirecting to your dashboard...",
-        });
-
-        setTimeout(() => {
-            window.location.href = "/marketplace";
-        }, 1000);
-    };
+    const router = useRouter();
 
     const onSubmit = async (values: {
         email: string;
@@ -27,25 +19,23 @@ export const useLogin = (options?: { onRoleMismatch?: () => void }) => {
         setIsLoading(true);
 
         try {
-            const data = await loginUser(values.email, values.password);
+            const data = await authService.login(values.email, values.password);
+            
+            storeAuthData(data, values.rememberMe ?? false, values.email);
 
-            // Check if role is buyer
-            if (data.user.role === "buyer") {
-                storeAuthData(data, values.rememberMe ?? false, values.email);
-                handleRedirect();
-            } else if (data.user.role === "vendor") {
-                storeAuthData(data, values.rememberMe ?? false, values.email);
-                toast({
-                    title: "Login Successful!",
-                    description: "Redirecting to your dashboard...",
-                });
-                setTimeout(() => {
-                    window.location.href = "/vendor/dashboard";
-                }, 1000);
+            toast({
+                title: "Login Successful!",
+                description: "Redirecting to your dashboard...",
+            });
+
+            if (data.user?.role === "vendor") {
+                router.push("/vendor/dashboard");
+            } else if (data.user?.role === "buyer") {
+                router.push("/marketplace");
             } else {
-                // If a Vendor tried to login here
-                options?.onRoleMismatch?.();
+                router.push("/");
             }
+
         } catch (error: any) {
             console.error("Login error full:", error);
 

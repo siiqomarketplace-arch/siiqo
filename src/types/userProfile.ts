@@ -1,13 +1,14 @@
 import { LucideIconName } from "@/components/AppIcon";
 
 export interface UserProfileData {
-  id: number;
+  id?: string | number;
   name?: string;
   business_name?: string;
   email: string;
   phone?: string;
   country?: string;
   state?: string;
+  address?: string;
   referral_code?: string;
   referred_by?: string | null;
   role?: string;

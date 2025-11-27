@@ -21,65 +21,13 @@ import {
   User,
   ShieldCheck,
 } from "lucide-react";
-
-interface UserProfileData {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  location: string;
-  joinDate: string;
-  isVerified: {
-    email: boolean;
-    phone: boolean;
-    identity: boolean;
-  };
-  stats: {
-    itemsListed: number;
-    purchasesMade: number;
-    sellerRating: number;
-    totalReviews: number;
-  };
-  bio: string;
-}
-interface VendorData {
-  business_name?: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  isVerified?: boolean;
-  phone?: string;
-}
-
-interface SettingsState {
-  location: {
-    homeAddress: string;
-    searchRadius: number;
-    autoLocation: boolean;
-    showExactLocation: boolean;
-  };
-  notifications: {
-    newMessages: boolean;
-    priceDrops: boolean;
-    newListings: boolean;
-    orderUpdates: boolean;
-    marketingEmails: boolean;
-    pushNotifications: boolean;
-  };
-  privacy: {
-    profileVisibility: "public" | "buyers" | "private";
-    showOnlineStatus: boolean;
-    allowContactFromBuyers: boolean;
-    showRatingsPublicly: boolean;
-  };
-  account: {
-    twoFactorAuth: boolean;
-    emailVerified?: boolean;
-    phoneVerified?: boolean;
-    test?: any;
-  };
-}
+import { useLocationDetection } from "@/hooks/useLocationDetection";
+import { userService } from "@/services/userService";
+import {
+  UserProfileData,
+  VendorData,
+  SettingsState,
+} from "@/types/vendor/settings";
 
 type SettingSectionKey = keyof SettingsState;
 
@@ -111,22 +59,20 @@ const Settings = () => {
   });
 
   const [activeSection, setActiveSection] = useState("location");
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
+
+  const {
+    location: autoDetectedLocation,
+    loading: isAutoLocationLoading,
+    refresh: getCurrentLocation,
+  } = useLocationDetection();
+
+  const [isManualLocationLoading, setManualLocationLoading] = useState(false);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("https://server.bizengo.com/api/user/profile", {
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${localStorage.getItem("vendorToken")}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch profile");
-
-        const data = await res.json();
+        const data = await userService.getVendorProfile();
         setVendorData(data);
       } catch (err) {
         console.error("Error fetching vendor profile:", err);
@@ -135,95 +81,8 @@ const Settings = () => {
 
     fetchProfile();
   }, []);
-  // Function to get user's current location
-  const getCurrentLocation = async (): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject("Geolocation is not supported by this browser.");
-        return;
-      }
 
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
 
-          try {
-            // Use reverse geocoding to get address
-            const response = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-            );
-
-            if (!response.ok) {
-              throw new Error("Failed to get address");
-            }
-
-            const data = await response.json();
-            const address = `${data.locality || ""}, ${
-              data.principalSubdivision || ""
-            } ${data.postcode || ""}`.trim();
-            resolve(
-              address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-            );
-          } catch (error) {
-            // If reverse geocoding fails, just use coordinates
-            resolve(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          }
-        },
-        (error) => {
-          let errorMessage = "Unable to retrieve location.";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = "Location access denied by user.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = "Location information is unavailable.";
-              break;
-            case error.TIMEOUT:
-              errorMessage = "Location request timed out.";
-              break;
-          }
-          reject(errorMessage);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000, // 5 minutes
-        }
-      );
-    });
-  };
-
-  // Auto-fetch location when autoLocation is enabled
-  useEffect(() => {
-    if (settings.location.autoLocation) {
-      setLocationLoading(true);
-      setLocationError(null);
-
-      getCurrentLocation()
-        .then((address) => {
-          setSettings((prev) => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              homeAddress: address,
-            },
-          }));
-          setLocationLoading(false);
-        })
-        .catch((error) => {
-          setLocationError(error);
-          setLocationLoading(false);
-          // Turn off auto-location if it fails
-          setSettings((prev) => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              autoLocation: false,
-            },
-          }));
-        });
-    }
-  }, [settings.location.autoLocation]);
 
   const handleSettingChange = (
     section: SettingSectionKey,
@@ -239,20 +98,26 @@ const Settings = () => {
     }));
   };
 
-  const handleAutoLocationToggle = () => {
+  const handleAutoLocationToggle = async () => {
     const newAutoLocation = !settings.location.autoLocation;
 
     if (newAutoLocation) {
-      // Clear any previous errors when enabling
-      setLocationError(null);
+      const address = await getCurrentLocation();
+      setSettings((prev) => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          homeAddress: address,
+          autoLocation: newAutoLocation,
+        },
+      }));
+    } else {
+      handleSettingChange("location", "autoLocation", newAutoLocation);
     }
-
-    handleSettingChange("location", "autoLocation", newAutoLocation);
   };
 
   const handleManualLocationUpdate = async () => {
-    setLocationLoading(true);
-    setLocationError(null);
+    setManualLocationLoading(true);
 
     try {
       const address = await getCurrentLocation();
@@ -264,9 +129,9 @@ const Settings = () => {
         },
       }));
     } catch (error) {
-      setLocationError(error as string);
+      console.error("Error getting location:", error);
     } finally {
-      setLocationLoading(false);
+      setManualLocationLoading(false);
     }
   };
 
@@ -295,32 +160,33 @@ const Settings = () => {
           <input
             type="text"
             value={
-              locationLoading
+              isAutoLocationLoading || isManualLocationLoading
                 ? "Getting location..."
                 : settings.location.homeAddress
             }
             onChange={(e) =>
               handleSettingChange("location", "homeAddress", e.target.value)
             }
-            disabled={settings.location.autoLocation || locationLoading}
+            disabled={
+              settings.location.autoLocation ||
+              isAutoLocationLoading ||
+              isManualLocationLoading
+            }
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
           {!settings.location.autoLocation && (
             <button
               onClick={handleManualLocationUpdate}
-              disabled={locationLoading}
+              disabled={isManualLocationLoading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {locationLoading ? "Getting..." : "Update"}
+              {isManualLocationLoading ? "Getting..." : "Update"}
             </button>
           )}
         </div>
         <p className="text-xs text-gray-600 mt-1">
           This helps us show you the most relevant nearby products
         </p>
-        {locationError && (
-          <p className="text-xs text-red-600 mt-1">{locationError}</p>
-        )}
       </div>
 
       <div>
@@ -359,7 +225,7 @@ const Settings = () => {
           </div>
           <button
             onClick={handleAutoLocationToggle}
-            disabled={locationLoading}
+            disabled={isAutoLocationLoading}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
               settings.location.autoLocation ? "bg-blue-600" : "bg-gray-300"
             }`}

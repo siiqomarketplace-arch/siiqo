@@ -11,93 +11,15 @@ import PriceComparison from "./components/PriceComparison";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 import Button from "@/components/Button";
 import { useCartModal } from "@/context/cartModalContext";
+import { productService } from "@/services/productService";
+import { cartService } from "@/services/cartService";
+import {
+  ApiProductFull,
+  Product,
+  PriceComparisonItem,
+  Notification,
+} from "@/types/product-detail";
 
-interface ApiProductFull {
-  id: number | string;
-  product_name: string;
-  description: string;
-  product_price: number;
-  category: string;
-  images: string[];
-  status: string;
-  visibility: boolean;
-  discount?: number;
-  condition?: string;
-  rating?: number;
-  review_count?: number;
-  distance?: number;
-  location?: {
-    address: string;
-    lat: number;
-    lng: number;
-  };
-  seller?: {
-    id: number | string;
-    name: string;
-    avatar?: string;
-    rating?: number;
-    review_count?: number;
-    response_time?: string;
-    member_since?: string;
-    verified?: boolean;
-  };
-  availability?: string;
-  last_updated?: string | Date;
-  views?: number;
-  watchers?: number;
-}
-
-// Local Product Interface (transformed from API)
-interface Product {
-  id: string;
-  title: string;
-  price: number;
-  originalPrice: number;
-  discount?: number;
-  condition: string;
-  rating: number;
-  reviewCount: number;
-  distance: number;
-  location: {
-    address: string;
-    lat: number;
-    lng: number;
-  };
-  images: string[];
-  description: string;
-  specifications: { [key: string]: string };
-  seller: {
-    id: string;
-    name: string;
-    avatar: string;
-    rating: number;
-    reviewCount: number;
-    responseTime: string;
-    memberSince: string;
-    verifiedSeller: boolean;
-  };
-  availability: string;
-  lastUpdated: Date;
-  views: number;
-  watchers: number;
-}
-
-interface PriceComparisonItem {
-  id: string;
-  seller: string;
-  price: number;
-  condition: string;
-  distance: number;
-  rating: number;
-}
-
-interface Notification {
-  id: string;
-  type: "success" | "error" | "info";
-  message: string;
-}
-
-// Notification Component
 const NotificationToast: React.FC<{
   notification: Notification;
   onClose: (id: string) => void;
@@ -161,18 +83,7 @@ const ProductDetail = () => {
   const { openCart } = useCartModal();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "https://server.bizengo.com/api";
 
-  // Get auth token from sessionStorage (as specified in your note)
-  const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem("RSToken") || "";
-    }
-    return "";
-  };
-
-  // Add notification
   const addNotification = (
     type: "success" | "error" | "info",
     message: string
@@ -181,38 +92,8 @@ const ProductDetail = () => {
     setNotifications(prev => [...prev, { id, type, message }]);
   };
 
-  // Remove notification
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  // API call helper
-  const apiCall = async (url: string, options: RequestInit = {}) => {
-    const token = getAuthToken();
-    const headers = {
-      accept: "application/json",
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `HTTP ${response.status}: ${errorText || "Request failed"}`
-      );
-    }
-
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return await response.json();
-    }
-    return null;
   };
 
   const transformApiProduct = (apiProduct: ApiProductFull): Product => {
@@ -263,10 +144,7 @@ const ProductDetail = () => {
     };
   };
 
-  // Extract category from current product
   const currentCategory = product?.specifications?.Category;
-  console.log("Current Product Category:", currentCategory);
-  // `${apiBase}/marketplace/products?category=${category}&limit=10`
 
   const handleNavigateToVendorProfile = (vendor: Product["seller"]) => {
     if (!vendor || !vendor.name) return;
@@ -281,45 +159,35 @@ const ProductDetail = () => {
     router.push(`/seller-profile/${encodeURIComponent(businessSlug)}`);
   };
 
-  // Fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get product ID from URL params
         const productId = searchParams.get("id") || "1";
         if (!productId) {
           setError("Missing product ID.");
           return;
         }
 
-        const apiProduct = await apiCall(
-          `${apiBase}/marketplace/products/${productId}`
-        );
+        const apiProduct = await productService.getProductById(productId);
 
         console.log("API Product Response:", apiProduct);
         const transformedProduct = transformApiProduct(apiProduct);
         setProduct(transformedProduct);
 
-        // Get the category from the fetched product
-        const category = apiProduct.specifications?.Category;
+        const category = apiProduct.category;
         console.log("Current Product Category:", category);
 
-        // fetch similar products by category
         if (category) {
           try {
-            const similarResponse = await apiCall(
-              `${apiBase}/marketplace/products?category=${category}`
-            );
+            const similarResponse = await productService.getProducts();
 
             console.log("All product with thesame Category: ", similarResponse);
 
-            // Check if similarResponse is an array
             if (Array.isArray(similarResponse)) {
               const transformed = similarResponse.map(transformApiProduct);
-              // Filter out current product
               const filtered = transformed.filter(
                 (p: Product) => p.id !== productId
               );
@@ -333,7 +201,6 @@ const ProductDetail = () => {
 
         console.log("Fetched Product:", transformedProduct);
 
-        // Check if product is in wishlist
         if (typeof window !== "undefined") {
           const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
           setIsWishlisted(wishlist.includes(transformedProduct.id));
@@ -348,7 +215,7 @@ const ProductDetail = () => {
     };
 
     fetchProduct();
-  }, [searchParams]); // Remove product?.id and currentCategory from dependencies
+  }, [searchParams]);
 
   const handleWishlistToggle = () => {
     if (!product || typeof window === "undefined") return;
@@ -368,20 +235,13 @@ const ProductDetail = () => {
     setIsWishlisted(!isWishlisted);
   };
 
-  // Add to Cart with real API call
   const handleAddToCart = async (quantity: number = 1) => {
     if (!product) return;
 
     try {
       setIsAddingToCart(true);
 
-      await apiCall(`${apiBase}/cart/add`, {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: parseInt(product.id),
-          quantity: quantity,
-        }),
-      });
+      await cartService.addToCart(parseInt(product.id), quantity);
 
       setCartQuantity(prev => prev + quantity);
       addNotification(
@@ -402,17 +262,10 @@ const ProductDetail = () => {
     try {
       setIsBuyingNow(true);
 
-      await apiCall(`${apiBase}/cart/add`, {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: parseInt(product.id),
-          quantity: 1,
-        }),
-      });
+      await cartService.addToCart(parseInt(product.id), 1);
 
-      // Update local cart quantity first
       setCartQuantity(prev => prev + 1);
-      openCart(1); // Open cart modal to checkout step
+      openCart(1);
 
       addNotification("success", "Product added! Redirecting to checkout...");
     } catch (error) {
@@ -423,7 +276,6 @@ const ProductDetail = () => {
     }
   };
 
-  // Navigate to Seller Profile Contact Tab
   const handleContactSeller = () => {
     addNotification("info", "Opening seller contact...");
     const businessName = sessionStorage.getItem("selectedBusinessName");
@@ -441,7 +293,6 @@ const ProductDetail = () => {
           .replace(/(^-|-$)+/g, "");
 
       const businessSlug = slugify(businessName);
-      // Navigate to seller profile with contact tab
       router.push(
         `/seller-profile/${encodeURIComponent(businessSlug)}?tab=contact`
       );
@@ -537,7 +388,6 @@ const ProductDetail = () => {
     );
   }
 
-  // 4. Your filter should now work
   const similarProductsData = allProducts.filter(
     (p: Product) =>
       p.id !== product?.id &&
@@ -546,7 +396,6 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen mb-20 bg-background">
-      {/* Notifications */}
       {notifications.map(notification => (
         <NotificationToast
           key={notification.id}
@@ -555,11 +404,9 @@ const ProductDetail = () => {
         />
       ))}
 
-      {/* Desktop Layout */}
       <div className="hidden lg:block">
         <div className="px-6 py-8 mx-auto max-w-7xl">
           <div className="grid grid-cols-3 gap-8">
-            {/* Left Column - Images and Map */}
             <div className="col-span-2 space-y-6">
               <ImageGallery
                 images={product.images}
@@ -573,7 +420,6 @@ const ProductDetail = () => {
               />
             </div>
 
-            {/* Right Column - Product Info and Actions */}
             <div className="space-y-6">
               <ProductInfo
                 product={product}
@@ -658,7 +504,6 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Mobile Layout */}
       <div className="lg:hidden">
         <div className="space-y-0">
           <ImageGallery
@@ -709,7 +554,6 @@ const ProductDetail = () => {
               }
             />
 
-            {/* Mobile Action Buttons */}
             <div className="fixed bottom-0 left-0 right-0 p-4 space-y-3 bg-white border-t border-border">
               <Button
                 type="button"

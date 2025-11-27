@@ -4,7 +4,8 @@ import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
 import Button from "@/components/Button";
 import Skeleton from "@/components/skeleton";
-import { PopularItem, ApiVendor, ApiProduct, ApiResponse } from "@/types/popular";
+import { productService } from "@/services/productService";
+import { PopularItem, ApiProduct, ApiResponse } from "@/types/popular";
 
 const PopularInArea: React.FC = () => {
   const router = useRouter();
@@ -13,36 +14,28 @@ const PopularInArea: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // API URL
-  const API_URL = "https://server.bizengo.com/api/marketplace/popular-products";
-
-  // Function to generate consistent random distance based on product ID
   const generateDistance = (productId: number): string => {
     const seed = productId;
     const distance = (((Math.sin(seed * 9999) * 10000) % 3) + 0.5).toFixed(1);
     return `${Math.abs(parseFloat(distance))} miles`;
   };
 
-  // Function to generate consistent random rating and reviews based on product ID
   const generateRatingAndReviews = (productId: number) => {
     const seed = productId;
-    const rating = +(((Math.sin(seed * 1111) * 10000) % 1.5) + 3.5).toFixed(1); // 3.5 to 5.0
-    const reviews = Math.floor((Math.sin(seed * 2222) * 10000) % 200) + 20; // 20 to 220
+    const rating = +(((Math.sin(seed * 1111) * 10000) % 1.5) + 3.5).toFixed(1);
+    const reviews = Math.floor((Math.sin(seed * 2222) * 10000) % 200) + 20;
     return {
       rating: Math.abs(rating),
       reviews: Math.abs(reviews),
     };
   };
 
-  // Function to generate popularity score based on rating and reviews
   const calculatePopularity = (rating: number, reviews: number): number => {
-    // Simple popularity calculation: higher rating and more reviews = higher popularity
-    const ratingScore = (rating / 5) * 60; // Max 60 points for rating
-    const reviewScore = Math.min(reviews / 200, 1) * 40; // Max 40 points for reviews
+    const ratingScore = (rating / 5) * 60;
+    const reviewScore = Math.min(reviews / 200, 1) * 40;
     return Math.round(ratingScore + reviewScore);
   };
 
-  // Function to transform API product to PopularItem
   const transformApiProduct = (apiProduct: ApiProduct): PopularItem => {
     const { rating, reviews } = generateRatingAndReviews(apiProduct.id);
     const popularity = calculatePopularity(rating, reviews);
@@ -50,7 +43,7 @@ const PopularInArea: React.FC = () => {
     return {
       id: apiProduct.id,
       title: apiProduct.product_name,
-      price: apiProduct.product_price, // Keep as is since your prices appear to be in correct format
+      price: apiProduct.product_price,
       image:
         apiProduct.images && apiProduct.images.length > 0
           ? apiProduct.images[0]
@@ -65,52 +58,35 @@ const PopularInArea: React.FC = () => {
     };
   };
 
-  // Fetch products from API
   const fetchPopularProducts = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(API_URL, {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const data: ApiResponse = await productService.getProducts();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ApiResponse = await response.json();
-
-      // Transform API products to PopularItem format
-      // Fixed: Remove problematic filter and only validate essential fields
       const transformedProducts = data.products
         .filter(
           (product) =>
-            // Only filter out products missing essential data
             product.product_name &&
             product.product_price !== undefined &&
             product.vendor?.business_name
         )
         .map(transformApiProduct)
-        .sort((a, b) => b.popularity - a.popularity); // Sort by popularity descending
+        .sort((a, b) => b.popularity - a.popularity);
 
-      console.log("Transformed popular products:", transformedProducts); // Debug log
+      console.log("Transformed popular products:", transformedProducts);
 
       setPopularItems(transformedProducts);
     } catch (err) {
       console.error("Error fetching popular products:", err);
       setError("Failed to load popular products. Please try again later.");
-      setPopularItems([]); // Clear products on error
+      setPopularItems([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchPopularProducts();
   }, []);
@@ -138,12 +114,10 @@ const PopularInArea: React.FC = () => {
     return "text-text-secondary";
   };
 
-  // Retry function for error state
   const handleRetry = () => {
     fetchPopularProducts();
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -169,7 +143,6 @@ const PopularInArea: React.FC = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -195,7 +168,6 @@ const PopularInArea: React.FC = () => {
     );
   }
 
-  // Empty state - no products available
   if (popularItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -223,10 +195,8 @@ const PopularInArea: React.FC = () => {
     );
   }
 
-  // Products grid
   return (
     <div>
-      {/* Header with refresh button */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-lg font-semibold text-text-primary">
@@ -236,7 +206,6 @@ const PopularInArea: React.FC = () => {
             {popularItems.length} products found
           </p>
         </div>
-        {/* refresh button */}
 
         <div className="flex items-center gap-4">
           <Button
@@ -264,7 +233,6 @@ const PopularInArea: React.FC = () => {
             onClick={() => handleItemClick(item)}
             className="transition-all duration-200 border rounded-lg cursor-pointer bg-surface border-border hover:shadow-elevation-2"
           >
-            {/* Image */}
             <div className="relative w-full h-32 overflow-hidden rounded-t-lg md:h-40">
               <Image
                 src={item.image}
@@ -273,7 +241,6 @@ const PopularInArea: React.FC = () => {
                 className="object-cover"
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 onError={e => {
-                  // Fallback image on error
                   const target = e.target as HTMLImageElement;
                   target.src =
                     "https://via.placeholder.com/400x400?text=Product+Image";
@@ -303,7 +270,6 @@ const PopularInArea: React.FC = () => {
               </Button>
             </div>
 
-            {/* Content */}
             <div className="p-3">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="flex-1 text-sm font-medium text-text-primary line-clamp-2">

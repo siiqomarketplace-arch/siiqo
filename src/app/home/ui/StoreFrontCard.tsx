@@ -22,22 +22,28 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
     }
   }, [storefront]);
 
-  const formatEstablishedDate = (dateString: string): string => {
+  const formatEstablishedDate = (dateString: string | undefined): string => {
+    if (!dateString) {
+      return "Established 1 year ago";
+    }
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffTime = Math.abs(now.getTime() - date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      let years = now.getFullYear() - date.getFullYear();
+      
+      // If the calculation results in NaN or a negative number, default to 1
+      if (isNaN(years) || years < 0) {
+        years = 1;
+      }
+      
+      // If years is 0, show "Established this year"
+      if (years === 0) {
+        return "Established this year";
+      }
 
-      if (diffDays <= 1) return "Established today";
-      if (diffDays <= 7) return `Established ${diffDays} days ago`;
-      if (diffDays <= 30)
-        return `Established ${Math.ceil(diffDays / 7)} weeks ago`;
-      if (diffDays <= 365)
-        return `Established ${Math.ceil(diffDays / 30)} months ago`;
-      return `Established ${Math.ceil(diffDays / 365)} years ago`;
+      return `Established ${years} year${years > 1 ? 's' : ''} ago`;
     } catch {
-      return "Recently established";
+      return "Established 1 year ago";
     }
   };
 
@@ -114,7 +120,7 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
         </p>
         <div className="flex items-center justify-between text-sm">
           <div className="text-gray-500">
-            {formatEstablishedDate(storefront.established_at)}
+            {formatEstablishedDate(storefront.vendor_info?.member_since)}
           </div>
           {storefront.vendor && (
             <div className="flex items-center space-x-1 font-medium text-green-600">

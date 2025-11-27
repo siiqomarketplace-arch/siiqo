@@ -4,18 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation'
 import Icon from '@/components/AppIcon';
 import Button from '@/components/ui/alt/ButtonAlt';
+import { Notification } from "@/types/dashboard";
 
 type NotificationType = 'order' | 'review' | 'inventory' | 'payment' | 'system';
 type FilterType = 'all' | 'unread' | NotificationType;
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
 
 interface NotificationPanelProps {
   notifications: Notification[];

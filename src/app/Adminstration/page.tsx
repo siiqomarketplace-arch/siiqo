@@ -30,60 +30,8 @@ import {
   Building2,
   Menu,
 } from "lucide-react";
-
-// Types
-interface AdminStats {
-  products: {
-    active: number;
-    inactive_or_hidden: number;
-    total: number;
-  };
-  storefronts: number;
-  users: {
-    buyers: number;
-    total_accounts: number;
-    vendors: number;
-  };
-}
-
-interface User {
-  id: number;
-  email: string;
-  name: string;
-  phone: string;
-  role: string;
-  account_type: string;
-  referral_code: string;
-  referred_by: string | null;
-  business_name?: string;
-  business_type?: string;
-  kyc_status?: string;
-}
-
-interface Vendor {
-  business_name: string;
-  email: string;
-  firstname: string;
-  id: number;
-  lastname: string;
-  phone: string;
-  profile_pic: string | null;
-}
-
-interface Storefront {
-  id: number;
-  business_name: string;
-  description: string;
-  established_at: string;
-  ratings: number;
-  business_banner: string | null;
-  vendor: Vendor | null;
-}
-
-interface StorefrontResponse {
-  count: number;
-  storefronts: Storefront[];
-}
+import { adminService } from "@/services/adminService";
+import { AdminStats, User, Storefront, StorefrontResponse } from "@/types/admin";
 
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
@@ -104,84 +52,35 @@ const AdminDashboard: React.FC = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Get admin token
-  const getAdminToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("adminToken");
-    }
-    return null;
-  };
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [statsData, usersData, storefrontsData] = await Promise.all([
+          adminService.getDashboardStats(),
+          adminService.getAllUsers(),
+          adminService.getAllStorefronts(),
+        ]);
+        setStats(statsData);
+        setUsers(usersData.users || []);
+        setStorefronts(storefrontsData.storefronts || []);
+        setStorefrontCount(storefrontsData.count || 0);
+      } catch (error) {
+        console.error("Failed to load admin data:", error);
+        setAlerts((prev) => [...prev, "Failed to load dashboard data"]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  // API call helper
-  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error("No admin token found");
-    }
-
-    const response = await fetch(`https://server.bizengo.com/api${endpoint}`, {
-      ...options,
-      headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
-    }
-
-    return response.json();
-  };
-
-  // Load data functions
-  const loadStats = async () => {
-    try {
-      const data = await apiCall("/admin/stats");
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to load stats:", error);
-      setAlerts((prev) => [...prev, "Failed to load statistics"]);
-      // Fallback mock data matching real structure
-      setStats({
-        products: { active: 1, inactive_or_hidden: 0, total: 1 },
-        storefronts: storefrontCount || 8,
-        users: { buyers: 3, total_accounts: 4, vendors: 1 },
-      });
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      const data = await apiCall("/admin/users");
-      setUsers(data.users || []);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-      setAlerts((prev) => [...prev, "Failed to load users"]);
-    }
-  };
-
-  const loadStorefronts = async () => {
-    try {
-      const data: StorefrontResponse = await apiCall("/admin/storefronts");
-      setStorefronts(data.storefronts || []);
-      setStorefrontCount(data.count || 0);
-    } catch (error) {
-      console.error("Failed to load storefronts:", error);
-      setAlerts((prev) => [...prev, "Failed to load storefronts"]);
-    }
-  };
-
-  // Delete functions
   const deleteUser = async (accountType: string, userId: number) => {
     if (!confirm(`Are you sure you want to delete this ${accountType}?`))
       return;
 
     try {
-      await apiCall(`/admin/users/${accountType}/${userId}`, {
-        method: "DELETE",
-      });
+      await adminService.deleteUser(accountType, userId);
       setUsers(users.filter((user) => user.id !== userId));
       setAlerts((prev) => [...prev, `${accountType} deleted successfully`]);
     } catch (error) {
@@ -194,7 +93,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm("Are you sure you want to delete this storefront?")) return;
 
     try {
-      await apiCall(`/admin/storefronts/${storefrontId}`, { method: "DELETE" });
+      await adminService.deleteStorefront(storefrontId);
       setStorefronts(storefronts.filter((store) => store.id !== storefrontId));
       setAlerts((prev) => [...prev, "Storefront deleted successfully"]);
     } catch (error) {
@@ -203,18 +102,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Initial load
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([loadStorefronts()]); // Load storefronts first
-      await Promise.all([loadStats(), loadUsers()]);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
-
-  // Filter users
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -797,7 +684,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         <button
                           onClick={() =>
-                            router.push(`/admin/storefronts/${store.id}`)
+                            router.push(`/marketplace/storefronts/${store.id}`)
                           }
                           className="p-1 sm:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
                         >

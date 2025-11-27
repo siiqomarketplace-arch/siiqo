@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { locationService } from "@/services/locationService";
 
 export const useLocationDetection = () => {
     const [location, setLocation] = useState({ country: "", state: "" });
@@ -8,8 +9,7 @@ export const useLocationDetection = () => {
     const detectLocation = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await fetch("https://ipapi.co/json/");
-            const data = await response.json();
+            const data = await locationService.detectLocation();
 
             if (data.country_name && data.region) {
                 setLocation({ country: data.country_name, state: data.region });

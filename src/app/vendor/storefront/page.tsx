@@ -4,14 +4,15 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Head from "next/head";
 import StorefrontCustomization from "./components/StorefrontCustomization";
-import StorefrontSettings from "./components/StorefrontSettings";
 import Button from "@/components/ui/alt/ButtonAlt";
 import Icon from "@/components/AppIcon";
 import BusinessStorefrontView from "./business-view";
-import { mockStorefrontData } from "@/constants/vendor/storefront";
 import { ApiStorefrontResponse, StorefrontContact, StorefrontData, VendorData } from "@/types/vendor/storefront";
+import { toast } from "@/hooks/use-toast";
+import { storefrontService } from "@/services/storefrontService";
+import { vendorService } from "@/services/vendorService";
 
-type TabId = "public" | "preview" | "customize" | "settings";
+type TabId = "public" | "preview" | "customize";
 
 const VendorStorefront: React.FC = () => {
   const router = useRouter();
@@ -24,148 +25,92 @@ const VendorStorefront: React.FC = () => {
   const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load vendor data
-    const vendor = JSON.parse(localStorage.getItem("vendorAuth") || "{}");
-    setVendorData(vendor);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [storefrontRes, productsRes] = await Promise.all([
+          vendorService.getStorefront(),
+          vendorService.getMyProducts(),
+        ]);
+        const storefrontData = storefrontRes.data;
+        const products = productsRes.products;
 
-    // Load storefront data
-    loadStorefrontData();
-  }, [router]);
-
-const loadStorefrontData = async () => {
-  setLoading(true);
-  try {
-    const token = localStorage.getItem("vendorToken");
-
-    if (!token) {
-      throw new Error("No vendor token found");
-    }
-
-    const res = await fetch(
-      "https://server.bizengo.com/api/vendor/storefront",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        setStorefrontData({
+          ...storefrontData,
+          products,
+        });
+      } catch (error) {
+        console.error("Failed to load storefront data", error);
+        toast({
+          title: "Error",
+          description: "Failed to load storefront data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    );
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data: ApiStorefrontResponse = await res.json();
-
-    if (!data || typeof data !== "object") {
-      throw new Error("Invalid API response format");
-    }
-
-    const sf = data.storefront || {};
-    const products = Array.isArray(data.products) ? data.products : [];
-
-    const contact: StorefrontContact = {
-      email:
-        typeof sf.email === "string"
-          ? sf.email
-          : mockStorefrontData.contact.email,
-      phone:
-        typeof sf.phone === "string"
-          ? sf.phone
-          : mockStorefrontData.contact.phone,
-      address:
-        sf.state && sf.country
-          ? `${sf.state}, ${sf.country}`
-          : mockStorefrontData.contact.address,
-      website:
-        typeof sf.website === "string"
-          ? sf.website
-          : mockStorefrontData.contact.website,
     };
-
-    setStorefrontData({
-      ...mockStorefrontData,
-      businessName:
-        typeof sf.business_name === "string"
-          ? sf.business_name
-          : mockStorefrontData.businessName,
-      description:
-        typeof sf.description === "string"
-          ? sf.description
-          : mockStorefrontData.description,
-      contact,
-      slug: sf.business_name
-        ? sf.business_name.toLowerCase().replace(/\s+/g, "-")
-        : mockStorefrontData.slug,
-      gallery:
-        products
-          .flatMap(p => (Array.isArray(p.images) ? p.images : []))
-          .filter((img): img is string => typeof img === "string") ||
-        mockStorefrontData.gallery,
-      bannerImage: products[0]?.images?.[0] || mockStorefrontData.bannerImage,
-      // check is the is_published is true by default and set it to false until published.
-      isPublished: sf.is_published === true ? true : false,
-      publishedAt: sf.published_at || null,
-      views: mockStorefrontData.views,
-      clicks: mockStorefrontData.clicks,
-      orders: mockStorefrontData.orders,
-      lastUpdated: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error("Error loading storefront:", err);
-
-    // Fallback to mock data so the component doesn't break
-    setStorefrontData({
-      ...mockStorefrontData,
-      isPublished: false,
-      publishedAt: null,
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+    loadData();
+  }, []);
 
   const handleSaveStorefront = async (updatedData: Partial<StorefrontData>) => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("vendorToken");
+      let bannerUrl = storefrontData?.bannerImage;
+      let logoUrl = storefrontData?.logo;
+
+      if (updatedData.bannerFile) {
+        const formData = new FormData();
+        formData.append("file", updatedData.bannerFile);
+        const response = await vendorService.uploadImage(updatedData.bannerFile);
+        bannerUrl = response.urls[0];
+      }
+
+      if (updatedData.logoFile) {
+        const formData = new FormData();
+        formData.append("file", updatedData.logoFile);
+        const response = await vendorService.uploadImage(updatedData.logoFile);
+        logoUrl = response.urls[0];
+      }
 
       const payload = {
         business_name: updatedData.businessName || storefrontData?.businessName,
         description: updatedData.description || storefrontData?.description,
-        business_banner: updatedData.gallery || storefrontData?.gallery,
+        business_banner: [bannerUrl, logoUrl],
+        template_options: {
+          theme: updatedData.template_options?.theme || storefrontData?.template_options?.theme || 'light',
+          font: updatedData.template_options?.font || storefrontData?.template_options?.font || 'Arial',
+        },
+        about: updatedData.about || storefrontData?.about,
+        show_call_button: updatedData.showCallButton,
+        team_size: updatedData.teamSize,
+        business_hours: updatedData.businessHours,
+        established: updatedData.established,
       };
 
-      const res = await fetch(
-        "https://server.bizengo.com/api/vendor/storefront",
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to update storefront");
-      const data = await res.json();
+      const response = await vendorService.updateStorefront(payload);
+      const data = response.data;
 
       setStorefrontData((prev) =>
         prev
           ? {
               ...prev,
-              businessName: data.business_name,
-              description: data.description,
-              gallery: data.business_banner || prev.gallery,
-              bannerImage: data.business_banner?.[0] || prev.bannerImage,
-              lastUpdated: new Date().toISOString(),
+              ...data,
             }
           : prev
       );
+      toast({
+        title: "Storefront Saved!",
+        description: "Your changes have been saved successfully.",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Failed to save storefront:", error);
-      alert("Failed to save changes. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "default",
+      });
     } finally {
       setSaving(false);
     }
@@ -174,36 +119,11 @@ const loadStorefrontData = async () => {
 const handlePublishStorefront = async () => {
   setSaving(true);
   try {
-    const token = localStorage.getItem("vendorToken");
-
-    if (!token) {
-      throw new Error("No vendor token found");
-    }
-
     const newPublishedState = !storefrontData?.isPublished;
 
-    const payload = {
-      is_published: newPublishedState,
-      published_at: newPublishedState ? new Date().toISOString() : null,
-    };
+    const data = await storefrontService.publishStorefront(newPublishedState);
 
-    const res = await fetch(
-      "https://server.bizengo.com/api/vendor/storefront",
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(`Failed to update storefront: ${res.status}`);
-    }
-
-    const data = await res.json();
+    console.log("Publish storefront response:", data);
 
     // Update local state with the the publish response
     setStorefrontData(prev =>
@@ -218,14 +138,20 @@ const handlePublishStorefront = async () => {
     );
 
     // Show success message
-    alert(
-      newPublishedState
-        ? "Storefront published successfully!"
-        : "Storefront unpublished successfully!"
-    );
+    toast({
+      title: newPublishedState ? "Storefront Published!" : "Storefront Unpublished!",
+      description: newPublishedState
+        ? "Your storefront is now live."
+        : "Your storefront is now a draft.",
+      variant: "default",
+    });
   } catch (error) {
     console.error("Failed to publish storefront:", error);
-    alert("Failed to update storefront. Please try again.");
+    toast({
+      title: "Error",
+      description: "Failed to update storefront. Please try again.",
+      variant: "default",
+    });
   } finally {
     setSaving(false);
   }
@@ -258,12 +184,6 @@ const handlePublishStorefront = async () => {
       label: "Customize",
       icon: "Palette",
       description: "Design your storefront",
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: "Settings",
-      description: "Configure options",
     },
   ];
 
@@ -410,26 +330,11 @@ const handlePublishStorefront = async () => {
           {/* Tab Content */}
           <div>
             {activeTab === "public" && (
-              // <PublicStorefront
-              // 	storefrontData={storefrontData}
-              // 	isPreview={true}
-              // />
-              <BusinessStorefrontView />
+              <BusinessStorefrontView storefrontData={storefrontData} products={storefrontData?.products || []} />
             )}
 
             {activeTab === "preview" && (
-              // <StorefrontPreview
-              // 	storefrontData={storefrontData}
-              // />
-              <BusinessStorefrontView />
-            )}
-
-            {activeTab === "settings" && (
-              <StorefrontSettings
-                storefrontData={storefrontData}
-                onSave={handleSaveStorefront}
-                saving={saving}
-              />
+              <BusinessStorefrontView storefrontData={storefrontData} products={storefrontData?.products || []} />
             )}
 
             {activeTab === "customize" && (

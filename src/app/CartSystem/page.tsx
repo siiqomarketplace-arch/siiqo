@@ -68,19 +68,6 @@ const handleCheckout = () => {
   const handlePaymentSubmit = (data: any) => {
     setPaymentData(data);
 
-    // TODO: API Integration - Submit order to backend
-    // const orderData = {
-    //   cartItems,
-    //   deliveryInfo: deliveryData,
-    //   paymentInfo: data,
-    //   totalAmount: totalPrice + deliveryFee
-    // };
-    // const response = await fetch('/api/orders', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(orderData)
-    // });
-
     console.log("Order Summary:", {
       delivery: deliveryData,
       payment: data,

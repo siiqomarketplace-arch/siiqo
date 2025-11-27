@@ -3,15 +3,7 @@ import { useRouter } from 'next/navigation'
 import Icon from '@/components/AppIcon';
 import Button from '@/components/ui/alt/ButtonAlt';
 import AppImage from '@/components/ui/alt/AppImageAlt';
-
-interface Product {
-	id: string;
-	name: string;
-	image: string;
-	orders: number;
-	revenue: number;
-	rating: number;
-}
+import { Product } from "@/types/dashboard";
 
 interface ProductOverviewProps {
 	products: Product[];
@@ -24,7 +16,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 		return (
 			<div className="bg-card rounded-lg border border-border p-6">
 				<h2 className="font-heading font-semibold text-lg text-text-primary mb-6">
-					Top Products
+					My Products
 				</h2>
 				<div className="text-center py-8">
 					<Icon name="Package" size={48} className="text-text-muted mx-auto mb-4" />
@@ -32,15 +24,16 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 					<p className="text-sm text-text-muted mt-1 mb-4">
 						Add your first product to get started
 					</p>
-					<Button
-						variant="primary"
-						size="sm"
-						onClick={() => router.push('../products')}
-					>
-						<Icon name="Plus" size={16} className="mr-2" />
-						Add Product
-					</Button>
-				</div>
+					                        																						<Button
+					                        																							variant="primary"
+					                        																							size="sm"
+					                        																							onClick={() => router.push('/create-listing')}
+					                        																						>
+					                        																							<span>
+					                        																								<Icon name="Plus" size={16} className="mr-2" />
+					                        																								Add Product
+					                        																							</span>
+					                        																						</Button>				</div>
 			</div>
 		);
 	}
@@ -49,7 +42,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 		<div className="bg-card rounded-lg border border-border p-6">
 			<div className="flex items-center justify-between mb-6">
 				<h2 className="font-heading font-semibold text-lg text-text-primary">
-					Top Products
+					My Products
 				</h2>
 				<Button
 					variant="outline"
@@ -84,10 +77,10 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 							</p>
 							<div className="flex items-center space-x-3 mt-1">
 								<span className="text-sm text-text-muted">
-									{product.orders} orders
+									{product.orders ?? 0} orders
 								</span>
 								<span className="text-sm font-medium text-success">
-									${product.revenue.toFixed(2)}
+									${(product.revenue ?? 0).toFixed(2)}
 								</span>
 							</div>
 						</div>
@@ -95,9 +88,9 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 						<div className="text-right">
 							<div className="flex items-center space-x-1">
 								<Icon name="Star" size={14} className="text-warning fill-current" />
-								<span className="text-sm font-medium text-text-primary">
-									{product.rating}
-								</span>
+<span className="text-sm font-medium text-warning">
+                                  {(product.rating ?? 0).toFixed(1)}
+                                </span>
 							</div>
 						</div>
 					</div>
@@ -108,9 +101,8 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 			<div className="mt-6 pt-4 border-t border-border">
 				<Button
 					variant="outline"
-					className="w-full"
-					onClick={() => router.push('../products')}
-				>
+					                    className="w-full"
+					                    onClick={() => router.push('/create-listing')}				>
 					<Icon name="Plus" size={16} className="mr-2" />
 					Add New Product
 				</Button>

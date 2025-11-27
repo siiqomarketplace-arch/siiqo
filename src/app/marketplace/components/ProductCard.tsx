@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
-import { Products } from "@/types/products";
+import { Product } from "@/types/products";
 import Skeleton from "@/components/skeleton";
 import Button from "@/components/Button";
 
 interface ProductCardProps {
-  product: Products;
-  onAddToCart: (product: Products) => void;
-  onQuickView: (product: Products) => void;
+  product: Product;
+  onAddToCart: (product: Product) => void;
+  onQuickView: (product: Product) => void;
   onAddToWishlist: (productId: number | string, isWishlisted: boolean) => void;
   cartQuantities: { [key: number]: number };
   isAddingToCart: { [key: number]: boolean };
@@ -35,8 +35,8 @@ const ProductCard = ({
     >
       <div className="relative overflow-hidden bg-gray-100 aspect-square">
         <img
-          src={product.image}
-          alt={product.name}
+          src={product.images[0]}
+          alt={product.product_name}
           className="object-cover w-full h-full"
           loading="lazy"
         />
@@ -67,9 +67,9 @@ const ProductCard = ({
       <div className="p-4">
         <div className="mb-2">
           <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
-            {product.name}
+            {product.product_name}
           </h3>
-          <p className="text-xs text-gray-500">{product.vendor}</p>
+          <p className="text-xs text-gray-500">{product.vendor.business_name}</p>
         </div>
 
         <div className="flex items-center mb-2 space-x-1">
@@ -78,7 +78,7 @@ const ProductCard = ({
               <Star
                 key={i}
                 className={`w-3 h-3 ${
-                  i < Math.floor(product.rating)
+                  i < Math.floor(product.rating || 0)
                     ? "text-yellow-400 fill-current"
                     : "text-gray-300"
                 }`}
@@ -91,7 +91,7 @@ const ProductCard = ({
         <div className="mb-3">
           <div className="flex items-center space-x-2">
             <span className="text-lg font-bold text-gray-900">
-              ₦{product.price.toLocaleString()}
+              ₦{product.product_price.toLocaleString()}
             </span>
             {product.salePrice && (
               <span className="text-sm text-gray-500 line-through">

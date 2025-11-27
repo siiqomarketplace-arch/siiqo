@@ -8,56 +8,14 @@ import ProductCard from "./components/ProductCard";
 import QuickFilters from "./components/QuickFilters";
 import SearchSuggestions from "./components/SearchSuggestions";
 import MapViewToggle from "./components/MapViewToggle";
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  seller: string;
-  rating: number;
-  reviewCount: number;
-  distance: number;
-  condition: string;
-  category: string;
-  isVerified: boolean;
-  availability: string;
-  location: string;
-  postedDate: string;
-}
-
-interface Filter {
-  type: string;
-  label: string;
-  value: any;
-  id: string;
-}
-
-// API Response interfaces
-interface ApiVendor {
-  business_name: string;
-  email: string;
-  id: number;
-}
-
-interface ApiProduct {
-  category: string;
-  id: number;
-  images: string[];
-  product_name: string;
-  product_price: number;
-  vendor: ApiVendor;
-  // Optional fields
-  description?: string;
-  status?: string;
-  visibility?: boolean;
-}
-
-interface ApiResponse {
-  count: number;
-  products: ApiProduct[];
-}
+import { productService } from "@/services/productService";
+import {
+  Product,
+  Filter,
+  ApiVendor,
+  ApiProduct,
+  ApiResponse,
+} from "@/types/search-results";
 
 const SearchResults = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,10 +31,6 @@ const SearchResults = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // API URL
-  const API_URL = "https://server.bizengo.com/api/marketplace/popular-products";
-
-  // Function to generate consistent random data based on product ID
   const generateProductExtras = (productId: number) => {
     const seed = productId;
     const random = (min: number, max: number, multiplier: number = 1) => {
@@ -85,9 +39,9 @@ const SearchResults = () => {
       );
     };
 
-    const rating = +(random(35, 50, 1111) / 10).toFixed(1); // 3.5 to 5.0
+    const rating = +(random(35, 50, 1111) / 10).toFixed(1);
     const reviewCount = Math.floor(random(20, 200, 2222));
-    const distance = +(random(5, 50, 3333) / 10).toFixed(1); // 0.5 to 5.0 miles
+    const distance = +(random(5, 50, 3333) / 10).toFixed(1);
     const conditions = ["New", "Like New", "Good", "Fair"];
     const condition = conditions[Math.floor(random(0, 3, 4444))];
     const locations = [
@@ -99,7 +53,6 @@ const SearchResults = () => {
     ];
     const location = locations[Math.floor(random(0, 4, 5555))];
 
-    // Generate posted date (within last 30 days)
     const daysAgo = Math.floor(random(1, 30, 6666));
     const postedDate = new Date();
     postedDate.setDate(postedDate.getDate() - daysAgo);
@@ -110,13 +63,12 @@ const SearchResults = () => {
       distance,
       condition,
       location,
-      postedDate: postedDate.toISOString().split("T")[0], // YYYY-MM-DD format
-      isVerified: random(0, 1, 7777) > 0.3, // 70% chance of being verified
+      postedDate: postedDate.toISOString().split("T")[0],
+      isVerified: random(0, 1, 7777) > 0.3,
       availability: random(0, 1, 8888) > 0.2 ? "In Stock" : "Limited Stock",
     };
   };
 
-  // Transform API product to our Product interface
   const transformApiProduct = (apiProduct: ApiProduct): Product => {
     const extras = generateProductExtras(apiProduct.id);
 
@@ -124,7 +76,7 @@ const SearchResults = () => {
       id: apiProduct.id,
       name: apiProduct.product_name,
       price: apiProduct.product_price,
-      originalPrice: Math.round(apiProduct.product_price * 1.2), // Simulate original price
+      originalPrice: Math.round(apiProduct.product_price * 1.2),
       image:
         apiProduct.images && apiProduct.images.length > 0
           ? apiProduct.images[0]
@@ -142,31 +94,16 @@ const SearchResults = () => {
     };
   };
 
-  // Fetch products from API
   const fetchProducts = async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(API_URL, {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const data: ApiResponse = await productService.getProducts();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ApiResponse = await response.json();
-
-      // Transform API products to our Product interface
       const transformedProducts = data.products
         .filter(
           (product) =>
-            // Only filter out products missing essential data
             product.product_name &&
             product.product_price !== undefined &&
             product.vendor?.business_name
@@ -214,7 +151,6 @@ const SearchResults = () => {
     "Sports equipment",
   ];
 
-  // Effect to load initial products based on search params
   useEffect(() => {
     const query = searchParams.get("q") || "";
     const view = searchParams.get("view") || "list";
@@ -222,15 +158,12 @@ const SearchResults = () => {
     setSearchQuery(query);
     setViewMode(view as "list" | "map");
 
-    // Fetch products from API
     fetchProducts();
   }, [searchParams]);
 
-  // This useMemo hook calculates the products to be displayed with search functionality
   const displayProducts = useMemo(() => {
     let currentProducts = [...products];
 
-    // 1. Apply search query filter first
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       currentProducts = currentProducts.filter(
@@ -242,7 +175,6 @@ const SearchResults = () => {
       );
     }
 
-    // 2. Apply additional filters from activeFilters
     activeFilters.forEach((filter) => {
       switch (filter.type) {
         case "price":
@@ -283,7 +215,6 @@ const SearchResults = () => {
       }
     });
 
-    // 3. Apply sorting
     switch (sortBy) {
       case "price-low":
         currentProducts.sort((a, b) => a.price - b.price);
@@ -304,7 +235,6 @@ const SearchResults = () => {
         currentProducts.sort((a, b) => b.rating - a.rating);
         break;
       default:
-        // 'relevance' - for search results, prioritize name matches first
         if (searchQuery.trim()) {
           const query = searchQuery.toLowerCase();
           currentProducts.sort((a, b) => {
@@ -451,7 +381,6 @@ const SearchResults = () => {
       )}
 
       <div className="flex">
-        {/* Desktop Sidebar Filters */}
         <div className="hidden border-r lg:block w-80 border-border bg-surface">
           <div className="sticky top-32 h-[calc(100vh-8rem)] overflow-y-auto">
             <div className="p-6">
@@ -474,9 +403,7 @@ const SearchResults = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1">
-          {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div className="px-4 py-3 border-b md:px-6 bg-surface-secondary border-border">
               <div className="flex flex-wrap items-center gap-2 space-x-2">
@@ -507,12 +434,10 @@ const SearchResults = () => {
             </div>
           )}
 
-          {/* Quick Filters - Mobile */}
           <div className="px-4 py-3 bg-white border-b lg:hidden border-border">
             <QuickFilters onApplyFilter={handleQuickFilter} />
           </div>
 
-          {/* Sort and Results Count */}
           <div className="px-4 py-4 border-b md:px-6 border-border bg-surface">
             <div className="flex items-center justify-between">
               <div className="text-sm text-text-secondary">
@@ -544,7 +469,6 @@ const SearchResults = () => {
             </div>
           </div>
 
-          {/* Products Grid */}
           <div className="px-4 py-6 md:px-6">
             {isLoading ? (
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -626,7 +550,6 @@ const SearchResults = () => {
             )}
           </div>
 
-          {/* Load More */}
           {!isLoading && !error && displayProducts.length > 0 && (
             <div className="px-4 py-6 text-center md:px-6">
               <button
@@ -640,7 +563,6 @@ const SearchResults = () => {
         </div>
       </div>
 
-      {/* Filter Drawer */}
       <FilterDrawer
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}

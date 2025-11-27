@@ -19,11 +19,11 @@ const ConditionalHeader: React.FC = () => {
     sessionStorage.removeItem("RSUser");
     sessionStorage.removeItem("RSUserRole");
     localStorage.removeItem("authToken");
-    router.push("../auth");
+    router.push("/auth/login");
   };
 
   // Routes where header should be hidden
-  const hiddenHeaderRoutes = ["/Administration", "/auth", "/vendor/auth"];
+  const hiddenHeaderRoutes = ["/Administration", "/auth", "/auth/login"];
 
   const shouldHideHeader = hiddenHeaderRoutes.some(
     pattern => pathname === pattern || pathname.startsWith(`${pattern}/`)
