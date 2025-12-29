@@ -1,3 +1,4 @@
+// /marketplace/page.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
@@ -90,18 +91,22 @@ const MarketplaceBrowse = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      let backendProducts: any[] = [];
-      try {
-        const data: ApiResponse = await productService.getProducts();
-        if (data?.products) {
-          backendProducts = data.products.filter((p) => p.product_name).map(transformApiProduct);
-        }
-      } catch {
-        console.warn("Backend fetch failed, using mocks only.");
-      }
-      const mockIds = new Set(MOCK_PRODUCTS.map((p) => String(p.id)));
-      const uniqueBackend = backendProducts.filter((p) => !mockIds.has(String(p.id)));
-      setProducts([...MOCK_PRODUCTS, ...uniqueBackend]);
+    //   let backendProducts: any[] = [];
+    //   try {
+    //     const data: ApiResponse = await productService.getProducts();
+    //     if (data?.products) {
+    //       backendProducts = data.products.filter((p) => p.product_name).map(transformApiProduct);
+    //     }
+    //   } catch {
+    //     console.warn("Backend fetch failed, using mocks only.");
+    //   }
+    //   const mockIds = new Set(MOCK_PRODUCTS.map((p) => String(p.id)));
+    //   const uniqueBackend = backendProducts.filter((p) => !mockIds.has(String(p.id)));
+    //   setProducts([...MOCK_PRODUCTS, ...uniqueBackend]);
+      // --- Using Dummy Data Instead ---
+      // Simulate slight delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setProducts(MOCK_PRODUCTS);
     } finally {
       setIsLoading(false);
     }

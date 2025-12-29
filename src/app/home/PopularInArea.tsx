@@ -2,13 +2,67 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image"; // Using Next.js Image for optimization
+import Image from "next/image";
 import { Heart, Star, MapPin, TrendingUp, AlertCircle, ShoppingBag, ArrowRight } from "lucide-react";
 import { productService } from "@/services/productService";
 import { PopularItem, ApiProduct, ApiResponse } from "@/types/popular";
-// import Skeleton from "react-loading-skeleton";
 import Skeleton from "@/components/skeleton";
-// import "react-loading-skeleton/dist/skeleton.css";
+
+// --- Dummy Data ---
+const DUMMY_POPULAR_PRODUCTS: PopularItem[] = [
+  {
+    id: 1,
+    title: "MacBook Pro 14-inch M3 Chip",
+    price: 2450000,
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=600",
+    distance: "0.8 km",
+    seller: "Apple Store NG",
+    rating: 4.9,
+    reviews: 128,
+    popularity: 98,
+    category: "Laptops",
+    description: "The latest M3 chip MacBook Pro with stunning Liquid Retina XDR display."
+  },
+  {
+    id: 2,
+    title: "Sony Alpha a7 IV Mirrorless Camera",
+    price: 1850000,
+    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=600",
+    distance: "2.4 km",
+    seller: "Digital Hub",
+    rating: 4.8,
+    reviews: 56,
+    popularity: 92,
+    category: "Photography",
+    description: "Full-frame mirrorless camera with 33MP sensor and 4K 60p video."
+  },
+  {
+    id: 3,
+    title: "PlayStation 5 Console (Disc Edition)",
+    price: 680000,
+    image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&q=80&w=600",
+    distance: "1.5 km",
+    seller: "Game Village",
+    rating: 5.0,
+    reviews: 312,
+    popularity: 99,
+    category: "Gaming",
+    description: "Experience lightning fast loading with an ultra-high speed SSD."
+  },
+  {
+    id: 4,
+    title: "Samsung 65\" QLED 4K Smart TV",
+    price: 920000,
+    image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80&w=600",
+    distance: "3.1 km",
+    seller: "Electro Mart",
+    rating: 4.7,
+    reviews: 89,
+    popularity: 88,
+    category: "Home Entertainment",
+    description: "Breathtaking 4K picture quality with Quantum HDR technology."
+  }
+];
 
 const PopularInArea: React.FC = () => {
   const router = useRouter();
@@ -17,11 +71,11 @@ const PopularInArea: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Helper Functions (Same as before) ---
+  // --- Helper Functions (Preserved but currently unused with Dummy Data) ---
   const generateDistance = (productId: number): string => {
     const seed = productId;
     const distance = (((Math.sin(seed * 9999) * 10000) % 3) + 0.5).toFixed(1);
-    return `${Math.abs(parseFloat(distance))} km`; // Changed to km for consistency
+    return `${Math.abs(parseFloat(distance))} km`;
   };
 
   const generateRatingAndReviews = (productId: number) => {
@@ -58,14 +112,22 @@ const PopularInArea: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+
+      /* --- Commented out Backend Fetching ---
       const data: ApiResponse = await productService.getProducts();
       const transformedProducts = data.products
         .filter((p) => p.product_name && p.product_price !== undefined && p.vendor?.business_name)
         .map(transformApiProduct)
         .sort((a, b) => b.popularity - a.popularity)
-        .slice(0, 8); // Limit to top 8 for clean layout
-
+        .slice(0, 8);
       setPopularItems(transformedProducts);
+      */
+
+      // --- Using Dummy Data ---
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setPopularItems(DUMMY_POPULAR_PRODUCTS);
+
     } catch (err) {
       console.error("Error fetching popular products:", err);
       setError("Failed to load popular products.");
@@ -78,8 +140,8 @@ const PopularInArea: React.FC = () => {
     fetchPopularProducts();
   }, []);
 
-  const handleItemClick = (id: number) => {
-    router.push(`/product-detail?id=${id}`);
+  const handleItemClick = (title: string) => {
+    router.push(`/product-detail?name=${encodeURIComponent(title)}`);
   };
 
   const toggleWishlist = (e: React.MouseEvent, itemId: number) => {
@@ -132,27 +194,8 @@ const PopularInArea: React.FC = () => {
     );
   }
 
-  if (popularItems.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border border-gray-100">
-        <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-        <h3 className="text-lg font-bold text-gray-900 mb-2">No trending items yet</h3>
-        <p className="text-gray-500 max-w-sm text-center mb-6">
-          There are currently no popular products in your area. Check back later!
-        </p>
-        <button
-          onClick={fetchPopularProducts}
-          className="px-6 py-2 bg-[#212830] text-white font-medium rounded-full hover:bg-gray-800 transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
-    );
-  }
-
   return (
     <section className="py-8">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -165,7 +208,7 @@ const PopularInArea: React.FC = () => {
         </div>
 
         <button
-          onClick={() => router.push("/search-results?sort=popular")}
+          onClick={() => router.push("/marketplace")}
           className="group flex items-center text-sm font-semibold text-[#212830] hover:text-[#E0921C] transition-colors"
         >
           View All Items
@@ -173,15 +216,13 @@ const PopularInArea: React.FC = () => {
         </button>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {popularItems.map((item) => (
           <div
             key={item.id}
-            onClick={() => handleItemClick(item.id)}
+            onClick={() => handleItemClick(item.title)}
             className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full"
           >
-            {/* Image Section */}
             <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
               <Image
                 src={item.image}
@@ -191,7 +232,6 @@ const PopularInArea: React.FC = () => {
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               />
               
-              {/* Badges */}
               <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <TrendingUp size={10} />
                 HOT
@@ -202,7 +242,6 @@ const PopularInArea: React.FC = () => {
                 {item.distance}
               </div>
 
-              {/* Wishlist Button */}
               <button
                 onClick={(e) => toggleWishlist(e, item.id)}
                 className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm ${
@@ -215,7 +254,6 @@ const PopularInArea: React.FC = () => {
               </button>
             </div>
 
-            {/* Content Section */}
             <div className="p-4 flex flex-col flex-grow">
               <div className="flex justify-between items-start mb-2">
                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide truncate max-w-[120px]">

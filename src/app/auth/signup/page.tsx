@@ -27,7 +27,7 @@ import { authService } from "@/services/authService";
 import { SignupResponse } from "@/types/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
+import { DUMMY_SIGNUP_SUCCESS } from "@/types/auth";
 // Utility for password strength
 const passwordStrength = (password: string): number => {
   let score = 0;
@@ -324,44 +324,79 @@ const Signup = () => {
     showNotification("info", "Creating Your Account", "Please wait while we set up your account...");
 
     try {
-      const requestBody: any = {
-        country: formData.country,
-        email: formData.email,
-        fullname: formData.name,
-        password: formData.password,
-        phone: formData.phone,
-        state: formData.state,
-      };
+      // const requestBody: any = {
+      //   country: formData.country,
+      //   email: formData.email,
+      //   fullname: formData.name,
+      //   password: formData.password,
+      //   phone: formData.phone,
+      //   state: formData.state,
+      // };
 
-      if (formData.referral_code) {
-        requestBody.referral_code = formData.referral_code;
-      }
+      // if (formData.referral_code) {
+      //   requestBody.referral_code = formData.referral_code;
+      // }
 
-      console.log("Sending signup request...", requestBody);
-      const response = await authService.signup(requestBody);
-      const data: SignupResponse = response; // Assuming axios response.data comes directly or via service wrapper
+      // console.log("Sending signup request...", requestBody);
+      // const response = await authService.signup(requestBody);
+      // const data: SignupResponse = response; // Assuming axios response.data comes directly or via service wrapper
+
+      // Handle Success
+      // if (data && (data.status === "success" || (data as any).success)) {
+      //   closeNotification();
+      //   setTimeout(() => {
+      //     sessionStorage.setItem("RSEmail", formData.email);
+      //     showNotification(
+      //       "success",
+      //       "Account Created Successfully!",
+      //       data.message || "Please check your email for the OTP verification code."
+      //     );
+      //     setFormData({
+      //       name: "", email: "", password: "", confirmPassword: "", phone: "", country: "", state: "", referral_code: "",
+      //     });
+      //     setTimeout(() => {
+      //       router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      //     }, 2000);
+      //   }, 500);
+      // } else {
+      //   // Handle Logic Failure (Status not success)
+      //   throw new Error(data.message || data.error || "Signup failed");
+      // }
+  // --- TEMPORARY TESTING CODE (MOCK) ---
+      // Simulate network delay of 1.5 seconds
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      // Use Dummy Data instead of API response
+      const data: SignupResponse = DUMMY_SIGNUP_SUCCESS;
+      // -------------------------------------
 
       // Handle Success
       if (data && (data.status === "success" || (data as any).success)) {
         closeNotification();
         setTimeout(() => {
           sessionStorage.setItem("RSEmail", formData.email);
+          
+          // Store a dummy status in local storage to track "unverified" state if needed
+          localStorage.setItem("isRegistrationPending", "true");
+
           showNotification(
             "success",
             "Account Created Successfully!",
-            data.message || "Please check your email for the OTP verification code."
+            "TEST MODE: Use any 6-digit code on the next screen."
           );
+          
           setFormData({
             name: "", email: "", password: "", confirmPassword: "", phone: "", country: "", state: "", referral_code: "",
           });
+
           setTimeout(() => {
             router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
           }, 2000);
         }, 500);
       } else {
-        // Handle Logic Failure (Status not success)
         throw new Error(data.message || data.error || "Signup failed");
       }
+
     } catch (error: any) {
       console.error("Signup error catch block:", error);
       closeNotification();

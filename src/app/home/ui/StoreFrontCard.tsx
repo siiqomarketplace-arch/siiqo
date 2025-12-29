@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { useRouter } from "next/navigation";
 import { 
@@ -5,17 +7,78 @@ import {
   MapPin, 
   Calendar, 
   ArrowRight, 
-  BadgeCheck, 
-  Store 
+  BadgeCheck 
 } from "lucide-react";
 import Skeleton from "@/components/skeleton";
-// import { Skeleton } from "@/components/ui/skeleton";
-// import Skeleton from "react-loading-skeleton"; // Assuming you are using this or a custom component
-// import "react-loading-skeleton/dist/skeleton.css";
 import { Storefront } from "@/types/storeFront";
+
+// --- Dummy Data Store ---
+export const DUMMY_STOREFRONTS: Storefront[] = [
+  {
+    id: 1,
+    business_name: "Tech Haven Stores",
+    description: "Your one-stop shop for premium gadgets, smartphones, and high-end laptops. We provide warranty on all items.",
+    address: "Ikeja City Mall, Lagos",
+    established_at: "2021-10-25",
+    business_banner: "https://images.unsplash.com/photo-1531297461136-82lwDe43qR?w=800&q=80",
+    ratings: 4.8,
+    vendor: {
+      business_name: "Tech Haven Stores",
+      email: "sales@techhaven.ng",
+      firstname: "Chidi",
+      lastname: "Okonkwo",
+      phone: "+234 801 234 5678",
+      profile_pic: null
+    },
+    vendor_info: { member_since: "2021-05-12" },
+    extended: null
+  },
+  {
+    id: 2,
+    business_name: "Urban Threads Fashion",
+    description: "Boutique clothing store specializing in contemporary African designs and international street wear.",
+    address: "Lekki Phase 1, Lagos",
+    established_at: "2022-03-15",
+    business_banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80",
+    ratings: 4.5,
+    vendor: {
+      business_name: "Urban Threads",
+      email: "hello@urbanthreads.ng",
+      firstname: "Sarah",
+      lastname: "Bello",
+      phone: "+234 703 444 5555",
+      profile_pic: null
+    },
+    vendor_info: { member_since: "2022-01-20" },
+    extended: null
+  },
+  {
+    id: 3,
+    business_name: "Eco Home Decor",
+    description: "Handcrafted, sustainable home furniture and decorative pieces for the modern environmentally conscious home.",
+    address: "Wuse II, Abuja",
+    established_at: "2023-01-10",
+    business_banner: "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=800&q=80",
+    ratings: 4.9,
+    vendor: {
+      business_name: "Eco Home",
+      email: "info@ecohome.com",
+      firstname: "Amina",
+      lastname: "Zubairu",
+      phone: "+234 902 111 2222",
+      profile_pic: null
+    },
+    vendor_info: { member_since: "2022-12-05" },
+    extended: null
+  }
+];
 
 export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
   const router = useRouter();
+
+  // --- Using Dummy Data (Comment this out to use real props) ---
+  // const storefront = DUMMY_STOREFRONTS[0]; // Use the first dummy item as a placeholder
+  // const storefront = propStorefront; // <--- Uncomment this to go back to real data
 
   const formatEstablishedDate = (dateString: string | undefined): string => {
     if (!dateString) return "New";
@@ -46,9 +109,10 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
 
       const businessSlug = slugify(storefront.business_name);
 
-      // Set session storage ONLY on click to prevent overwriting
+      /* --- Real Logic: Session Storage ---
       sessionStorage.setItem("selectedVendorEmail", storefront.vendor?.email || "");
       sessionStorage.setItem("selectedBusinessName", storefront.business_name);
+      */
 
       router.push(`/storefront/${encodeURIComponent(businessSlug)}`);
     }
@@ -75,10 +139,8 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
           }}
         />
         
-        {/* Overlay Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
 
-        {/* Top Badges */}
         <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
           {storefront.ratings > 0 ? (
             <div className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-900 bg-white/90 backdrop-blur-md rounded-full shadow-sm">
@@ -86,7 +148,7 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
               <span>{storefront.ratings.toFixed(1)}</span>
             </div>
           ) : (
-            <div /> /* Spacer */
+            <div />
           )}
 
           {storefront.vendor && (
@@ -102,7 +164,7 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
       <div className="flex flex-col flex-grow p-5">
         <div className="flex-grow">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+            <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-[#E0921C] transition-colors">
               {storefront.business_name}
             </h3>
           </div>
@@ -111,7 +173,6 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
             {storefront.description || "Welcome to our store! We offer quality products and excellent service."}
           </p>
 
-          {/* Meta Tags */}
           <div className="flex flex-wrap gap-3 mb-4">
             <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
               <Calendar className="w-3.5 h-3.5 text-gray-400" />
@@ -143,8 +204,8 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
             </div>
           </div>
 
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-primary group-hover:text-white transition-all duration-300">
-         View Storefront   <ArrowRight className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 group-hover:text-[#E0921C] transition-colors">
+             View Storefront <ArrowRight className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -162,12 +223,10 @@ export const StorefrontSkeleton = ({ count = 6 }: { count?: number }) => {
           key={index}
           className="flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden"
         >
-          {/* Banner Skeleton */}
           <div className="h-48 w-full bg-gray-100 relative">
              <Skeleton type="rect" height="100%" width="100%" />
           </div>
 
-          {/* Content Skeleton */}
           <div className="p-5 flex flex-col flex-grow">
             <Skeleton width="60%" height={24} className="mb-3" />
             <Skeleton width="100%" height={16} count={2} className="mb-4" />
@@ -194,4 +253,4 @@ export const StorefrontSkeleton = ({ count = 6 }: { count?: number }) => {
   );
 };
 
-export default StorefrontSkeleton;
+export default StorefrontCard;

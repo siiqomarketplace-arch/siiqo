@@ -144,76 +144,103 @@ const LoginForm = () => {
     setNotification((prev) => ({ ...prev, show: false }));
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!email || !password) {
-      showNotification("error", "Missing Information", "Please enter both email and password.");
+  if (!email || !password) {
+    showNotification("error", "Missing Information", "Please enter both email and password.");
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showNotification("error", "Invalid Email", "Please enter a valid email address.");
+    return;
+  }
+
+  setIsLoading(true);
+  showNotification("info", "Signing You In", "TEST MODE: Verifying credentials locally...");
+
+  try {
+    // --- LIVE CODE (COMMENTED OUT) ---
+    /* 
+    await login(email, password);
+    const token = sessionStorage.getItem("RSToken");
+    if (token) {
+      const decodedToken = jwtDecode<DecodedToken>(token);
+      const userRole = decodedToken.role ? decodedToken.role.toLowerCase() : "";
+    */
+
+    // --- TEMPORARY TESTING CODE (LOCALSTORAGE/MOCK) ---
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // 1. Create a dummy token and store it
+    const dummyToken = "dummy_json_web_token_for_testing";
+    sessionStorage.setItem("RSToken", dummyToken);
+    localStorage.setItem("isLoggedIn", "true");
+
+    // 2. Define Mock Roles based on email for testing
+    let userRole = "customer"; // Default
+    if (email.toLowerCase().includes("admin")) userRole = "admin";
+    else if (email.toLowerCase().includes("vendor")) userRole = "vendor";
+    else if (email.toLowerCase().includes("shopping")) userRole = "shopping";
+
+    // 3. Mock logic for Admin
+    if (userRole === "admin") {
+      // FIX: Changed 'token' to 'dummyToken' because 'token' is commented out above
+      localStorage.setItem("adminToken", dummyToken);
+      localStorage.setItem("isAdminLoggedIn", "true");
+    }
+    // --- END TESTING CODE ---
+
+    closeNotification();
+
+    // 1. Priority: Redirect URL (Checking params first)
+    const paramRedirect = searchParams.get("redirect") || searchParams.get("callbackUrl");
+    const storageRedirect = sessionStorage.getItem("redirectUrl");
+    const intendedDestination = paramRedirect || storageRedirect;
+
+    if (intendedDestination && !intendedDestination.includes("/auth/login")) {
+      showNotification("success", "Welcome Back!", "Returning you to your previous page...");
+      sessionStorage.removeItem("redirectUrl");
+      setTimeout(() => {
+        window.location.href = intendedDestination; 
+      }, 1000);
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showNotification("error", "Invalid Email", "Please enter a valid email address.");
-      return;
+    // 2. Role Based Routing
+    if (userRole === "admin") {
+      showNotification("success", "Admin Access Granted!", "Redirecting to admin panel...");
+      setTimeout(() => router.push("/Administration"), 1500);
+    } 
+    else if (userRole === "vendor") {
+      showNotification("success", "Vendor Login Successful!", "Redirecting to vendor dashboard...");
+      setTimeout(() => router.push("/vendor/dashboard"), 1500);
+    } 
+    else if (["shopping", "shopper", "customer"].includes(userRole)) {
+      showNotification("success", "Login Successful!", "Redirecting to your dashboard...");
+      // setTimeout(() => router.push("/shopping/dashboard"), 1500);
+      setTimeout(()=> router.push("/seller-details"), 1500)
+    } 
+    else {
+      showNotification("success", "Welcome Back!", "Redirecting to marketplace...");
+      setTimeout(() => router.push("/marketplace"), 1500);
     }
 
-    setIsLoading(true);
-    showNotification("info", "Signing You In", "Please wait while we verify your credentials...");
-
-    try {
-      await login(email, password);
-      const token = sessionStorage.getItem("RSToken");
-      
-      if (token) {
-        const decodedToken = jwtDecode<DecodedToken>(token);
-        const userRole = decodedToken.role ? decodedToken.role.toLowerCase() : "";
-
-        closeNotification();
-
-        // 1. Priority: Redirect URL
-        const paramRedirect = searchParams.get("redirect") || searchParams.get("callbackUrl");
-        const storageRedirect = sessionStorage.getItem("redirectUrl");
-        const intendedDestination = paramRedirect || storageRedirect;
-
-        if (intendedDestination && !intendedDestination.includes("/auth/login")) {
-          showNotification("success", "Welcome Back!", "Returning you to your previous page...");
-          sessionStorage.removeItem("redirectUrl");
-          setTimeout(() => {
-            window.location.href = intendedDestination; 
-          }, 1000);
-          return;
-        }
-
-        // 2. Role Based Routing
-        if (userRole === "admin") {
-          localStorage.setItem("adminToken", token);
-          localStorage.setItem("isAdminLoggedIn", "true");
-          showNotification("success", "Admin Access Granted!", "Redirecting to admin panel...");
-          setTimeout(() => router.push("/Administration"), 1500);
-        } 
-        else if (userRole === "vendor") {
-          showNotification("success", "Vendor Login Successful!", "Redirecting to vendor dashboard...");
-          setTimeout(() => router.push("/vendor/dashboard"), 1500);
-        } 
-        else if (["shopping", "shopper", "customer"].includes(userRole)) {
-          showNotification("success", "Login Successful!", "Redirecting to your dashboard...");
-          setTimeout(() => router.push("/shopping/dashboard"), 1500);
-        } 
-        else {
-          showNotification("success", "Welcome Back!", "Redirecting to marketplace...");
-          setTimeout(() => router.push("/marketplace"), 1500);
-        }
-      } else {
-        throw new Error("No access token received");
-      }
-    } catch (error: any) {
-      closeNotification();
-      showNotification("error", "Login Failed", error.message || "Invalid credentials. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    /* 
+    } else {
+      throw new Error("No access token received");
+    } 
+    */
+  } catch (error: any) {
+    closeNotification();
+    showNotification("error", "Login Failed", error.message || "Invalid credentials. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <>

@@ -15,6 +15,17 @@ interface Seller {
   verifiedSeller: boolean;
 }
 
+// --- Dummy Data ---
+const DUMMY_SELLER: Seller = {
+  name: "John Doe",
+  avatar: "", // Empty to test the initial fallback logic
+  rating: 4.9,
+  reviewCount: 128,
+  responseTime: "Usually responds within 1 hour",
+  memberSince: "January 2022",
+  verifiedSeller: true,
+};
+
 interface SellerCardProps {
   seller: Seller;
   onContact: () => void;
@@ -23,11 +34,22 @@ interface SellerCardProps {
 }
 
 const SellerCard = ({
-  seller,
+  seller: propSeller, // Renamed to propSeller to allow dummy override
   onContact,
   onNavigateToVendorProfile,
   isMobile = false,
 }: SellerCardProps) => {
+  
+  // --- Using Dummy Data (Comment out to use real props) ---
+  const seller = DUMMY_SELLER; 
+  // const seller = propSeller; // <--- Uncomment this to use real data from parent
+
+  // Logic to get initial
+  const sellerInitial = seller.name ? seller.name.charAt(0).toUpperCase() : "?";
+  
+  // Logic to check if avatar is valid (not empty and not a generic placeholder)
+  const hasAvatar = seller.avatar && seller.avatar.trim() !== "" && !seller.avatar.includes("placeholder");
+
   return (
     <div className="p-4 border rounded-lg bg-surface border-border md:p-4">
       {/* Header */}
@@ -46,14 +68,21 @@ const SellerCard = ({
       {/* Seller Info */}
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0">
-          <div className="relative w-16 h-16 overflow-hidden rounded-full bg-surface-secondary">
-            <Image
-              src={seller.avatar}
-              alt={seller.name}
-              fill
-              className="object-cover"
-              sizes="64px"
-            />
+          <div className="relative w-16 h-16 overflow-hidden rounded-full bg-surface-secondary flex items-center justify-center">
+            {hasAvatar ? (
+              <Image
+                src={seller.avatar}
+                alt={seller.name}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            ) : (
+              // Fallback Initial Circle
+              <div className="w-full h-full bg-[#E0921C] flex items-center justify-center text-white text-2xl font-bold">
+                {sellerInitial}
+              </div>
+            )}
           </div>
         </div>
 
@@ -120,7 +149,9 @@ const SellerCard = ({
           <span className="text-sm">View Profile</span>
         </button>
 
-        {/* <button className="flex items-center gap-1 transition-colors duration-200 text-text-secondary hover:text-text-primary">
+        {/* --- Unused Buttons Commented Out --- */}
+        {/* 
+        <button className="flex items-center gap-1 transition-colors duration-200 text-text-secondary hover:text-text-primary">
           <Icon name="Package" size={16} />
           <span className="text-sm">Other Items</span>
         </button>
@@ -132,7 +163,8 @@ const SellerCard = ({
         >
           <Icon name="Flag" size={16} />
           <span className="text-sm">Report</span>
-        </Button> */}
+        </Button> 
+        */}
       </div>
     </div>
   );

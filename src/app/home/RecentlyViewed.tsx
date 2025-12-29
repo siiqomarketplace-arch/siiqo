@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/AppIcon";
@@ -18,56 +20,69 @@ interface RecentItem {
   description?: string;
 }
 
+// --- Dummy Data ---
+const DUMMY_RECENT_ITEMS: RecentItem[] = [
+  {
+    id: 1,
+    title: "iPhone 13 Pro Max - 256GB Gold",
+    price: 750000,
+    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=400",
+    distance: "1.2 km",
+    seller: "Tech Haven",
+    viewedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+    isAvailable: true,
+  },
+  {
+    id: 2,
+    title: "Sony WH-1000XM4 Wireless Headphones",
+    price: 220000,
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400",
+    distance: "2.5 km",
+    seller: "Gadget Hub",
+    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    isAvailable: true,
+  },
+  {
+    id: 4,
+    title: "Nike Air Jordan 1 Retro",
+    price: 85000,
+    image: "https://images.unsplash.com/photo-1584908197066-394ffac0a7b7?auto=format&fit=crop&q=80&w=400",
+    distance: "5.2 km",
+    seller: "Sneaker Head",
+    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+    isAvailable: false, // Marked as Sold
+  }
+];
+
 const RecentlyViewed: React.FC = () => {
   const router = useRouter();
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Get recently viewed items from localStorage or session storage
   const getRecentlyViewedItems = (): RecentItem[] => {
     try {
-      // In a real app, you would get this from localStorage, session storage,
-      // or a user's viewing history from an API
-      const stored = localStorage.getItem("recentlyViewed");
-      console.log(stored);
+      if (typeof window === "undefined") return [];
       
+      const stored = localStorage.getItem("recentlyViewed");
+      
+      /* --- Real Logic: Return empty if nothing stored ---
+      if (stored) return JSON.parse(stored);
+      return [];
+      */
+
+      // --- Dummy Logic: If empty, seed with dummy data ---
       if (stored) {
         return JSON.parse(stored);
+      } else {
+        localStorage.setItem("recentlyViewed", JSON.stringify(DUMMY_RECENT_ITEMS));
+        return DUMMY_RECENT_ITEMS;
       }
-      return [];
     } catch (error) {
       console.error("Error loading recently viewed items:", error);
       return [];
     }
   };
 
-  // Add item to recently viewed (this would typically be called from product detail pages)
-  const addToRecentlyViewed = (item: Omit<RecentItem, "viewedAt">) => {
-    try {
-      const currentItems = getRecentlyViewedItems();
-
-      // Remove item if it already exists (to avoid duplicates)
-      const filteredItems = currentItems.filter(
-        (existingItem) => existingItem.id !== item.id
-      );
-
-      // Add new item at the beginning with current timestamp
-      const newItem: RecentItem = {
-        ...item,
-        viewedAt: new Date().toISOString(),
-      };
-
-      // Keep only the last 20 items
-      const updatedItems = [newItem, ...filteredItems].slice(0, 20);
-
-      localStorage.setItem("recentlyViewed", JSON.stringify(updatedItems));
-      setRecentItems(updatedItems);
-    } catch (error) {
-      console.error("Error saving recently viewed item:", error);
-    }
-  };
-
-  // Format the viewed time to be more readable
   const formatViewedAt = (isoString: string): string => {
     const now = new Date();
     const viewedDate = new Date(isoString);
@@ -76,50 +91,33 @@ const RecentlyViewed: React.FC = () => {
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
 
-    if (diffInMinutes < 1) {
-      return "Just now";
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-    } else if (diffInDays < 7) {
-      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-    } else {
-      return viewedDate.toLocaleDateString();
-    }
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return viewedDate.toLocaleDateString();
   };
 
-  // Clear recently viewed items
   const clearRecentlyViewed = () => {
     try {
       localStorage.removeItem("recentlyViewed");
       setRecentItems([]);
     } catch (error) {
-      console.error("Error clearing recently viewed items:", error);
+      console.error("Error clearing items:", error);
     }
   };
 
-  // Load recently viewed items on component mount
   useEffect(() => {
     setLoading(true);
-
-    // Simulate loading delay (you can remove this in production)
     setTimeout(() => {
       const items = getRecentlyViewedItems();
       setRecentItems(items);
       setLoading(false);
-    }, 500);
+    }, 600);
   }, []);
 
   const handleItemClick = (item: RecentItem) => {
     router.push(`/product-detail?id=${item.id}`);
-  };
-
-  const handleQuickAdd = (e: React.MouseEvent, item: RecentItem) => {
-    e.stopPropagation();
-    // Mock quick add functionality
-    console.log("Quick add:", item.title);
-    // In a real app, you would add this to cart or wishlist
   };
 
   const handleRemoveItem = (e: React.MouseEvent, itemId: number) => {
@@ -129,45 +127,24 @@ const RecentlyViewed: React.FC = () => {
       localStorage.setItem("recentlyViewed", JSON.stringify(updatedItems));
       setRecentItems(updatedItems);
     } catch (error) {
-      console.error("Error removing item from recently viewed:", error);
+      console.error("Error removing item:", error);
     }
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div>
+      <div className="space-y-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-text-primary">
-            Recently Viewed
-          </h2>
-          <Skeleton
-            type="text"
-            className="w-8 h-8 rounded animate-pulse bg-surface-secondary"
-          />
-          {/* <div className="w-8 h-8 rounded animate-pulse bg-surface-secondary"></div> */}
+          <Skeleton width={150} height={24} />
+          <Skeleton width={80} height={20} />
         </div>
-
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {[...Array(4)].map((_, index) => (
-            <div
-              key={index}
-              className="border rounded-lg bg-surface border-border animate-pulse"
-            >
-              <Skeleton
-                type="text"
-                className="w-full h-32 rounded-t-lg md:h-40 bg-surface-secondary"
-              />
+            <div key={index} className="border rounded-lg bg-white overflow-hidden">
+              <Skeleton height={160} />
               <div className="p-3 space-y-2">
-                <Skeleton
-                  type="text"
-                  className="w-3/4 h-4 rounded bg-surface-secondary"
-                  count={5}
-                />
-                {/* <div className="w-3/4 h-4 rounded bg-surface-secondary"></div>
-                <div className="w-1/2 h-4 rounded bg-surface-secondary"></div>
-                <div className="w-full h-3 rounded bg-surface-secondary"></div>
-                <div className="w-2/3 h-3 rounded bg-surface-secondary"></div> */}
+                <Skeleton width="90%" height={16} />
+                <Skeleton width="40%" height={16} />
               </div>
             </div>
           ))}
@@ -176,62 +153,34 @@ const RecentlyViewed: React.FC = () => {
     );
   }
 
-  // Empty state - no recently viewed items
   if (recentItems.length === 0) {
     return (
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-text-primary">
-            Recently Viewed
-          </h2>
-        </div>
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-center">
-            <Icon
-              name="Clock"
-              size={48}
-              className="mx-auto mb-4 text-text-secondary"
-            />
-            <h3 className="mb-2 text-lg font-semibold text-text-primary">
-              No Recently Viewed Items
-            </h3>
-            <p className="max-w-md mb-4 text-text-secondary">
-              Start browsing products to see your recently viewed items here.
-              They'll help you quickly find products you've looked at before.
-            </p>
-            <Button
-              onClick={() => router.push("/marketplace")}
-              className="px-4 py-2 font-medium text-white transition-colors duration-200 rounded-lg bg-primary hover:bg-primary-700"
-            >
-              Browse Products
-            </Button>
-          </div>
-        </div>
+      <div className="py-12 flex flex-col items-center border border-dashed rounded-xl bg-gray-50">
+        <Icon name="Clock" size={40} className="text-gray-300 mb-3" />
+        <h3 className="text-gray-500 font-medium">No recently viewed items</h3>
+        <Button 
+          onClick={() => router.push("/marketplace")}
+          className="mt-4 text-sm text-[#E0921C] font-semibold"
+        >
+          Browse Marketplace
+        </Button>
       </div>
     );
   }
 
-  // Items grid
   return (
     <div>
-      {/* Header with clear button */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-text-primary">
-            Recently Viewed
-          </h2>
-          <p className="text-sm text-text-secondary">
-            {recentItems.length} item{recentItems.length > 1 ? "s" : ""}
-          </p>
+          <h2 className="text-lg font-semibold text-text-primary">Recently Viewed</h2>
+          <p className="text-sm text-text-secondary">{recentItems.length} items</p>
         </div>
-        {recentItems.length > 0 && (
-          <Button
-            onClick={clearRecentlyViewed}
-            className="text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary"
-          >
-            Clear All
-          </Button>
-        )}
+        <button
+          onClick={clearRecentlyViewed}
+          className="text-sm font-medium text-gray-400 hover:text-red-500 transition-colors"
+        >
+          Clear All
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -239,70 +188,52 @@ const RecentlyViewed: React.FC = () => {
           <div
             key={item.id}
             onClick={() => handleItemClick(item)}
-            className={`bg-surface rounded-lg border border-border hover:shadow-elevation-2 transition-all duration-200 cursor-pointer relative ${
-              !item.isAvailable ? "opacity-60" : ""
+            className={`bg-white group rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200 cursor-pointer relative overflow-hidden ${
+              !item.isAvailable ? "opacity-75" : ""
             }`}
           >
             {/* Remove button */}
-            <Button
+            <button
               onClick={(e) => handleRemoveItem(e, item.id)}
-              className="absolute z-10 p-1 text-white transition-opacity duration-200 bg-black bg-opacity-50 rounded-full top-2 left-2 hover:bg-opacity-70"
-              title="Remove from recently viewed"
+              className="absolute z-10 p-1.5 text-white bg-black/40 backdrop-blur-md rounded-full top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <Icon name="X" size={12} />
-            </Button>
+            </button>
 
             {/* Image */}
-            <div className="relative w-full h-32 overflow-hidden rounded-t-lg md:h-40">
+            <div className="relative w-full h-32 md:h-40 bg-gray-50">
               <Image
                 src={item.image}
                 fill
                 alt={item.title}
                 className="object-cover"
-                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                onError={(e) => {
-                  // Fallback image on error
-                  const target = e.target as HTMLImageElement;
-                  target.src =
-                    "https://via.placeholder.com/400x400?text=Product+Image";
-                }}
+                sizes="250px"
               />
-              <div className="absolute px-2 py-1 text-xs text-white bg-black bg-opacity-50 rounded-full top-2 right-2">
+              <div className="absolute px-2 py-0.5 text-[10px] font-bold text-white bg-black/50 rounded-md bottom-2 left-2">
                 {item.distance}
               </div>
               {!item.isAvailable && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                  <span className="text-sm font-medium text-white">Sold</span>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                  <span className="px-3 py-1 bg-white/90 text-black text-xs font-bold rounded-full shadow-sm">SOLD</span>
                 </div>
               )}
             </div>
 
             {/* Content */}
             <div className="p-3">
-              <h3 className="mb-2 text-sm font-medium text-text-primary line-clamp-2">
+              <h3 className="text-sm font-medium text-gray-800 line-clamp-1 mb-1">
                 {item.title}
               </h3>
 
               <div className="flex items-center justify-between mb-2">
-                <span className="text-base font-semibold text-text-primary">
-                  ${item.price}
+                <span className="text-base font-bold text-[#E0921C]">
+                  ₦{item.price.toLocaleString()}
                 </span>
-                {item.isAvailable && (
-                  <Button
-                    onClick={(e) => handleQuickAdd(e, item)}
-                    className="p-1 transition-colors duration-200 rounded-full hover:bg-surface-secondary"
-                    title="Quick add to cart"
-                  >
-                    <Icon name="Plus" size={14} className="text-primary" />
-                  </Button>
-                )}
               </div>
 
-              <div className="space-y-1 text-xs text-text-secondary">
-                <p className="truncate" title={item.seller}>
-                  {item.seller}
-                </p>
-                <p>Viewed {formatViewedAt(item.viewedAt)}</p>
+              <div className="flex justify-between items-center text-[10px] text-gray-400">
+                <span className="truncate max-w-[60px]">{item.seller}</span>
+                <span>{formatViewedAt(item.viewedAt)}</span>
               </div>
             </div>
           </div>
@@ -312,29 +243,20 @@ const RecentlyViewed: React.FC = () => {
   );
 };
 
-// Export helper function to add items to recently viewed from other components
+// --- Exported helper (Preserved for real use) ---
 export const addToRecentlyViewed = (item: Omit<RecentItem, "viewedAt">) => {
   try {
+    if (typeof window === "undefined") return;
     const stored = localStorage.getItem("recentlyViewed");
     const currentItems: RecentItem[] = stored ? JSON.parse(stored) : [];
 
-    // Remove item if it already exists
-    const filteredItems = currentItems.filter(
-      (existingItem) => existingItem.id !== item.id
-    );
-
-    // Add new item at the beginning
-    const newItem: RecentItem = {
-      ...item,
-      viewedAt: new Date().toISOString(),
-    };
-
-    // Keep only the last 20 items
+    const filteredItems = currentItems.filter((i) => i.id !== item.id);
+    const newItem: RecentItem = { ...item, viewedAt: new Date().toISOString() };
     const updatedItems = [newItem, ...filteredItems].slice(0, 20);
 
     localStorage.setItem("recentlyViewed", JSON.stringify(updatedItems));
   } catch (error) {
-    console.error("Error saving recently viewed item:", error);
+    console.error("Error saving item:", error);
   }
 };
 

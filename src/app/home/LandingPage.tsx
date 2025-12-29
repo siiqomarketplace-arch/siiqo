@@ -6,6 +6,7 @@ import { storefrontService } from "@/services/storefrontService";
 import { Storefront, APIResponse } from "@/types/storeFront";
 import { motion, AnimatePresence, Variants } from "framer-motion"; // Import Framer Motion
 import {
+  DUMMY_STOREFRONTS,
   StorefrontCard,
   StorefrontSkeleton,
 } from "@/app/home/ui/StoreFrontCard";
@@ -46,12 +47,14 @@ const LandingPage: React.FC = () => {
 
       try {
         const data: APIResponse = await storefrontService.getStorefronts();
-        if (data && Array.isArray(data.storefronts)) {
-          setStorefronts(data.storefronts);
-        } else {
-          setStorefronts([]);
-          setError("Failed to load storefronts due to unexpected response.");
-        }
+        // if (data && Array.isArray(data.storefronts)) {
+        //   setStorefronts(data.storefronts);
+        // } else {
+        //   setStorefronts([]);
+        //   setError("Failed to load storefronts due to unexpected response.");
+        // }
+         // --- Directly use Dummy Data to stop the 500 error ---
+    setStorefronts(DUMMY_STOREFRONTS); 
       } catch (err: any) {
         setError(err.message || "Failed to load storefronts");
         console.error("Error fetching storefronts:", err);

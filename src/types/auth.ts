@@ -1,3 +1,4 @@
+//types/auth.ts
 export interface UserData {
   id?: string | number;
   account_id?: string;
@@ -44,3 +45,29 @@ export interface SignupResponse {
     error?: string;
     errors?: string[];
 }
+
+// --- DUMMY DATA FOR TESTING ---
+export const MOCK_USER: UserData = {
+  id: "999",
+  account_id: "ACC-TEST-001",
+  name: "Test User",
+  email: "test@bizengo.com",
+  role: "shopper",
+  phone: "08012345678",
+  country: "Nigeria",
+  state: "Lagos",
+  is_verified: false,
+  created_at: new Date().toISOString()
+};
+
+export const DUMMY_SIGNUP_SUCCESS: SignupResponse = {
+  status: "success",
+  message: "Account created successfully. Mock OTP sent to your email.",
+  user: MOCK_USER
+};
+
+export const DUMMY_SIGNUP_ERROR: SignupResponse = {
+  status: "error",
+  message: "This email is already registered.",
+  error: "Conflict"
+};

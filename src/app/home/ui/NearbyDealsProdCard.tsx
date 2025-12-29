@@ -85,7 +85,7 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-text-secondary">
-            {product.vendor?.business_name ?? "Bizengo Vendor"}
+            {product.vendor?.business_name ?? "siiqo Vendor"}
           </span>
           <Button
             onClick={() => onClick(product.id)}

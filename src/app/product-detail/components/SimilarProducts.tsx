@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
@@ -35,7 +36,9 @@ const SimilarProducts = ({
           Similar Products Nearby
         </h3>
         <button className="transition-colors duration-200 text-primary hover:text-primary-700">
-          <span className="text-sm font-medium">View All</span>
+          <span className="text-sm font-medium" >
+          <Link href='/marketplace'  > View All </Link>
+             </span>
         </button>
       </div>
 

@@ -14,8 +14,6 @@ import {
   X,
   ChevronRight,
   MapPin,
-  Truck,
-  ShieldCheck,
   ShoppingBag
 } from "lucide-react";
 import Button from "@/components/Button";
@@ -73,8 +71,106 @@ const Breadcrumbs = ({ category, title }: { category: string; title: string }) =
   </nav>
 );
 
+// --- Fixed Dummy Data Store ---
+const DUMMY_PRODUCT_STORE: ApiProductFull[] = [
+  {
+    id: 1,
+    product_name: "iPhone 13 Pro Max - 256GB Gold",
+    product_price: 75000000, 
+    discount: 15,
+    condition: "Like New",
+    rating: 4.8,
+    review_count: 24,
+    distance: 1.2,
+    location: { address: "Ikeja, Lagos", lat: 6.5244, lng: 3.3792 },
+    images: ["https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=800"],
+    description: "Premium iPhone 13 Pro Max. Battery health 98%.",
+    category: "Smartphones", 
+    status: "active",
+    visibility: true,
+    seller: { id: 101, name: "Tech Haven", avatar: "", rating: 4.9, review_count: 150, response_time: "5 mins", member_since: "Oct 2021", verified: true },
+    availability: "Available",
+    last_updated: "2023-10-25",
+  },
+  {
+    id: 2,
+    product_name: "Sony WH-1000XM4 Wireless Headphones",
+    product_price: 22000000,
+    discount: 10,
+    condition: "New",
+    rating: 4.9,
+    review_count: 85,
+    distance: 2.5,
+    location: { address: "Victoria Island, Lagos", lat: 6.4281, lng: 3.4219 },
+    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800"],
+    description: "Industry leading noise canceling headphones.",
+    category: "Electronics",
+    status: "active",
+    visibility: true,
+    seller: { id: 102, name: "Gadget Hub", avatar: "", rating: 4.7, review_count: 320, response_time: "1 hour", member_since: "Jan 2022", verified: true },
+    availability: "Available",
+    last_updated: "2023-11-01",
+  },
+  {
+    id: 3,
+    product_name: "MacBook Air M2 Chip",
+    product_price: 120000000,
+    discount: 5,
+    condition: "New",
+    rating: 5.0,
+    review_count: 12,
+    distance: 0.8,
+    location: { address: "Lekki Phase 1, Lagos", lat: 6.4478, lng: 3.4737 },
+    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800"],
+    description: "The new MacBook Air with M2 chip. Supercharged for work.",
+    category: "Computers",
+    status: "active",
+    visibility: true,
+    seller: { id: 103, name: "Apple Store NG", avatar: "", rating: 5.0, review_count: 500, response_time: "Instant", member_since: "May 2020", verified: true },
+    availability: "Available",
+    last_updated: "2023-11-05",
+  },
+  {
+    id: 5,
+    product_name: "MacBook Pro 14-inch M3 Chip",
+    product_price: 245000000,
+    discount: 0,
+    condition: "New",
+    rating: 4.9,
+    review_count: 128,
+    distance: 0.8,
+    location: { address: "Victoria Island, Lagos", lat: 6.4281, lng: 3.4219 },
+    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=600"],
+    description: "The latest M3 chip MacBook Pro with stunning Liquid Retina XDR display.",
+    category: "Laptops",
+    status: "active",
+    visibility: true,
+    seller: { id: 103, name: "Apple Store NG", avatar: "", rating: 5.0, review_count: 500, response_time: "Instant", member_since: "May 2020", verified: true },
+    availability: "Available",
+    last_updated: "2023-11-20",
+  },
+  {
+    id: 6,
+    product_name: "Sony Alpha a7 IV Mirrorless Camera",
+    product_price: 185000000,
+    discount: 5,
+    condition: "New",
+    rating: 4.8,
+    review_count: 56,
+    distance: 2.4,
+    location: { address: "Ikeja, Lagos", lat: 6.5244, lng: 3.3792 },
+    images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=600"],
+    description: "Full-frame mirrorless camera with 33MP sensor and 4K 60p video.",
+    category: "Photography",
+    status: "active",
+    visibility: true,
+    seller: { id: 105, name: "Digital Hub", avatar: "", rating: 4.8, review_count: 56, response_time: "2 hours", member_since: "Mar 2021", verified: true },
+    availability: "Available",
+    last_updated: "2023-11-21",
+  }
+];
+
 const ProductDetail = () => {
-  // --- State (Restored fully from original) ---
   const [product, setProduct] = useState<Product | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,12 +183,10 @@ const ProductDetail = () => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  // --- Hooks ---
   const { openCart } = useCartModal();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- Helper Functions ---
   const addNotification = (type: "success" | "error" | "info", message: string) => {
     const id = Date.now().toString();
     setNotifications((prev) => [...prev, { id, type, message }]);
@@ -102,7 +196,6 @@ const ProductDetail = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  // --- Data Transformation (Restored fully) ---
   const transformApiProduct = (apiProduct: ApiProductFull): Product => {
     return {
       id: apiProduct.id.toString(),
@@ -115,12 +208,7 @@ const ProductDetail = () => {
       reviewCount: apiProduct.review_count ?? 0,
       distance: apiProduct.distance ?? 0,
       location: apiProduct.location ?? { address: "Unknown", lat: 0, lng: 0 },
-      images:
-        apiProduct.images.length > 0
-          ? apiProduct.images
-          : [
-              "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&h=600&fit=crop",
-            ],
+      images: apiProduct.images.length > 0 ? apiProduct.images : ["https://via.placeholder.com/800"],
       description: apiProduct.description || "No description available",
       specifications: {
         Category: apiProduct.category || "General",
@@ -131,40 +219,66 @@ const ProductDetail = () => {
       seller: {
         id: apiProduct.seller?.id.toString() || "0",
         name: apiProduct.seller?.name || "Unknown Seller",
-        avatar:
-          apiProduct.seller?.avatar ||
-          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+        avatar: apiProduct.seller?.avatar || "",
         rating: apiProduct.seller?.rating ?? 0,
         reviewCount: apiProduct.seller?.review_count ?? 0,
         responseTime: apiProduct.seller?.response_time || "N/A",
         memberSince: apiProduct.seller?.member_since || "N/A",
         verifiedSeller: apiProduct.seller?.verified ?? false,
       },
-      availability:
-        apiProduct.availability ??
-        (apiProduct.status === "active" ? "Available" : "Unavailable"),
-      lastUpdated: apiProduct.last_updated
-        ? new Date(apiProduct.last_updated)
-        : new Date(),
+      availability: apiProduct.availability ?? "Available",
+      lastUpdated: apiProduct.last_updated ? new Date(apiProduct.last_updated) : new Date(),
       views: apiProduct.views ?? 0,
       watchers: apiProduct.watchers ?? 0,
     };
   };
 
-  // --- Handlers (Restored fully) ---
+  useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const productName = searchParams.get("name");
+        
+        if (!productName) {
+          setError("Product not found.");
+          return;
+        }
 
-  const handleNavigateToVendorProfile = (vendor: Product["seller"]) => {
-    if (!vendor || !vendor.name) return;
-    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-    const businessSlug = slugify(vendor.name);
-    router.push(`/seller-profile/${encodeURIComponent(businessSlug)}`);
-  };
+        const decodedName = decodeURIComponent(productName);
+        const foundApiProduct = DUMMY_PRODUCT_STORE.find(
+          (p) => p.product_name === decodedName
+        ) || DUMMY_PRODUCT_STORE[0];
+
+        const transformedProduct = transformApiProduct(foundApiProduct);
+        setProduct(transformedProduct);
+
+        const similarProducts = DUMMY_PRODUCT_STORE
+          .filter((p) => p.product_name !== decodedName)
+          .map(transformApiProduct);
+        setAllProducts(similarProducts);
+
+        if (typeof window !== "undefined") {
+          const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+          setIsWishlisted(wishlist.includes(transformedProduct.id));
+        }
+
+      } catch (err: any) {
+        console.error("Error loading product:", err);
+        setError("Failed to load product details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductData();
+  }, [searchParams]);
 
   const handleWishlistToggle = () => {
     if (!product || typeof window === "undefined") return;
     const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
     let updatedWishlist;
-
     if (isWishlisted) {
       updatedWishlist = wishlist.filter((id: string) => id !== product.id);
       addNotification("info", "Removed from wishlist");
@@ -182,13 +296,10 @@ const ProductDetail = () => {
       setIsAddingToCart(true);
       await cartService.addToCart(parseInt(product.id), quantity);
       setCartQuantity((prev) => prev + quantity);
-      addNotification("success", `Added ${quantity} item(s) to cart successfully!`);
+      addNotification("success", `Added to cart!`);
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      addNotification("error", "Failed to add item to cart. Please try again.");
-    } finally {
-      setIsAddingToCart(false);
-    }
+      addNotification("error", "Failed to add to cart");
+    } finally { setIsAddingToCart(false); }
   };
 
   const handleBuyNow = async () => {
@@ -196,348 +307,148 @@ const ProductDetail = () => {
     try {
       setIsBuyingNow(true);
       await cartService.addToCart(parseInt(product.id), 1);
-      setCartQuantity((prev) => prev + 1);
       openCart(1);
-      addNotification("success", "Product added! Redirecting to checkout...");
     } catch (error) {
-      console.error("Error on Buy Now:", error);
-      addNotification("error", "Failed to process Buy Now. Please try again.");
-    } finally {
-      setIsBuyingNow(false);
-    }
-  };
-
-  const handleContactSeller = () => {
-    addNotification("info", "Opening seller contact...");
-    const businessName = sessionStorage.getItem("selectedBusinessName");
-    if (businessName) {
-      const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      router.push(`/seller-profile/${encodeURIComponent(slugify(businessName))}?tab=contact`);
-    } else {
-      console.warn("Missing business name!");
-    }
-  };
-
-  const handleGetDirections = () => {
-    if (!product) return;
-    const { lat, lng } = product.location;
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, "_blank");
+      addNotification("error", "Failed to process Buy Now");
+    } finally { setIsBuyingNow(false); }
   };
 
   const handleShare = async () => {
     if (!product) return;
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product.title,
-          text: `Check out this ${product.title} for ₦${product.price}`,
-          url: window.location.href,
-        });
-      } catch (error) {
-        console.log("Error sharing:", error);
-      }
+        try { await navigator.share({ title: product.title, url: window.location.href }); } catch {}
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      addNotification("success", "Link copied to clipboard!");
+        navigator.clipboard.writeText(window.location.href);
+        addNotification("success", "Link copied!");
     }
   };
 
-  // --- Effects (Restored fully) ---
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const productId = searchParams.get("id") || "1";
-        
-        if (!productId) {
-          setError("Missing product ID.");
-          return;
-        }
-
-        const apiProduct = await productService.getProductById(productId);
-        const transformedProduct = transformApiProduct(apiProduct);
-        setProduct(transformedProduct);
-
-        // Fetch Similar Products Logic (Restored)
-        const category = apiProduct.category;
-        if (category) {
-          try {
-            const similarResponse = await productService.getProducts();
-            if (Array.isArray(similarResponse)) {
-              const transformed = similarResponse.map(transformApiProduct);
-              const filtered = transformed.filter((p: Product) => p.id !== productId);
-              setAllProducts(filtered);
-            }
-          } catch (err) {
-            console.error("Error fetching similar products:", err);
-            setAllProducts([]);
-          }
-        }
-
-        // Check Wishlist Status (Restored)
-        if (typeof window !== "undefined") {
-          const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-          setIsWishlisted(wishlist.includes(transformedProduct.id));
-        }
-
-      } catch (err: any) {
-        console.error("Error fetching product:", err);
-        setError(err instanceof Error ? err.message : "Failed to load product");
-        addNotification("error", "Failed to load product details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [searchParams]);
-
-  // --- Comparisons Data ---
   const priceComparisons: PriceComparisonItem[] = [
-    { id: "comp_001", seller: "Mobile World", price: 929, condition: "New", distance: 1.5, rating: 4.6 },
-    { id: "comp_002", seller: "Phone Paradise", price: 949, condition: "New", distance: 2.3, rating: 4.4 },
-    { id: "comp_003", seller: "Digital Store", price: 879, condition: "Like New", distance: 3.1, rating: 4.7 },
+    { id: "comp_001", seller: "Mobile World", price: (product?.price || 0) * 1.05, condition: "New", distance: 1.5, rating: 4.6 },
+    { id: "comp_002", seller: "Phone Paradise", price: (product?.price || 0) * 0.98, condition: "New", distance: 2.3, rating: 4.4 },
   ];
 
-  // --- Loading / Error UI ---
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-12 h-12 border-4 border-[#E0921C] border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 border-4 rounded-full border-[#E0921C] border-t-transparent animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading product details...</p>
-        </div>
+  if (error || !product) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center bg-white p-8 rounded-2xl shadow-sm max-w-md">
+        <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+        <h2 className="text-xl font-bold">Product Not Available</h2>
+        <Button onClick={() => router.back()} className="mt-6 bg-[#212830] text-white px-6">Go Back</Button>
       </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-md">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-          <h2 className="mb-2 text-xl font-bold text-[#212830]">Product Not Available</h2>
-          <p className="mb-6 text-gray-500">{error || "The product you're looking for doesn't exist."}</p>
-          <Button onClick={() => router.back()} className="px-6 py-2 bg-[#212830] text-white hover:bg-[#212830]/90 rounded-lg">
-            Go Back
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const similarProductsData = allProducts.filter(
-    (p: Product) =>
-      p.id !== product?.id &&
-      p.specifications?.Category === product?.specifications?.Category
+    </div>
   );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-      {/* Notifications */}
       {notifications.map((n) => (
         <NotificationToast key={n.id} notification={n} onClose={removeNotification} />
       ))}
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         <Breadcrumbs category={product.specifications.Category} title={product.title} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* --- LEFT COLUMN: Visuals & Details (8 Cols) --- */}
           <div className="lg:col-span-6 space-y-8">
-            
-            {/* 1. Gallery */}
             <div className="bg-white rounded-3xl p-1 overflow-hidden border border-gray-100 shadow-sm">
                 <ImageGallery 
                     images={product.images} 
                     activeIndex={activeImageIndex} 
                     onImageChange={setActiveImageIndex} 
-                    // isMobile handled via CSS/responsive logic in subcomponent usually, 
-                    // or explicitly passed if your component requires it:
                     isMobile={false} 
                 />
             </div>
-   {/* 2. Seller Card */}
+            
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <SellerCard 
                     seller={product.seller} 
-                    onContact={handleContactSeller} // Restored handler
-                    onNavigateToVendorProfile={() => handleNavigateToVendorProfile(product.seller)} // Restored handler
+                    onContact={() => addNotification("info", "Opening chat...")} 
+                    onNavigateToVendorProfile={() => router.push(`/seller/${product.seller.id}`)} 
                 />
             </div>
-{/* 3. Price Comparison */}
+
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
                 <h4 className="font-bold text-[#212830] mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
                     <ShoppingBag className="w-4 h-4 text-[#E0921C]" /> Market Comparison
                 </h4>
-                <PriceComparison 
-                    comparisons={priceComparisons} 
-                    currentPrice={product.price} 
-                />
+                <PriceComparison comparisons={priceComparisons} currentPrice={product.price} />
             </div>
-         
 
-            {/* 3. Similar Products */}
             <div className="mt-12">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-[#212830]">Similar Items</h3>
-                </div>
+                <h3 className="text-xl font-bold text-[#212830] mb-6">Similar Items</h3>
                 <SimilarProducts 
-                    products={similarProductsData} 
-                    onProductClick={(id) => router.push(`/product-detail?id=${id}`)} 
+                    products={allProducts} 
+                    onProductClick={(title) => router.push(`/product-detail?name=${encodeURIComponent(title)}`)} 
                 />
             </div>
           </div>
 
-
-          {/* --- RIGHT COLUMN: Buy Box & Seller (4 Cols) --- */}
           <div className="lg:col-span-6 space-y-6">
-            
-              {/* 1. Product Info & Location */}
             <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm space-y-8">
                 <ProductInfo 
                     product={product} 
                     isWishlisted={isWishlisted}
                     onWishlistToggle={handleWishlistToggle}
                     onShare={handleShare}
-                    showFullDescription={showFullDescription} // Restored state
-                    onToggleDescription={() => setShowFullDescription(!showFullDescription)} // Restored handler
+                    showFullDescription={showFullDescription} 
+                    onToggleDescription={() => setShowFullDescription(!showFullDescription)} 
                     isMobile={false}
                 />
                 
                 <hr className="border-gray-100" />
-                {/* 1. Sticky Buy Box */}
-            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg sticky top-6 z-10">
-                <div className="mb-6">
-                    <div className="flex items-baseline gap-2 mb-1">
-                        <span className="text-3xl font-extrabold text-[#E0921C]">₦{product.price.toLocaleString()}</span>
-                        {product.originalPrice > product.price && (
-                            <span className="text-sm text-gray-400 line-through">₦{product.originalPrice.toLocaleString()}</span>
-                        )}
-                    </div>
-                    {product.discount && product.discount > 0 && (
-                        <div className="flex gap-2">
-                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
-                               {product.discount}% OFF
-                           </span>
-                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                               {product.condition}
-                           </span>
+                
+                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg sticky top-6 z-10">
+                    <div className="mb-6">
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-3xl font-extrabold text-[#E0921C]">₦{product.price.toLocaleString()}</span>
+                            {product.originalPrice > product.price && (
+                                <span className="text-sm text-gray-400 line-through">₦{product.originalPrice.toLocaleString()}</span>
+                            )}
                         </div>
-                    )}
-                </div>
-
-                {/* Status */}
-                <div className="flex items-center gap-2 mb-6 text-sm p-3 bg-gray-50 rounded-lg">
-                    {product.availability === "Available" ? (
-                        <>
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                            <span className="text-[#212830] font-medium">Available & Ready to Ship</span>
-                        </>
-                    ) : (
-                        <>
-                            <X className="w-5 h-5 text-red-500" />
-                            <span className="text-red-600 font-medium">Currently Unavailable</span>
-                        </>
-                    )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                    <Button 
-                        onClick={handleBuyNow} 
-                        disabled={isBuyingNow || product.availability !== "Available"}
-                        className="w-full py-4 text-base font-bold bg-[#212830] hover:bg-[#212830]/90 text-white rounded-xl shadow-md transition-transform active:scale-[0.98] disabled:opacity-50"
-                    >
-                        {isBuyingNow ? (
-                           <span className="flex items-center justify-center gap-2">
-                             <span className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></span>
-                             Processing...
-                           </span>
-                        ) : "Buy Now"}
-                    </Button>
-                    
-                    <Button 
-                        variant="outline" 
-                        onClick={() => handleAddToCart(1)}
-                        disabled={isAddingToCart || product.availability !== "Available"}
-                        className="w-full py-4 text-base font-semibold border-2 border-gray-200 hover:border-[#212830] hover:text-[#212830] text-gray-600 rounded-xl transition-colors disabled:opacity-50"
-                    >
-                        {isAddingToCart ? (
-                           <span className="flex items-center justify-center gap-2">
-                             <span className="w-4 h-4 border-2 border-[#212830] rounded-full border-t-transparent animate-spin"></span>
-                             Adding...
-                           </span>
-                        ) : `Add to Cart ${cartQuantity > 0 ? `(${cartQuantity})` : ""}`}
-                    </Button>
-                </div>
-
-                {/* Trust Badges */}
-                <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
-                    <div className="flex flex-col items-center text-center gap-1">
-                        <ShieldCheck className="w-6 h-6 text-gray-300" />
-                        <span className="text-xs text-gray-500 font-medium">Secure Payment</span>
                     </div>
-                    <div className="flex flex-col items-center text-center gap-1">
-                        <Truck className="w-6 h-6 text-gray-300" />
-                        <span className="text-xs text-gray-500 font-medium">Nationwide Delivery</span>
+
+                    <div className="space-y-3">
+                        <Button 
+                            onClick={handleBuyNow} 
+                            disabled={isBuyingNow}
+                            className="w-full py-4 bg-[#212830] text-white rounded-xl font-bold"
+                        >
+                            {isBuyingNow ? "Processing..." : "Buy Now"}
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => handleAddToCart(1)}
+                            disabled={isAddingToCart}
+                            className="w-full py-4 border-2 rounded-xl font-semibold"
+                        >
+                            {isAddingToCart ? "Adding..." : "Add to Cart"}
+                        </Button>
                     </div>
                 </div>
-            </div>
+
                 <div>
                     <h3 className="text-lg font-bold text-[#212830] mb-4 flex items-center gap-2">
                        <MapPin className="w-5 h-5 text-[#E0921C]" /> Item Location
                     </h3>
                     <div className="rounded-xl overflow-hidden border border-gray-200">
-                        <LocationMap location={product.location} onGetDirections={handleGetDirections} />
+                        <LocationMap location={product.location} onGetDirections={() => window.open(`https://maps.google.com?q=${product.location.lat},${product.location.lng}`)} />
                     </div>
                 </div>
             </div>
-
-          
-            
-
           </div>
         </div>
       </div>
-
-      {/* Mobile Sticky Action Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-50 safe-area-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-        <div className="flex gap-3">
-            <Button 
-                variant="outline" 
-                className="flex-1 py-3 rounded-xl font-semibold border-gray-300 text-gray-700" 
-                onClick={() => handleAddToCart(1)}
-                disabled={isAddingToCart || product.availability !== "Available"}
-            >
-                Add to Cart
-            </Button>
-            <Button 
-                className="flex-1 py-3 bg-[#E0921C] hover:bg-[#c9831b] text-white rounded-xl font-bold shadow-lg" 
-                onClick={handleBuyNow}
-                disabled={isBuyingNow || product.availability !== "Available"}
-            >
-                Buy Now
-            </Button>
-        </div>
-      </div>
-
     </div>
   );
 };
 
 const ProductDetailPage = () => (
-  <Suspense fallback={
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="w-12 h-12 border-4 border-[#E0921C] border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  }>
+  <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-12 h-12 border-4 border-[#E0921C] border-t-transparent rounded-full animate-spin"></div></div>}>
     <ProductDetail />
   </Suspense>
 );
