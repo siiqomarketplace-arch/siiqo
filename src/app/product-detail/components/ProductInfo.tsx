@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { useToast } from "@/hooks/use-toast"; // Assuming you have a toast hook for feedback
 
 interface Product {
     title: string;
@@ -9,7 +10,7 @@ interface Product {
     originalPrice: number;
     rating: number;
     reviewCount: number;
-    distance: number; // Changed from string to number
+    distance: number; 
     availability: string;
     views: number;
     watchers: number;
@@ -23,7 +24,7 @@ interface ProductInfoProps {
     product: Product;
     isWishlisted: boolean;
     onWishlistToggle: () => void;
-    onShare: () => void;
+    // onShare is now handled internally or passed as a callback
     showFullDescription: boolean;
     onToggleDescription: () => void;
     isMobile?: boolean;
@@ -33,11 +34,12 @@ const ProductInfo = ({
     product,
     isWishlisted,
     onWishlistToggle,
-    onShare,
     showFullDescription,
     onToggleDescription,
     isMobile = false
 }: ProductInfoProps) => {
+    const { toast } = useToast();
+
     const formatTimeAgo = (date: Date): string => {
         const now = new Date();
         const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -46,6 +48,28 @@ const ProductInfo = ({
         if (diffInHours < 24) return `${diffInHours}h ago`;
         const diffInDays = Math.floor(diffInHours / 24);
         return `${diffInDays}d ago`;
+    };
+
+    // --- CUSTOM SHARE LOGIC ---
+    const handleShare = async () => {
+        // 1. Format the name and distance (location)
+        // Replaces spaces with hyphens and makes lowercase for a clean URL feel
+        const formattedName = product.title.toLowerCase().trim().replace(/\s+/g, '-');
+        const locationTag = `${product.distance}-miles-away`;
+        
+        // 2. Construct the specific string: name+location
+        const shareUrl = `${formattedName}+${locationTag}`;
+        
+        // 3. Copy to clipboard
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast({
+                title: "Link Copied!",
+                description: "Product details copied to clipboard.",
+            });
+        } catch (err) {
+            console.error("Failed to copy!", err);
+        }
     };
 
     const discountPercentage = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
@@ -97,29 +121,25 @@ const ProductInfo = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center ml-4 space-x-2">
+          <div className="flex flex-col md:flex-row items-center space-x-2">
             <button
               type="button"
-              // variant='navy'
               onClick={onWishlistToggle}
-              className={`p-1 rounded-full bg-none transition-all duration-200 ${
+              className={`p-1 rounded-full transition-all duration-200 ${
                 isWishlisted
                   ? "bg-white text-slate-900"
-                  : "bg-white text-orange-500 hover:text-text-0"
+                  : "bg-white text-orange-500"
               }`}
-              aria-label={
-                isWishlisted ? "Remove from wishlist" : "Add to wishlist"
-              }
             >
               <Icon
                 name="Heart"
                 size={15}
-                className={isWishlisted ? "fill-current" : "fill-current"}
+                className={isWishlisted ? "fill-current" : ""}
               />
             </button>
 
             <button
-              onClick={onShare}
+              onClick={handleShare}
               className="p-3 transition-all duration-200 rounded-full bg-surface-secondary text-text-secondary hover:bg-surface hover:text-text-primary"
               aria-label="Share product"
             >
@@ -128,7 +148,7 @@ const ProductInfo = ({
           </div>
         </div>
 
-        {/* Status Indicators */}
+        {/* ... Rest of your existing JSX (Status, Condition, Description, Specs) ... */}
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
@@ -146,7 +166,6 @@ const ProductInfo = ({
           </div>
         </div>
 
-        {/* Condition and Last Updated */}
         <div className="flex items-center justify-between py-4 border-t border-b border-border">
           <div>
             <span className="text-sm text-text-secondary">Condition</span>
@@ -160,17 +179,12 @@ const ProductInfo = ({
           </div>
         </div>
 
-        {/* Description */}
         <div>
           <h3 className="mb-3 text-lg font-semibold font-heading text-text-primary">
             Description
           </h3>
           <div className="leading-relaxed text-text-secondary">
-            <p
-              className={`${
-                !showFullDescription && isMobile ? "line-clamp-3" : ""
-              }`}
-            >
+            <p className={`${!showFullDescription && isMobile ? "line-clamp-3" : ""}`}>
               {product.description}
             </p>
             {isMobile && (
@@ -184,7 +198,6 @@ const ProductInfo = ({
           </div>
         </div>
 
-        {/* Specifications */}
         <div>
           <h3 className="mb-3 text-lg font-semibold font-heading text-text-primary">
             Specifications

@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Star, 
   MapPin, 
   Calendar, 
   ArrowRight, 
-  BadgeCheck 
+  BadgeCheck,
+  RefreshCw,
+  ChevronRight
 } from "lucide-react";
 import Skeleton from "@/components/skeleton";
 import { Storefront } from "@/types/storeFront";
@@ -73,12 +75,66 @@ export const DUMMY_STOREFRONTS: Storefront[] = [
   }
 ];
 
+/**
+ * STOREFRONT LIST COMPONENT
+ * Handles the Refresh and View All UI
+ */
+export const StorefrontList = ({ onRefresh }: { onRefresh?: () => Promise<void> }) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [stores, setStores] = useState<Storefront[]>([]);
+
+  const fetchStores = async () => {
+    setIsLoading(true);
+    try {
+      // Simulating API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setStores(DUMMY_STOREFRONTS);
+    } catch (err) {
+      console.error("Failed to fetch storefronts", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    await fetchStores();
+    if (onRefresh) await onRefresh();
+    setIsLoading(false);
+  };
+
+  const handleViewAll = () => {
+    router.push("/storefronts");
+  };
+
+  return (
+    <div className="w-full">
+      
+
+      {/* Grid of Storefront Cards */}
+      <div className="grid bg-black grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {isLoading ? (
+          <StorefrontSkeleton count={3} />
+        ) : (
+          stores.map((store) => (
+            <StorefrontCard key={store.id} storefront={store} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * INDIVIDUAL STOREFRONT CARD
+ */
 export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
   const router = useRouter();
-
-  // --- Using Dummy Data (Comment this out to use real props) ---
-  // const storefront = DUMMY_STOREFRONTS[0]; // Use the first dummy item as a placeholder
-  // const storefront = propStorefront; // <--- Uncomment this to go back to real data
 
   const formatEstablishedDate = (dateString: string | undefined): string => {
     if (!dateString) return "New";
@@ -108,12 +164,6 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
           .replace(/(^-|-$)+/g, "");
 
       const businessSlug = slugify(storefront.business_name);
-
-      /* --- Real Logic: Session Storage ---
-      sessionStorage.setItem("selectedVendorEmail", storefront.vendor?.email || "");
-      sessionStorage.setItem("selectedBusinessName", storefront.business_name);
-      */
-
       router.push(`/storefront/${encodeURIComponent(businessSlug)}`);
     }
   };
@@ -194,7 +244,7 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
               <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white bg-gradient-to-br from-[#0E2848] to-[#0E2848]/60 rounded-full shadow-sm">
                 {storefront.vendor?.firstname?.charAt(0) || "V"}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+              {/* <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div> */}
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-medium text-gray-900">
@@ -205,7 +255,7 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
           </div>
 
           <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 group-hover:text-[#E0921C] transition-colors">
-             View Storefront <ArrowRight className="w-4 h-4" />
+              View Storefront <ArrowRight className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -213,8 +263,9 @@ export const StorefrontCard = ({ storefront }: { storefront: Storefront }) => {
   );
 };
 
-// --- Updated Skeleton ---
-
+/**
+ * UPDATED SKELETON
+ */
 export const StorefrontSkeleton = ({ count = 6 }: { count?: number }) => {
   return (
     <>

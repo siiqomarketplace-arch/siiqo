@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, ShoppingBag, AlertCircle, MapPin, X } from "lucide-react";
+import { Search, ShoppingBag, AlertCircle, MapPin, X, RefreshCw, ChevronRight } from "lucide-react";
 import { storefrontService } from "@/services/storefrontService";
 import { Storefront, APIResponse } from "@/types/storeFront";
 import { motion, AnimatePresence, Variants } from "framer-motion"; // Import Framer Motion
@@ -10,7 +10,7 @@ import {
   StorefrontCard,
   StorefrontSkeleton,
 } from "@/app/home/ui/StoreFrontCard";
-
+import { useRouter } from "next/navigation";
 // Animation Variants
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -32,7 +32,7 @@ const itemVariants: Variants = {
   },
 };
 
-const LandingPage: React.FC = () => {
+const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> }) => {
   const [distance, setDistance] = useState<string>("2 km");
   const [verifiedOnly, setVerifiedOnly] = useState<boolean>(false);
   const [storefronts, setStorefronts] = useState<Storefront[]>([]);
@@ -84,6 +84,37 @@ const LandingPage: React.FC = () => {
     setSearchTerm("");
     setVerifiedOnly(false);
     setDistance("2 km");
+  };
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [stores, setStores] = useState<Storefront[]>([]);
+
+  const fetchStores = async () => {
+    setIsLoading(true);
+    try {
+      // Simulating API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setStores(DUMMY_STOREFRONTS);
+    } catch (err) {
+      console.error("Failed to fetch storefronts", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    await fetchStores();
+    if (onRefresh) await onRefresh();
+    setIsLoading(false);
+  };
+
+  const handleViewAll = () => {
+    router.push("/marketplace");
   };
 
   return (
@@ -257,7 +288,27 @@ const LandingPage: React.FC = () => {
             </button>
           </motion.div>
         )}
+{/* Header with Refresh and View All */}
+      <div className="flex items-center justify-between pt-20 mb-6 px-1">
+        <div className="flex items-center gap-4">
+           <h2 className="text-xl font-bold text-gray-900">Featured Stores</h2>
+           <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </button>
+        </div>
 
+        <button 
+          onClick={handleViewAll}
+          className="flex items-center gap-1 text-sm font-semibold text-[#E0921C] hover:underline"
+        >
+          View All <ChevronRight size={16} />
+        </button>
+      </div>
         {/* Storefront Grid with Staggered Animation */}
         {!loading && !error && filteredStorefronts.length > 0 && (
           <motion.div 

@@ -138,7 +138,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
 
           {/* Contact Form Container */}
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+          {/* <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
             <h3 className="mb-6 font-black text-slate-900">Send a Message</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -179,7 +179,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
                 Send Message
               </Button>
             </form>
-          </div>
+          </div> */}
         </div>
       </div>
 

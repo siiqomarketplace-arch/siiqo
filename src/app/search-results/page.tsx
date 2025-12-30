@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
@@ -160,7 +159,6 @@ const SearchResults = () => {
 
   // --- Helpers --- //
   const transformApiProduct = (apiProduct: ApiProduct): any => {
-    // Generate extras to match the user's requested schema structure
     const seed = apiProduct.id;
     const random = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     
@@ -192,7 +190,6 @@ const SearchResults = () => {
 
       let transformedProducts: any[] = [];
       try {
-        // Attempt fetch, but we will mix in our MOCK_PRODUCTS as priority
         const data: ApiResponse = await productService.getProducts();
         if (data && data.products) {
             transformedProducts = data.products
@@ -203,8 +200,6 @@ const SearchResults = () => {
         console.warn("Backend fetch failed, using mocks.");
       }
 
-      // Prioritize MOCK_PRODUCTS to ensure user's test data is visible
-      // Fix: Ensure unique IDs by filtering out backend products that match mock IDs to avoid key collision
       const mockIds = new Set(MOCK_PRODUCTS.map(p => String(p.id)));
       const uniqueBackendProducts = transformedProducts.filter(p => !mockIds.has(String(p.id)));
 
@@ -232,14 +227,12 @@ const SearchResults = () => {
   const displayProducts = useMemo(() => {
     let currentProducts = [...products];
 
-    // Mode Filter
     if (searchMode === 'storefront') {
         currentProducts = currentProducts.filter(p => p.isProduct === false);
     } else {
         currentProducts = currentProducts.filter(p => p.isProduct === true);
     }
 
-    // Query Filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       currentProducts = currentProducts.filter(
@@ -251,11 +244,9 @@ const SearchResults = () => {
       );
     }
 
-    // Additional Filters
     activeFilters.forEach((filter) => {
        if (filter.type === "price") currentProducts = currentProducts.filter(p => p.price <= filter.value);
        if (filter.type === "distance") currentProducts = currentProducts.filter(p => p.distance <= filter.value);
-       // Add logic for categories if needed
     });
 
     return currentProducts;
@@ -271,6 +262,7 @@ const SearchResults = () => {
   };
 
   const handleSearchSubmit = (query: string) => {
+    if (!query.trim()) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("q", query);
     router.push(`/search-results?${params.toString()}`);
@@ -314,32 +306,39 @@ const SearchResults = () => {
       {/* Placeholder Background for Initial Load */}
        <div className={`absolute inset-0 z-0 bg-slate-100 transition-opacity duration-1000 ${hasSearched ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="absolute inset-0 bg-gradient-to-br from-[#1B3F61]/5 via-slate-100 to-[#1B3F61]/5" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#1B3F61]/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#1B3F61]/5 rounded-full blur-[120px] animate-pulse" />
        </div>
 
       {/* 2. Glass Container */}
       <div 
         className={`
             absolute top-0 bottom-0 left-0 z-10
-            w-full h-screen md:w-[450px] lg:w-[480px]
-            bg-white/60 backdrop-blur-xl border-r border-white/40 shadow-2xl
-            transition-all duration-500 ease-in-out
-            flex flex-col
+            h-screen transition-all duration-700 ease-in-out
+            flex flex-col items-center
             ${showMapFull ? '-translate-x-[calc(100%)]' : 'translate-x-0'}
-            ${!hasSearched ? 'md:w-full lg:w-full items-center justify-center bg-white/0 backdrop-blur-none border-none shadow-none' : ''}
+            ${!hasSearched 
+                ? 'w-full bg-transparent justify-center' 
+                : 'w-full md:w-[450px] lg:w-[480px] bg-white/60 backdrop-blur-xl border-r border-white/40 shadow-2xl'}
         `}
       >
         {/* Inner Content Wrapper */}
-        <div className={`flex flex-col w-full h-full ${!hasSearched ? 'max-w-xl p-4' : ''}`}>
+        <div className={`flex flex-col w-full h-full transition-all duration-700 ${!hasSearched ? 'max-w-4xl px-6' : ''}`}>
             
             {/* Top Search Area */}
-            <div className={`flex-none p-5 pb-2 transition-all duration-500 ${!hasSearched ? 'w-full' : ''}`}>
+            <div className={`flex-none p-5 transition-all duration-700 ${!hasSearched ? 'flex flex-col items-center justify-center h-full' : 'pb-2'}`}>
                 
-                {/* Search Bar */}
-                <div className="relative z-50 mb-4">
-                    <div className="relative group shadow-lg rounded-2xl">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Icon name="Search" size={18} className="text-black group-focus-within:text-black transition-colors z-50" />
+                {!hasSearched && (
+                    <div className="mb-8 text-center animate-in fade-in zoom-in duration-1000">
+                        <h1 className="text-4xl md:text-5xl font-black text-[#1B3F61] mb-2 tracking-tight">Explore your city.</h1>
+                        <p className="text-slate-500 font-medium">Find anything from products to local storefronts</p>
+                    </div>
+                )}
+
+                {/* Search Bar Container - Logic for Bing-style Long Bar */}
+                <div className={`relative z-50 transition-all duration-700 ${!hasSearched ? 'w-full max-w-3xl' : 'w-full mb-4'}`}>
+                    <div className={`relative group shadow-2xl transition-all duration-500 ${!hasSearched ? 'scale-110' : 'scale-100'}`}>
+                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                            <Icon name="Search" size={!hasSearched ? 24 : 18} className="text-[#1B3F61] group-focus-within:text-black transition-colors z-50" />
                         </div>
                         <input
                             type="text"
@@ -348,38 +347,45 @@ const SearchResults = () => {
                             onChange={handleSearchChange}
                             onFocus={() => setShowSuggestions(searchQuery.length > 0)}
                             onKeyPress={(e) => e.key === "Enter" && handleSearchSubmit(searchQuery)}
-                            className={`w-full py-4 pl-11 pr-12 text-sm bg-white/90 border border-white/60 rounded-full text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F61]/50 transition-all backdrop-blur-sm ${!hasSearched ? 'shadow-xl text-lg' : 'shadow-sm'}`}
+                            className={`
+                                w-full font-medium transition-all duration-500 backdrop-blur-md border border-white/60 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#1B3F61]/10 bg-white/95
+                                ${!hasSearched 
+                                    ? 'py-6 pl-16 pr-14 text-xl rounded-2xl shadow-[0_20px_50px_rgba(27,63,97,0.15)]' 
+                                    : 'py-4 pl-12 pr-12 text-sm rounded-full shadow-sm'}
+                            `}
                         />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"
+                                className="absolute right-5 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"
                             >
-                                <Icon name="X" size={14} />
+                                <Icon name="X" size={!hasSearched ? 20 : 14} />
                             </button>
                         )}
                     </div>
 
                     {showSuggestions && (
-                        <div className="absolute bg-transparent top-full left-0 right-0 mt-2 z-50">
-                            <SearchSuggestions
-                                query={searchQuery}
-                                recentSearches={["Mini Q12", "Headphones", "Storefront"]}
-                                popularSearches={["Smart Electronics", "Dining", "Fashion"]}
-                                onSelectSuggestion={handleSearchSubmit}
-                                onClose={() => setShowSuggestions(false)}
-                            />
+                        <div className={`absolute top-full left-0 right-0 z-50 ${!hasSearched ? 'mt-4' : 'mt-2'}`}>
+                            <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 overflow-hidden">
+                                <SearchSuggestions
+                                    query={searchQuery}
+                                    recentSearches={["Mini Q12", "Headphones", "Storefront"]}
+                                    popularSearches={["Smart Electronics", "Dining", "Fashion"]}
+                                    onSelectSuggestion={handleSearchSubmit}
+                                    onClose={() => setShowSuggestions(false)}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* --- TOGGLE & FILTERS AREA (Hidden until searched) --- */}
-                <div className={`transition-all duration-700 ease-in-out ${hasSearched ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+                {/* --- TOGGLE & FILTERS AREA --- */}
+                <div className={`transition-all duration-700 ease-in-out w-full ${hasSearched ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0 overflow-hidden mt-0'}`}>
                     
                     {/* Storefront / Product Toggle */}
-                    <div className="flex items-center justify-center mb-5 space-x-4">
+                    <div className="flex items-center justify-center my-4 space-x-4">
                         <span 
-                            className={`text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors ${searchMode === 'storefront' ? 'text-slate-900' : 'text-slate-400'}`}
+                            className={`text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${searchMode === 'storefront' ? 'text-[#1B3F61]' : 'text-slate-400'}`}
                             onClick={() => setSearchMode('storefront')}
                         >
                             Storefront
@@ -387,27 +393,25 @@ const SearchResults = () => {
                         
                         <button 
                             onClick={() => setSearchMode(prev => prev === 'product' ? 'storefront' : 'product')}
-                            className={`relative w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none shadow-inner ${searchMode === 'product' ? 'bg-[#1B3F61]' : 'bg-slate-300'}`}
+                            className={`relative w-12 h-6 rounded-full p-1 transition-colors duration-300 focus:outline-none shadow-inner ${searchMode === 'product' ? 'bg-[#1B3F61]' : 'bg-slate-300'}`}
                         >
                             <div 
-                                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${searchMode === 'product' ? 'translate-x-7' : 'translate-x-0'}`} 
+                                className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${searchMode === 'product' ? 'translate-x-6' : 'translate-x-0'}`} 
                             />
                         </button>
                         
                         <span 
-                            className={`text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors ${searchMode === 'product' ? 'text-slate-900' : 'text-slate-400'}`}
+                            className={`text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${searchMode === 'product' ? 'text-[#1B3F61]' : 'text-slate-400'}`}
                             onClick={() => setSearchMode('product')}
                         >
                             Product
                         </span>
                     </div>
 
-                    {/* Quick Filters */}
                     <div className="mb-2">
                         <QuickFilters onApplyFilter={handleQuickFilter} />
                     </div>
 
-                     {/* Active Filters */}
                     {activeFilters.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
                             {activeFilters.map((filter) => (
@@ -420,27 +424,24 @@ const SearchResults = () => {
                         </div>
                     )}
 
-                    {/* New Categories (Tabs) */}
                     <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide py-2">
                         {categories.map((category) => (
                             <button 
                                 key={category}
-                                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/50 border border-white/60 text-xs font-medium text-slate-600 shadow-sm hover:bg-white/90 hover:text-slate-900 transition-all active:scale-95"
+                                className="whitespace-nowrap px-4 py-2 rounded-full bg-white/50 border border-white/60 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-white hover:text-[#1B3F61] transition-all active:scale-95"
                             >
                                 {category}
                             </button>
                         ))}
                     </div>
 
-                    {/* Results Count */}
                     <div className="flex items-center justify-between mt-2 px-2">
-                         <span className="text-xs font-medium text-slate-500">
-                             {isLoading ? 'Searching...' : `${displayProducts.length} Results found`}
+                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                             {isLoading ? 'Searching...' : `${displayProducts.length} items found nearby`}
                          </span>
                          
-                         {/* Mobile Map Toggle */}
                          <div className="md:hidden flex items-center space-x-2">
-                            <span className="text-[10px] text-slate-400 uppercase">Map</span>
+                            <span className="text-[10px] text-slate-400 uppercase font-bold">Map</span>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input 
                                     type="checkbox" 
@@ -448,14 +449,14 @@ const SearchResults = () => {
                                     checked={showMapFull}
                                     onChange={() => setShowMapFull(!showMapFull)}
                                 />
-                                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#1B3F61] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                <div className="w-8 h-4 bg-slate-300 rounded-full peer peer-checked:bg-[#1B3F61] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
                             </label>
                          </div>
                     </div>
                 </div>
             </div>
 
-            {/* Results List Area (Hidden until searched) */}
+            {/* Results List Area */}
             {hasSearched && (
                 <div className="flex-1 overflow-y-auto px-5 pb-20 scrollbar-hide animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="space-y-4 min-h-[200px] mt-2">
@@ -472,7 +473,7 @@ const SearchResults = () => {
                         ) : displayProducts.length === 0 ? (
                             <div className="text-center py-12 bg-white/30 rounded-3xl backdrop-blur-sm border border-white/40">
                                 <Icon name="Search" size={32} className="mx-auto text-slate-400 mb-2" />
-                                <p className="text-slate-600 font-medium">No results found</p>
+                                <p className="text-slate-600 font-medium">No results match your filters</p>
                             </div>
                         ) : (
                             displayProducts.map((product) => (
@@ -488,13 +489,12 @@ const SearchResults = () => {
             )}
         </div>
         
-        {/* Bottom Fade */}
         {hasSearched && (
             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/80 to-transparent pointer-events-none z-20" />
         )}
       </div>
 
-      {/* 3. Floating Map Controls */}
+      {/* Floating Map Controls */}
         {hasSearched && (
         <div className="fixed z-50 bottom-24 right-6 md:bottom-8 md:right-8">
             <button

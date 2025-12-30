@@ -43,7 +43,7 @@ const SimilarProducts = ({
       </div>
 
       <div
-        className={`${isMobile ? "overflow-x-auto" : "grid grid-cols-3 gap-4"}`}
+        className={`${isMobile ? "overflow-x-auto" : "grid grid-cols-1 gap-4"}`}
       >
         <div className={`${isMobile ? "flex space-x-4 pb-4" : "contents"}`}>
           {products.map(product => (

@@ -132,7 +132,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
 
           {/* Contact Form */}
-          <div>
+          {/* <div>
             <h3 className="mb-4 font-medium text-text-primary">
               Send a Message
             </h3>
@@ -205,7 +205,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
                   : "Send Message"}
               </Button>
             </form>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

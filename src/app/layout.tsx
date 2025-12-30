@@ -11,9 +11,9 @@ import { CartModalProvider } from "@/context/cartModalContext";
 import ToastProvider from "@/context/ToastProvider";
 
 export const metadata: Metadata = {
-  title: "Citymart | Roots & Squares",
+  title: "Siiqo",
   description:
-    "Find products all over the country, find stores, place orders, and receive them quickly",
+    "Your local Marketplace",
   icons: {
     icon: "/images/favicon.png",
   },

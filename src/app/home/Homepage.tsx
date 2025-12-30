@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   MapPin,
   Search,
@@ -13,11 +13,17 @@ import {
   User,
   Zap,
   X,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./LandingPage";
 import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard"; // Adjust path as needed
 import { Product } from "@/types/products";
+
+
+
+const CATEGORIES = ["All Items", "Smartphones", "Electronics", "Fashion"];
+
 
 // --- THE HERO VISUALIZATION COMPONENT ---
 const MarketplaceSimulation = () => {
@@ -30,7 +36,6 @@ const MarketplaceSimulation = () => {
     }, 3000); // Change step every 3 seconds
     return () => clearInterval(interval);
   }, []);
-
   return (
     <div className="relative w-full max-w-[600px] h-[450px] flex items-center justify-center perspective-1000">
       
@@ -238,6 +243,8 @@ const FeaturePill = ({ icon, text, delay }: any) => (
 const Homepage: React.FC = () => {
   const router = useRouter();
 
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   // 1. Search States
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [location, setLocation] = useState<string>("");
@@ -247,6 +254,17 @@ const Homepage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<Product[]>([]);
+
+    // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 3. Filter Function (The core logic)
   const handleSearch = (e: React.FormEvent) => {
@@ -355,20 +373,61 @@ const Homepage: React.FC = () => {
                   {/* CATEGORY */}
                   <div className="flex items-center flex-1 px-4 py-3 relative">
                     <ShoppingBag className="text-purple-500 mr-3" size={20} />
-                    <div className="flex flex-col w-full">
-                      <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Category</label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full bg-transparent text-white text-sm font-medium outline-none appearance-none cursor-pointer"
-                      >
-                        <option className="text-black">All Items</option>
-                        <option className="text-black">Smartphones</option>
-                        <option className="text-black">Electronics</option>
-                        <option className="text-black">Fashion</option>
-                      </select>
+                    <div className="flex flex-col w-full rounded-md">
+{/* Label */}
+      <label className="text-[10px] uppercase font-bold text-[#E0921C] tracking-wider mb-1">
+        Category
+      </label>
+      {/* Trigger Button */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 transition-all cursor-pointer group"
+      >
+        <div className="flex items-center gap-2 overflow-hidden">
+          <ShoppingBag size={16} className="text-purple-400 shrink-0" />
+          <span className="text-white text-sm font-medium truncate">
+            {category}
+          </span>
+        </div>
+        
+        <ChevronDown 
+          size={16} 
+          className={`text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} 
+        />
+      </div>
+                        {/* Dropdown Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden bg-[#0A1D3B]/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          >
+            <div className="py-2 max-h-[240px] overflow-y-auto scrollbar-hide">
+              {CATEGORIES.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    setCategory(item);
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-blue-100/80 hover:bg-[#E0921C] hover:text-white transition-all text-left"
+                >
+                  {item}
+                  {category === item && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                      <Check size={14} className="text-white" />
+                    </motion.div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
                     </div>
-                    <ChevronDown className="absolute right-4 text-gray-500 pointer-events-none" size={16} />
                   </div>
 
                   {/* BUTTON */}

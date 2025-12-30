@@ -1,21 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { vendorService } from "@/services/vendorService";
-import {
-  OrderStatus,
-  ProductOrder,
-  ProductOrderItem,
-  ApiOrdersResponse,
-  ApiOrder,
-  ApiOrderDetailsResponse,
-  Filters,
-  Statistics,
-  Activity,
-  ExportFormat,
-  VendorData,
+import { Plus, RefreshCcw, Search, Filter, Package, ShoppingBag, DollarSign, BarChart3 } from "lucide-react";
+
+// --- Types (Simplified for LocalStorage Logic) ---
+import { 
+  OrderStatus, ProductOrder, Filters, Statistics, Activity, ExportFormat 
 } from "@/types/orders";
+
 import OrderFilters from "./components/OrderFilters";
 import OrderStatistics from "./components/OrderStatistics";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
@@ -24,492 +17,256 @@ import OrderDetailModal from "./components/OrderDetailModal";
 import RecentActivityFeed from "./components/RecentActivityFeed";
 import QuickActions from "./components/QuickActions";
 
-// const OrderManagement: React.FC = () => {
-//   const router = useRouter();
-//   const [vendorData, setVendorData] = useState<VendorData | null>(null);
-//   const [orders, setOrders] = useState<ProductOrder[]>([]);
-//   const [filteredOrders, setFilteredOrders] = useState<ProductOrder[]>([]);
-//   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-//   const [selectedOrder, setSelectedOrder] = useState<ProductOrder | null>(null);
-//   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-//   const [loading, setLoading] = useState<boolean>(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [filters, setFilters] = useState<Filters>({
-//     search: "",
-//     status: "all",
-//     sort: "newest",
-//     dateRange: {
-//       from: "",
-//       to: "",
-//     },
-//     amountRange: {
-//       min: "",
-//       max: "",
-//     },
-//   });
-
-//   const transformApiOrderToProductOrder = (
-//     apiOrder: ApiOrder | ApiOrderDetailsResponse
-//   ): ProductOrder => {
-//     const subtotal = apiOrder.items.reduce(
-//       (sum, item) => sum + item.price * item.quantity,
-//       0
-//     );
-//     const shipping = subtotal > 5000 ? 0 : 1000;
-//     const tax = subtotal * 0.075;
-//     const total = subtotal + shipping + tax;
-
-//     const transformedItems: ProductOrderItem[] = apiOrder.items.map(
-//       (item, index) => ({
-//         id: index + 1,
-//         name: item.product_name,
-//         image:
-//           "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
-//         quantity: item.quantity,
-//         price: item.price / 100,
-//       })
-//     );
-
-//     let orderStatus: OrderStatus = "pending";
-//     if ("status" in apiOrder && apiOrder.status) {
-//       orderStatus = apiOrder.status as OrderStatus;
-//     } else if (apiOrder.items.length > 0 && apiOrder.items[0].status) {
-//       orderStatus = apiOrder.items[0].status as OrderStatus;
-//     }
-
-//     return {
-//       id: apiOrder.order_id.toString(),
-//       orderNumber: `ORD-${apiOrder.order_id.toString().padStart(6, "0")}`,
-//       customer: {
-//         name: apiOrder.buyer_name,
-//         email: apiOrder.buyer_email,
-//         phone: undefined,
-//       },
-//       items: transformedItems,
-//       subtotal: subtotal / 100,
-//       shipping: shipping / 100,
-//       tax: tax / 100,
-//       total: total / 100,
-//       status: orderStatus,
-//       createdAt: new Date(apiOrder.created_at),
-//       shippingAddress: {
-//         name: apiOrder.buyer_name,
-//         street: "",
-//         city: "",
-//         state: "",
-//         zipCode: "",
-//         country: "Nigeria",
-//         phone: undefined,
-//       },
-//       customerNotes: null,
-//       trackingNumber: null,
-//     };
-//   };
-
-//   const fetchOrders = async (): Promise<void> => {
-//     try {
-//       setLoading(true);
-//       setError(null);
-
-//       // Check for token first to avoid unnecessary requests
-//       const token = sessionStorage.getItem("authToken") || sessionStorage.getItem("RSToken");
-//       if (!token) {
-//         throw new Error("No authentication token found. Please login.");
-//       }
-
-//       const response: ApiOrdersResponse = await vendorService.getVendorOrders();
-
-//       const transformedOrders = response.orders.map(
-//         transformApiOrderToProductOrder
-//       );
-
-//       setOrders(transformedOrders);
-//       setFilteredOrders(transformedOrders);
-//     } catch (err: any) {
-//       console.error("Error fetching orders:", err);
-      
-//       // Handle 403 Forbidden specifically
-//       if (err.response && err.response.status === 403) {
-//         setError("Access Denied: You are not authorized to view vendor orders. Please log in as a vendor.");
-//         // Clear invalid session data
-//         sessionStorage.clear();
-//         localStorage.removeItem("authToken");
-//         // Redirect to login after a brief delay
-//         setTimeout(() => router.push("/auth/login"), 2000);
-//       } else {
-//         const errorMessage = err.message || "Failed to fetch orders";
-//         setError(errorMessage);
-//       }
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const calculateStatistics = (orders: ProductOrder[]): Statistics => {
-//     const today = new Date();
-//     today.setHours(0, 0, 0, 0);
-
-//     const todayOrders = orders.filter((order) => {
-//       const orderDate = new Date(order.createdAt);
-//       orderDate.setHours(0, 0, 0, 0);
-//       return orderDate.getTime() === today.getTime();
-//     });
-
-//     const pendingOrders = orders.filter((order) => order.status === "pending");
-//     const revenueToday = todayOrders.reduce(
-//       (sum, order) => sum + order.total,
-//       0
-//     );
-//     const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
-//     const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
-
-//     return {
-//       totalOrders: orders.length,
-//       ordersChange: 0,
-//       pendingOrders: pendingOrders.length,
-//       pendingChange: 0,
-//       revenueToday: revenueToday,
-//       revenueChange: 0,
-//       avgOrderValue: avgOrderValue,
-//       avgOrderChange: 0,
-//     };
-//   };
-
-//   const generateActivities = (orders: ProductOrder[]): Activity[] => {
-//     const activities: Activity[] = [];
-
-//     orders.slice(0, 4).forEach((order, index) => {
-//       activities.push({
-//         id: index + 1,
-//         type: "order_placed",
-//         title: "New Order Received",
-//         description: `${order.customer.name} placed a new order`,
-//         orderNumber: order.orderNumber,
-//         status: order.status,
-//         timestamp: order.createdAt.toISOString(),
-//       });
-//     });
-
-//     return activities;
-//   };
-
-//   useEffect(() => {
-//     fetchOrders();
-//   }, []);
-
-//   useEffect(() => {
-//     let filtered = [...orders];
-
-//     if (filters.search) {
-//       filtered = filtered.filter(
-//         (order) =>
-//           order.orderNumber
-//             .toLowerCase()
-//             .includes(filters.search.toLowerCase()) ||
-//           order.customer.name
-//             .toLowerCase()
-//             .includes(filters.search.toLowerCase()) ||
-//           order.customer.email
-//             .toLowerCase()
-//             .includes(filters.search.toLowerCase())
-//       );
-//     }
-
-//     if (filters.status && filters.status !== "all") {
-//       filtered = filtered.filter((order) => order.status === filters.status);
-//     }
-
-//     if (filters.dateRange.from) {
-//       filtered = filtered.filter(
-//         (order) => new Date(order.createdAt) >= new Date(filters.dateRange.from)
-//       );
-//     }
-//     if (filters.dateRange.to) {
-//       filtered = filtered.filter(
-//         (order) => new Date(order.createdAt) <= new Date(filters.dateRange.to)
-//       );
-//     }
-
-//     if (filters.amountRange.min) {
-//       filtered = filtered.filter(
-//         (order) => order.total >= parseFloat(filters.amountRange.min)
-//       );
-//     }
-//     if (filters.amountRange.max) {
-//       filtered = filtered.filter(
-//         (order) => order.total <= parseFloat(filters.amountRange.max)
-//       );
-//     }
-
-//     filtered.sort((a, b) => {
-//       switch (filters.sort) {
-//         case "oldest":
-//           return (
-//             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-//           );
-//         case "amount_high":
-//           return b.total - a.total;
-//         case "amount_low":
-//           return a.total - b.total;
-//         case "newest":
-//         default:
-//           return (
-//             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-//           );
-//       }
-//     });
-
-//     setFilteredOrders(filtered);
-//   }, [orders, filters]);
-
-//   const handleFiltersChange = (newFilters: Filters): void => {
-//     setFilters(newFilters);
-//   };
-
-//   const handleClearFilters = (): void => {
-//     setFilters({
-//       search: "",
-//       status: "all",
-//       sort: "newest",
-//       dateRange: { from: "", to: "" },
-//       amountRange: { min: "", max: "" },
-//     });
-//   };
-
-//   const handleOrderSelect = (orderId: string, isSelected: boolean): void => {
-//     if (isSelected) {
-//       setSelectedOrders([...selectedOrders, orderId]);
-//     } else {
-//       setSelectedOrders(selectedOrders.filter((id) => id !== orderId));
-//     }
-//   };
-
-//   const handleSelectAll = (isSelected: boolean): void => {
-//     if (isSelected) {
-//       setSelectedOrders(filteredOrders.map((order) => order.id));
-//     } else {
-//       setSelectedOrders([]);
-//     }
-//   };
-
-//   const handleStatusUpdate = async (
-//     orderId: string,
-//     newStatus: OrderStatus
-//   ): Promise<void> => {
-//     try {
-//       await vendorService.updateOrderStatus(orderId, newStatus);
-//       setOrders(
-//         orders.map((order) =>
-//           order.id === orderId ? { ...order, status: newStatus } : order
-//         )
-//       );
-//     } catch (error) {
-//       console.error("Error updating order status:", error);
-//       fetchOrders();
-//     }
-//   };
-
-//   const handleBulkStatusUpdate = (newStatus: OrderStatus): void => {
-//     setOrders(
-//       orders.map((order) =>
-//         selectedOrders.includes(order.id)
-//           ? { ...order, status: newStatus }
-//           : order
-//       )
-//     );
-//     setSelectedOrders([]);
-//   };
-
-//   const handleBulkExport = (format: ExportFormat): void => {
-//     console.log(`Exporting ${selectedOrders.length} orders as ${format}`);
-//   };
-
-//   const handleViewOrder = (order: ProductOrder): void => {
-//     setSelectedOrder(order);
-//     setIsModalOpen(true);
-//   };
-
-//   const handleSendMessage = (orderId: string, message: string): void => {
-//     console.log(`Sending message to order ${orderId}: ${message}`);
-//   };
-
-//   const handleQuickAction = (actionId: string): void => {
-//     if (actionId === "refresh") {
-//       fetchOrders();
-//     }
-//     else {
-//       console.log(`Quick action: ${actionId}`);
-//     }
-//   };
-
-//   const handleRetry = (): void => {
-//     fetchOrders();
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen bg-background flex items-center justify-center">
-//         <div className="text-center">
-//           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-//           <h2 className="text-xl font-semibold text-foreground mb-2">
-//             Loading Orders...
-//           </h2>
-//           <p className="text-muted-foreground">
-//             Please wait while we fetch your orders
-//           </p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   // Error State Display
-//   if (error) {
-//     return (
-//       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-//         <div className="text-center max-w-md bg-white p-8 rounded-lg shadow-lg border border-red-100">
-//           <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-//             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-//               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-//             </svg>
-//           </div>
-//           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Error</h2>
-//           <p className="text-gray-600 mb-6">{error}</p>
-//           <div className="flex gap-3 justify-center">
-//             <button
-//               onClick={() => router.push("/auth/login")}
-//               className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors font-medium"
-//             >
-//               Log In
-//             </button>
-//             <button
-//               onClick={handleRetry}
-//               className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-//             >
-//               Retry
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const statistics = calculateStatistics(orders);
-//   const activities = generateActivities(orders);
-
-//   return (
-//     // <div className="min-h-screen bg-background">
-//     //   <div className="max-w-[85vw] mx-auto py-6 px-0 md:px-4">
-//     //     <div className="mb-8 flex items-center justify-between">
-//     //       <div>
-//     //         <h1 className="text-3xl font-bold text-foreground mb-2">
-//     //           Order Management
-//     //         </h1>
-//     //         <p className="text-muted-foreground">
-//     //           Track, process, and fulfill customer orders efficiently
-//     //         </p>
-//     //       </div>
-//     //       <button
-//     //         onClick={() => fetchOrders()}
-//     //         className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-//     //       >
-//     //         <svg
-//     //           className="w-4 h-4"
-//     //           fill="none"
-//     //           stroke="currentColor"
-//     //           viewBox="0 0 24 24"
-//     //         >
-//     //           <path
-//     //             strokeLinecap="round"
-//     //             strokeLinejoin="round"
-//     //             strokeWidth={2}
-//     //             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-//     //           />
-//     //         </svg>
-//     //         Refresh
-//     //       </button>
-//     //     </div>
-
-//     //     <OrderStatistics statistics={statistics} />
-
-//     //     <OrderFilters
-//     //       filters={filters}
-//     //       onFiltersChange={handleFiltersChange}
-//     //       onClearFilters={handleClearFilters}
-//     //     />
-
-//     //     <BulkActionsToolbar
-//     //       selectedCount={selectedOrders.length}
-//     //       onBulkStatusUpdate={handleBulkStatusUpdate}
-//     //       onBulkExport={handleBulkExport}
-//     //       onClearSelection={() => setSelectedOrders([])}
-//     //     />
-
-//     //     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-//     //       <div className="xl:col-span-3">
-//     //         {orders.length === 0 ? (
-//     //           <div className="bg-card rounded-lg border p-8 text-center">
-//     //             <div className="text-muted-foreground mb-4">
-//     //               <svg
-//     //                 className="w-16 h-16 mx-auto mb-4"
-//     //                 fill="none"
-//     //                 stroke="currentColor"
-//     //                 viewBox="0 0 24 24"
-//     //               >
-//     //                 <path
-//     //                   strokeLinecap="round"
-//     //                   strokeLinejoin="round"
-//     //                   strokeWidth={1}
-//     //                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-//     //                 />
-//     //               </svg>
-//     //               <h3 className="text-xl font-semibold text-foreground mb-2">
-//     //                 No Orders Found
-//     //               </h3>
-//     //               <p>
-//     //                 You don't have any orders yet. Orders will appear here once
-//     //                 customers start purchasing your products.
-//     //               </p>
-//     //             </div>
-//     //           </div>
-//     //         ) : (
-//     //           <OrderTable
-//     //             orders={filteredOrders}
-//     //             selectedOrders={selectedOrders}
-//     //             onOrderSelect={handleOrderSelect}
-//     //             onSelectAll={handleSelectAll}
-//     //             onStatusUpdate={handleStatusUpdate}
-//     //             onViewOrder={handleViewOrder}
-//     //           />
-//     //         )}
-//     //       </div>
-
-//     //       <div className="space-y-6">
-//     //         <QuickActions onAction={handleQuickAction} />
-//     //         <RecentActivityFeed activities={activities} />
-//     //       </div>
-//     //     </div>
-
-//     //     <OrderDetailModal
-//     //       order={selectedOrder}
-//     //       isOpen={isModalOpen}
-//     //       onClose={() => setIsModalOpen(false)}
-//     //       onStatusUpdate={handleStatusUpdate}
-//     //       onSendMessage={handleSendMessage}
-//     //     />
-//     //   </div>
-//     // </div>
-//     <div className='flex items-center justify-center h-screen'>
-//       Coming Soon... 
-//     </div>
-
-//   );
-// };
+const STORAGE_KEY = "vendor_orders_mock";
 
 const OrderManagement: React.FC = () => {
-  return(
-    <div className='flex items-center justify-center h-screen'>
-    Coming Soon
+  const router = useRouter();
+  
+  // --- States ---
+  const [orders, setOrders] = useState<ProductOrder[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<ProductOrder | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [filters, setFilters] = useState<Filters>({
+    search: "",
+    status: "all",
+    sort: "newest",
+    dateRange: { from: "", to: "" },
+    amountRange: { min: "", max: "" },
+  });
+
+  // --- 1. Initial Load Logic (LocalStorage) ---
+  useEffect(() => {
+    const loadData = () => {
+      setLoading(true);
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      
+      if (savedData) {
+        // Parse dates back to Date objects
+        const parsed: ProductOrder[] = JSON.parse(savedData).map((o: any) => ({
+          ...o,
+          createdAt: new Date(o.createdAt)
+        }));
+        setOrders(parsed);
+      } else {
+        // Seed initial data if empty
+        const initialMock: ProductOrder[] = [
+          {
+            id: "1",
+            orderNumber: "ORD-000452",
+            customer: { name: "Sarah Connor", email: "sarah@sky.net" },
+            items: [{ id: 1, name: "Premium Headphones", quantity: 1, price: 299, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" }],
+            subtotal: 299, shipping: 10, tax: 22, total: 331,
+            status: "pending",
+            createdAt: new Date(),
+            shippingAddress: { name: "Sarah Connor", street: "123 Resistance Way", city: "LA", state: "CA", zipCode: "90001", country: "USA" },
+            customerNotes: "Please leave at the back door.",
+            trackingNumber: null
+          },
+          {
+            id: "2",
+            orderNumber: "ORD-000453",
+            customer: { name: "James Holden", email: "holden@rocinante.com" },
+            items: [{ id: 2, name: "Coffee Machine", quantity: 1, price: 150, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" }],
+            subtotal: 150, shipping: 0, tax: 11, total: 161,
+            status: "processing",
+            createdAt: new Date(Date.now() - 86400000), // Yesterday
+            shippingAddress: { name: "James Holden", street: "Ceres Station", city: "Belt", state: "Asteroid", zipCode: "00001", country: "Sol" },
+            customerNotes: null,
+            trackingNumber: "TRK12345678"
+          }
+        ];
+        saveToStorage(initialMock);
+        setOrders(initialMock);
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  const saveToStorage = (data: ProductOrder[]) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  };
+
+  // --- 2. Filter & Sort Logic ---
+  const filteredOrders = useMemo(() => {
+    let result = [...orders];
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(o => 
+        o.orderNumber.toLowerCase().includes(searchLower) ||
+        o.customer.name.toLowerCase().includes(searchLower) ||
+        o.customer.email.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (filters.status !== "all") {
+      result = result.filter(o => o.status === filters.status);
+    }
+
+    if (filters.dateRange.from) {
+      result = result.filter(o => o.createdAt >= new Date(filters.dateRange.from));
+    }
+
+    if (filters.amountRange.min) {
+      result = result.filter(o => o.total >= parseFloat(filters.amountRange.min));
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      if (filters.sort === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
+      if (filters.sort === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
+      if (filters.sort === "amount_high") return b.total - a.total;
+      if (filters.sort === "amount_low") return a.total - b.total;
+      return 0;
+    });
+
+    return result;
+  }, [orders, filters]);
+
+  // --- 3. Handlers ---
+  const handleStatusUpdate = (orderId: string, newStatus: OrderStatus) => {
+    const updated = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+    setOrders(updated);
+    saveToStorage(updated);
+  };
+
+  const handleBulkStatusUpdate = (newStatus: OrderStatus) => {
+    const updated = orders.map(o => selectedOrders.includes(o.id) ? { ...o, status: newStatus } : o);
+    setOrders(updated);
+    saveToStorage(updated);
+    setSelectedOrders([]);
+  };
+
+  const calculateStatistics = (): Statistics => {
+    const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+    return {
+      totalOrders: orders.length,
+      ordersChange: 12,
+      pendingOrders: orders.filter(o => o.status === "pending").length,
+      pendingChange: -5,
+      revenueToday: orders.filter(o => o.createdAt.toDateString() === new Date().toDateString()).reduce((sum, o) => sum + o.total, 0),
+      revenueChange: 8.4,
+      avgOrderValue: orders.length ? totalRevenue / orders.length : 0,
+      avgOrderChange: 2.1,
+    };
+  };
+
+  const activities: Activity[] = orders.slice(0, 5).map((o, i) => ({
+    id: i,
+    type: "order_placed",
+    title: "Order Update",
+    description: `${o.customer.name}'s order is ${o.status}`,
+    orderNumber: o.orderNumber,
+    status: o.status,
+    timestamp: o.createdAt.toISOString(),
+  }));
+
+  if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 mt-14 md:mt-0 gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Order Management</h1>
+            <p className="text-sm font-medium text-slate-500">Manage your sales, fulfillments and customer interactions.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              <RefreshCcw size={18} className="text-slate-600" />
+            </button>
+            <button className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+              <Plus size={18} /> Create Manual Order
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="mb-8">
+          <OrderStatistics statistics={calculateStatistics()} />
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white rounded-[2rem] p-2 border border-slate-100 shadow-sm mb-6">
+          <OrderFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onClearFilters={() => setFilters({
+              search: "", status: "all", sort: "newest",
+              dateRange: { from: "", to: "" },
+              amountRange: { min: "", max: "" },
+            })}
+          />
+        </div>
+
+        {/* Bulk Actions */}
+        {selectedOrders.length > 0 && (
+          <div className="mb-6 animate-in slide-in-from-top-4 duration-300">
+            <BulkActionsToolbar
+              selectedCount={selectedOrders.length}
+              onBulkStatusUpdate={handleBulkStatusUpdate}
+              onBulkExport={(f) => console.log("Exporting...", f)}
+              onClearSelection={() => setSelectedOrders([])}
+            />
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div className="xl:col-span-3 space-y-6">
+            {filteredOrders.length === 0 ? (
+              <div className="bg-white rounded-[2.5rem] border border-dashed border-slate-200 p-20 text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                  <ShoppingBag size={40} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">No matching orders</h3>
+                <p className="text-slate-500 text-sm max-w-xs mx-auto">Try adjusting your filters or search terms to find what you're looking for.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                <OrderTable
+                  orders={filteredOrders}
+                  selectedOrders={selectedOrders}
+                  onOrderSelect={(id, checked) => setSelectedOrders(prev => checked ? [...prev, id] : prev.filter(x => x !== id))}
+                  onSelectAll={(checked) => setSelectedOrders(checked ? filteredOrders.map(o => o.id) : [])}
+                  onStatusUpdate={handleStatusUpdate}
+                  onViewOrder={(o) => { setSelectedOrder(o); setIsModalOpen(true); }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+               <QuickActions onAction={(id) => id === "refresh" && window.location.reload()} />
+            </div>
+            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+               <RecentActivityFeed activities={activities} />
+            </div>
+          </div>
+        </div>
+
+        {/* Detail Modal */}
+        <OrderDetailModal
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onStatusUpdate={handleStatusUpdate}
+          onSendMessage={(id, msg) => alert(`Message sent for ${id}`)}
+        />
+      </div>
     </div>
-  )
-}
+  );
+};
+
 export default OrderManagement;

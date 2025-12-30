@@ -1,456 +1,412 @@
 "use client";
+import React, { useState, useEffect } from "react";
+import Icon from "@/components/ui/AppIcon";
+import Image from "@/components/ui/AppImage";
+import MyListings from "../user-profile/components/MyListings";
+import PurchaseHistory from "../user-profile/components/PurchaseHistory";
+import SavedItems from "../user-profile/components/SavedItems";
+import Settings from "../user-profile/components/Settings";
+import { useRouter } from "next/navigation";
+import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
+import { userService } from "@/services/userService";
+import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
 
-import React, { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import ImageGallery from "./components/ImageGallery";
-import ProductInfo from "./components/ProductInfo";
-import LocationMap from "./components/LocationMap";
-import SellerCard from "./components/SellerCard";
-import SimilarProducts from "./components/SimilarProducts";
-import PriceComparison from "./components/PriceComparison";
-import {
-  CheckCircle,
-  AlertCircle,
-  X,
-  ChevronRight,
-  MapPin,
-  ShoppingBag
-} from "lucide-react";
-import Button from "@/components/Button";
-import { useCartModal } from "@/context/cartModalContext";
-import { productService } from "@/services/productService";
-import { cartService } from "@/services/cartService";
-import {
-  ApiProductFull,
-  Product,
-  PriceComparisonItem,
-  Notification,
-} from "@/types/product-detail";
-
-// --- Components ---
-
-const NotificationToast: React.FC<{
-  notification: Notification;
-  onClose: (id: string) => void;
-}> = ({ notification, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => onClose(notification.id), 4000);
-    return () => clearTimeout(timer);
-  }, [notification.id, onClose]);
-
-  const styles = {
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
-  };
-
-  const icons = {
-    success: <CheckCircle className="w-5 h-5 text-green-600" />,
-    error: <AlertCircle className="w-5 h-5 text-red-600" />,
-    info: <AlertCircle className="w-5 h-5 text-blue-600" />,
-  };
-
-  return (
-    <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 p-4 rounded-xl border shadow-lg animate-in fade-in slide-in-from-top-4 duration-300 ${styles[notification.type]}`}>
-      {icons[notification.type]}
-      <p className="text-sm font-medium">{notification.message}</p>
-      <button onClick={() => onClose(notification.id)} className="opacity-60 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
+// --- DUMMY FALLBACK DATA ---
+const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
+  id: 999,
+  name: "John Doe",
+  email: "john.doe@example.com",
+  phone: "+234 800 000 0000",
+  profile_pic_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+  country: "Nigeria",
+  state: "Lagos",
+  role: "shopper",
 };
 
-const Breadcrumbs = ({ category, title }: { category: string; title: string }) => (
-  <nav className="flex items-center text-sm text-gray-500 mb-6 flex-wrap">
-    <span className="hover:text-[#E0921C] cursor-pointer transition-colors">Home</span>
-    <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />
-    <span className="hover:text-[#E0921C] cursor-pointer transition-colors">{category || "Product"}</span>
-    <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />
-    <span className="font-medium text-[#212830] line-clamp-1">{title}</span>
-  </nav>
-);
-
-// --- Fixed Dummy Data Store ---
-const DUMMY_PRODUCT_STORE: ApiProductFull[] = [
-  {
-    id: 1,
-    product_name: "iPhone 13 Pro Max - 256GB Gold",
-    product_price: 75000000, 
-    discount: 15,
-    condition: "Like New",
-    rating: 4.8,
-    review_count: 24,
-    distance: 1.2,
-    location: { address: "Ikeja, Lagos", lat: 6.5244, lng: 3.3792 },
-    images: ["https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=800"],
-    description: "Premium iPhone 13 Pro Max. Battery health 98%.",
-    category: "Smartphones", 
-    status: "active",
-    visibility: true,
-    seller: { id: 101, name: "Tech Haven", avatar: "", rating: 4.9, review_count: 150, response_time: "5 mins", member_since: "Oct 2021", verified: true },
-    availability: "Available",
-    last_updated: "2023-10-25",
-  },
-  {
-    id: 2,
-    product_name: "Sony WH-1000XM4 Wireless Headphones",
-    product_price: 22000000,
-    discount: 10,
-    condition: "New",
-    rating: 4.9,
-    review_count: 85,
-    distance: 2.5,
-    location: { address: "Victoria Island, Lagos", lat: 6.4281, lng: 3.4219 },
-    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800"],
-    description: "Industry leading noise canceling headphones.",
-    category: "Electronics",
-    status: "active",
-    visibility: true,
-    seller: { id: 102, name: "Gadget Hub", avatar: "", rating: 4.7, review_count: 320, response_time: "1 hour", member_since: "Jan 2022", verified: true },
-    availability: "Available",
-    last_updated: "2023-11-01",
-  },
-  {
-    id: 3,
-    product_name: "MacBook Air M2 Chip",
-    product_price: 120000000,
-    discount: 5,
-    condition: "New",
-    rating: 5.0,
-    review_count: 12,
-    distance: 0.8,
-    location: { address: "Lekki Phase 1, Lagos", lat: 6.4478, lng: 3.4737 },
-    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800"],
-    description: "The new MacBook Air with M2 chip. Supercharged for work.",
-    category: "Computers",
-    status: "active",
-    visibility: true,
-    seller: { id: 103, name: "Apple Store NG", avatar: "", rating: 5.0, review_count: 500, response_time: "Instant", member_since: "May 2020", verified: true },
-    availability: "Available",
-    last_updated: "2023-11-05",
-  },
-  {
-    id: 5,
-    product_name: "MacBook Pro 14-inch M3 Chip",
-    product_price: 245000000,
-    discount: 0,
-    condition: "New",
-    rating: 4.9,
-    review_count: 128,
-    distance: 0.8,
-    location: { address: "Victoria Island, Lagos", lat: 6.4281, lng: 3.4219 },
-    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=600"],
-    description: "The latest M3 chip MacBook Pro with stunning Liquid Retina XDR display.",
-    category: "Laptops",
-    status: "active",
-    visibility: true,
-    seller: { id: 103, name: "Apple Store NG", avatar: "", rating: 5.0, review_count: 500, response_time: "Instant", member_since: "May 2020", verified: true },
-    availability: "Available",
-    last_updated: "2023-11-20",
-  },
-  {
-    id: 6,
-    product_name: "Sony Alpha a7 IV Mirrorless Camera",
-    product_price: 185000000,
-    discount: 5,
-    condition: "New",
-    rating: 4.8,
-    review_count: 56,
-    distance: 2.4,
-    location: { address: "Ikeja, Lagos", lat: 6.5244, lng: 3.3792 },
-    images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=600"],
-    description: "Full-frame mirrorless camera with 33MP sensor and 4K 60p video.",
-    category: "Photography",
-    status: "active",
-    visibility: true,
-    seller: { id: 105, name: "Digital Hub", avatar: "", rating: 4.8, review_count: 56, response_time: "2 hours", member_since: "Mar 2021", verified: true },
-    availability: "Available",
-    last_updated: "2023-11-21",
-  }
-];
-
-const ProductDetail = () => {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [cartQuantity, setCartQuantity] = useState(0);
-  const [showFullDescription, setShowFullDescription] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isBuyingNow, setIsBuyingNow] = useState(false);
-
-  const { openCart } = useCartModal();
+const UserProfile = () => {
+  const [activeTab, setActiveTab] = useState<string>("history");
+  const [user, setUser] = useState<UserProfileData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
-  const addNotification = (type: "success" | "error" | "info", message: string) => {
-    const id = Date.now().toString();
-    setNotifications((prev) => [...prev, { id, type, message }]);
+  // Review Modal States
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedProductForReview, setSelectedProductForReview] = useState<any>(null);
+
+  // Persistence Helper for testing locally
+  const updateLocalStorageUser = (key: string, value: string) => {
+    const savedUserJson = localStorage.getItem("pendingUserData"); 
+    if (savedUserJson) {
+      const userObj = JSON.parse(savedUserJson);
+      userObj[key] = value;
+      localStorage.setItem("pendingUserData", JSON.stringify(userObj));
+    }
   };
 
-  const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const handleProfilePictureUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const localUrl = URL.createObjectURL(file);
+      await new Promise(r => setTimeout(r, 1000)); 
+      
+      setUser(prev => prev ? { ...prev, profile_pic_url: localUrl } : null);
+      updateLocalStorageUser("profile_pic_url", localUrl);
+      
+      alert("Test Mode: Profile picture updated locally!");
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const transformApiProduct = (apiProduct: ApiProductFull): Product => {
-    return {
-      id: apiProduct.id.toString(),
-      title: apiProduct.product_name || "Unknown Product",
-      price: apiProduct.product_price / 100 || 0,
-      originalPrice: (apiProduct.product_price / 100) * 1.2 || 0,
-      discount: apiProduct.discount ?? 0,
-      condition: apiProduct.condition ?? "Like New",
-      rating: apiProduct.rating ?? 4.7,
-      reviewCount: apiProduct.review_count ?? 0,
-      distance: apiProduct.distance ?? 0,
-      location: apiProduct.location ?? { address: "Unknown", lat: 0, lng: 0 },
-      images: apiProduct.images.length > 0 ? apiProduct.images : ["https://via.placeholder.com/800"],
-      description: apiProduct.description || "No description available",
-      specifications: {
-        Category: apiProduct.category || "General",
-        Status: apiProduct.status || "unknown",
-        "Product ID": apiProduct.id.toString(),
-        Seller: apiProduct.seller?.name || "Unknown",
-      },
-      seller: {
-        id: apiProduct.seller?.id.toString() || "0",
-        name: apiProduct.seller?.name || "Unknown Seller",
-        avatar: apiProduct.seller?.avatar || "",
-        rating: apiProduct.seller?.rating ?? 0,
-        reviewCount: apiProduct.seller?.review_count ?? 0,
-        responseTime: apiProduct.seller?.response_time || "N/A",
-        memberSince: apiProduct.seller?.member_since || "N/A",
-        verifiedSeller: apiProduct.seller?.verified ?? false,
-      },
-      availability: apiProduct.availability ?? "Available",
-      lastUpdated: apiProduct.last_updated ? new Date(apiProduct.last_updated) : new Date(),
-      views: apiProduct.views ?? 0,
-      watchers: apiProduct.watchers ?? 0,
-    };
+  const handleCoverPhotoUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const localUrl = URL.createObjectURL(file);
+      await new Promise(r => setTimeout(r, 1000)); 
+
+      setUser(prev => prev ? { ...prev, cover_photo_url: localUrl } as any : null);
+      updateLocalStorageUser("cover_photo_url", localUrl);
+
+      alert("Test Mode: Cover photo updated locally!");
+    } catch (error) {
+      console.error("Cover upload error:", error);
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) return alert("Please select an image file");
+      handleProfilePictureUpload(file);
+    }
+  };
+
+  const handleCoverFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) return alert("Please select an image file");
+      handleCoverPhotoUpload(file);
+    }
   };
 
   useEffect(() => {
-    const fetchProductData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const productName = searchParams.get("name");
-        
-        if (!productName) {
-          setError("Product not found.");
-          return;
+    const loadProfile = async () => {
+      setLoading(true);
+      await new Promise(r => setTimeout(r, 800));
+
+      const pendingUserData = localStorage.getItem("pendingUserData");
+      if (pendingUserData) {
+        try {
+          const parsed = JSON.parse(pendingUserData);
+          setUser({
+            ...DUMMY_USER_FALLBACK,
+            ...parsed,
+            name: parsed.name || DUMMY_USER_FALLBACK.name,
+            email: parsed.email || DUMMY_USER_FALLBACK.email,
+            phone: parsed.phone || DUMMY_USER_FALLBACK.phone,
+            profile_pic_url: parsed.profile_pic_url || DUMMY_USER_FALLBACK.profile_pic_url,
+          } as UserProfileData);
+        } catch (e) {
+          setUser(DUMMY_USER_FALLBACK as UserProfileData);
         }
-
-        const decodedName = decodeURIComponent(productName);
-        const foundApiProduct = DUMMY_PRODUCT_STORE.find(
-          (p) => p.product_name === decodedName
-        ) || DUMMY_PRODUCT_STORE[0];
-
-        const transformedProduct = transformApiProduct(foundApiProduct);
-        setProduct(transformedProduct);
-
-        const similarProducts = DUMMY_PRODUCT_STORE
-          .filter((p) => p.product_name !== decodedName)
-          .map(transformApiProduct);
-        setAllProducts(similarProducts);
-
-        if (typeof window !== "undefined") {
-          const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-          setIsWishlisted(wishlist.includes(transformedProduct.id));
-        }
-
-      } catch (err: any) {
-        console.error("Error loading product:", err);
-        setError("Failed to load product details");
-      } finally {
-        setLoading(false);
+      } else {
+        setUser(DUMMY_USER_FALLBACK as UserProfileData);
       }
+      setLoading(false);
     };
+    loadProfile();
+  }, [router]);
 
-    fetchProductData();
-  }, [searchParams]);
+  const defaultAvatar = "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face";
+  const defaultCover = "https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=80";
 
-  const handleWishlistToggle = () => {
-    if (!product || typeof window === "undefined") return;
-    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    let updatedWishlist;
-    if (isWishlisted) {
-      updatedWishlist = wishlist.filter((id: string) => id !== product.id);
-      addNotification("info", "Removed from wishlist");
-    } else {
-      updatedWishlist = [...wishlist, product.id];
-      addNotification("success", "Added to wishlist");
-    }
-    localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
-    setIsWishlisted(!isWishlisted);
-  };
+  const userProfile = user
+    ? {
+        id: user.id,
+        name: user.name || (user as any).business_name || "Test User",
+        email: user.email,
+        phone: user.phone || "Not provided",
+        avatar: user.profile_pic_url || defaultAvatar,
+        cover: (user as any).cover_photo_url || (user as any).cover || defaultCover,
+        location: user.state && user.country ? `${user.state}, ${user.country}` : "Lagos, Nigeria",
+        joinDate: "December 2025",
+        isVerified: { email: true, phone: !!user.phone, identity: false },
+        stats: {
+          itemsListed: 5,
+          purchasesMade: 12,
+          sellerRating: 4.5,
+          totalReviews: 8,
+        },
+        bio: `Community member interested in local marketplace deals.`,
+      }
+    : null;
 
-  const handleAddToCart = async (quantity: number = 1) => {
-    if (!product) return;
-    try {
-      setIsAddingToCart(true);
-      await cartService.addToCart(parseInt(product.id), quantity);
-      setCartQuantity((prev) => prev + quantity);
-      addNotification("success", `Added to cart!`);
-    } catch (error) {
-      addNotification("error", "Failed to add to cart");
-    } finally { setIsAddingToCart(false); }
-  };
-
-  const handleBuyNow = async () => {
-    if (!product) return;
-    try {
-      setIsBuyingNow(true);
-      await cartService.addToCart(parseInt(product.id), 1);
-      openCart(1);
-    } catch (error) {
-      addNotification("error", "Failed to process Buy Now");
-    } finally { setIsBuyingNow(false); }
-  };
-
-  const handleShare = async () => {
-    if (!product) return;
-    if (navigator.share) {
-        try { await navigator.share({ title: product.title, url: window.location.href }); } catch {}
-    } else {
-        navigator.clipboard.writeText(window.location.href);
-        addNotification("success", "Link copied!");
-    }
-  };
-
-  const priceComparisons: PriceComparisonItem[] = [
-    { id: "comp_001", seller: "Mobile World", price: (product?.price || 0) * 1.05, condition: "New", distance: 1.5, rating: 4.6 },
-    { id: "comp_002", seller: "Phone Paradise", price: (product?.price || 0) * 0.98, condition: "New", distance: 2.3, rating: 4.4 },
+  const tabs: Tab[] = [
+    { id: "history", label: "Purchase History", icon: "ShoppingBag", count: userProfile?.stats.purchasesMade },
+    { id: "saved", label: "Saved Items", icon: "Heart", count: 12 },
+    { id: "settings", label: "Settings", icon: "Settings" },
   ];
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-12 h-12 border-4 border-[#E0921C] border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
+  const quickActions: QuickAction[] = [
+    {
+      id: "messages",
+      label: "Messages",
+      icon: "MessageCircle",
+      color: "bg-secondary text-primary",
+      badge: 3,
+      action: () => router.push("/messages"),
+    },
+    {
+      id: "account-settings",
+      label: "Settings",
+      icon: "User",
+      color: "bg-surface border border-border text-text-primary",
+      action: () => setActiveTab("settings"),
+    },
+    {
+      id: "share",
+      label: "Share",
+      icon: "Share2",
+      color: "bg-secondary text-primary",
+      action: () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Link copied!");
+      },
+    },
+  ];
 
-  if (error || !product) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center bg-white p-8 rounded-2xl shadow-sm max-w-md">
-        <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-        <h2 className="text-xl font-bold">Product Not Available</h2>
-        <Button onClick={() => router.back()} className="mt-6 bg-[#212830] text-white px-6">Go Back</Button>
+  // Logic for the requested actions in Purchase History
+  const handleViewDetails = (productId: string | number) => {
+    router.push(`/product/${productId}`);
+  };
+
+  const handleWriteReview = (product: any) => {
+    setSelectedProductForReview(product);
+    setShowReviewModal(true);
+  };
+
+  const renderTabContent = () => {
+    if (!userProfile) return null;
+    switch (activeTab) {
+      case "history": 
+        return (
+          <PurchaseHistory 
+            onViewDetails={handleViewDetails} 
+            onWriteReview={handleWriteReview}
+            // reorder is commented out inside the PurchaseHistory component logically
+          />
+        );
+      case "saved": return <SavedItems />;
+      case "settings": return <Settings userProfile={userProfile} />;
+      default: return <PurchaseHistory />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto mb-4 border-b-2 rounded-full animate-spin border-primary"></div>
+          <p className="text-text-secondary">Loading your profile...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!userProfile) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-      {notifications.map((n) => (
-        <NotificationToast key={n.id} notification={n} onClose={removeNotification} />
-      ))}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumbs category={product.specifications.Category} title={product.title} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-6 space-y-8">
-            <div className="bg-white rounded-3xl p-1 overflow-hidden border border-gray-100 shadow-sm">
-                <ImageGallery 
-                    images={product.images} 
-                    activeIndex={activeImageIndex} 
-                    onImageChange={setActiveImageIndex} 
-                    isMobile={false} 
-                />
-            </div>
-            
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <SellerCard 
-                    seller={product.seller} 
-                    onContact={() => addNotification("info", "Opening chat...")} 
-                    onNavigateToVendorProfile={() => router.push(`/seller/${product.seller.id}`)} 
-                />
-            </div>
-
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-                <h4 className="font-bold text-[#212830] mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
-                    <ShoppingBag className="w-4 h-4 text-[#E0921C]" /> Market Comparison
-                </h4>
-                <PriceComparison comparisons={priceComparisons} currentPrice={product.price} />
-            </div>
-
-            <div className="mt-12">
-                <h3 className="text-xl font-bold text-[#212830] mb-6">Similar Items</h3>
-                <SimilarProducts 
-                    products={allProducts} 
-                    onProductClick={(title) => router.push(`/product-detail?name=${encodeURIComponent(title)}`)} 
-                />
-            </div>
+    <RoleProtectedRoute allowedRoles={["shopper", "customer", "shopping"]}>
+    <div className="min-h-screen h-full bg-background pb-10">
+      <div className="relative">
+        <div
+          className="h-40 md:h-64 w-full bg-center bg-cover relative group"
+          style={{ backgroundImage: `url(${userProfile.cover})` }}
+        >
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all" />
+          <div className="absolute right-3 top-3">
+            <label className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-white/90 backdrop-blur-sm rounded-full shadow-sm cursor-pointer hover:bg-white transition-all">
+              {uploadingCover ? <Icon name="Loader2" size={14} className="animate-spin" /> : <Icon name="Camera" size={14} />}
+              <span className="hidden md:inline">{uploadingCover ? "Uploading..." : "EDIT COVER"}</span>
+              <input type="file" accept="image/*" onChange={handleCoverFileSelect} className="hidden" />
+            </label>
           </div>
 
-          <div className="lg:col-span-6 space-y-6">
-            <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm space-y-8">
-                <ProductInfo 
-                    product={product} 
-                    isWishlisted={isWishlisted}
-                    onWishlistToggle={handleWishlistToggle}
-                    onShare={handleShare}
-                    showFullDescription={showFullDescription} 
-                    onToggleDescription={() => setShowFullDescription(!showFullDescription)} 
-                    isMobile={false}
-                />
-                
-                <hr className="border-gray-100" />
-                
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg sticky top-6 z-10">
-                    <div className="mb-6">
-                        <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-3xl font-extrabold text-[#E0921C]">₦{product.price.toLocaleString()}</span>
-                            {product.originalPrice > product.price && (
-                                <span className="text-sm text-gray-400 line-through">₦{product.originalPrice.toLocaleString()}</span>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Button 
-                            onClick={handleBuyNow} 
-                            disabled={isBuyingNow}
-                            className="w-full py-4 bg-[#212830] text-white rounded-xl font-bold"
-                        >
-                            {isBuyingNow ? "Processing..." : "Buy Now"}
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => handleAddToCart(1)}
-                            disabled={isAddingToCart}
-                            className="w-full py-4 border-2 rounded-xl font-semibold"
-                        >
-                            {isAddingToCart ? "Adding..." : "Add to Cart"}
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="text-lg font-bold text-[#212830] mb-4 flex items-center gap-2">
-                       <MapPin className="w-5 h-5 text-[#E0921C]" /> Item Location
-                    </h3>
-                    <div className="rounded-xl overflow-hidden border border-gray-200">
-                        <LocationMap location={product.location} onGetDirections={() => window.open(`https://maps.google.com?q=${product.location.lat},${product.location.lng}`)} />
-                    </div>
-                </div>
+          <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-10 md:-bottom-14 flex items-end">
+            <div className="relative group/avatar">
+              <div className="w-24 h-24 md:w-36 md:h-36 rounded-full overflow-hidden border-[6px] border-white bg-gray-100 shadow-xl">
+                <Image src={userProfile.avatar} alt={userProfile.name} fill className="object-cover" sizes="150px" />
+              </div>
+              <div
+                className="absolute right-1 bottom-1 bg-white rounded-full p-2 shadow-lg border border-gray-100 cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => document.getElementById("profile-pic-input")?.click()}
+              >
+                {uploading ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Camera" size={18} />}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="h-14 md:h-20" />
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-text-primary">
+            {userProfile.name}
+          </h1>
+          <div className="mt-2 flex items-center justify-center gap-3 text-sm text-text-secondary font-medium">
+            <div className="flex items-center gap-1">
+              <Icon name="MapPin" size={14} className="text-primary" />
+              <span>{userProfile.location}</span>
+            </div>
+            <span>•</span>
+            <div>Joined {userProfile.joinDate}</div>
+          </div>
+
+          <div className="mt-6 md:hidden">
+            <div className="flex justify-center gap-4">
+              {quickActions.map((a) => (
+                <button key={a.id} onClick={a.action} className="flex flex-col items-center gap-1">
+                  <div className={`p-4 rounded-2xl ${a.color} shadow-sm border border-gray-100 relative`}>
+                    <Icon name={a.icon} size={20} />
+                    {a.badge && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+                        {a.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase text-gray-500">{a.label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          <main className="md:col-span-8 order-1 md:order-2">
+            <div className="mb-6 border rounded-2xl bg-surface border-border shadow-sm overflow-hidden min-h-[500px]">
+              <div className="flex border-b border-border bg-gray-50/50 overflow-x-auto scrollbar-hide">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 border-b-2 transition-all min-w-[140px] ${
+                      activeTab === tab.id
+                        ? "border-primary text-primary font-bold bg-white"
+                        : "border-transparent text-text-secondary hover:text-text-primary hover:bg-white/50"
+                    }`}
+                  >
+                    <Icon name={tab.icon} size={18} />
+                    <span className="text-sm">{tab.label}</span>
+                    {tab.count !== undefined && (
+                      <span className={`ml-2 px-2 py-1 rounded-full text-[10px] ${
+                          activeTab === tab.id ? "bg-primary text-white" : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="p-6">{renderTabContent()}</div>
+            </div>
+          </main>
+
+          <aside className="md:col-span-4 space-y-6 order-2 md:order-1">
+            <div className="p-6 border rounded-2xl bg-surface border-border shadow-sm">
+              <h3 className="text-xs font-black text-text-primary uppercase tracking-[0.2em] mb-4">About Me</h3>
+              <p className="text-sm text-text-secondary leading-relaxed font-medium">{userProfile.bio}</p>
+              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-gray-50 pt-4">
+                <div className="text-center">
+                  <div className="text-lg font-black text-text-primary">{userProfile.stats.itemsListed}</div>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase">Listings</div>
+                </div>
+                <div className="text-center border-x border-gray-50">
+                  <div className="text-lg font-black text-text-primary">{userProfile.stats.purchasesMade}</div>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase">Orders</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-black text-text-primary">{userProfile.stats.sellerRating}</div>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase">Rating</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border rounded-2xl bg-surface border-border shadow-sm">
+              <h3 className="text-xs font-black text-text-primary uppercase tracking-[0.2em] mb-4">Contact</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg"><Icon name="Mail" size={16} /></div>
+                  <div className="overflow-hidden">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Email</p>
+                    <p className="text-sm font-bold truncate">{userProfile.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Icon name="Phone" size={16} /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Phone</p>
+                    <p className="text-sm font-bold">{userProfile.phone}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <input id="profile-pic-input" type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+
+      {/* Write Review Modal Implementation */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl scale-in-center">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-text-primary">Rate Product</h2>
+              <button onClick={() => setShowReviewModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Icon name="X" size={24} />
+              </button>
+            </div>
+            
+            <div className="text-center mb-6">
+                <p className="text-sm text-text-secondary mb-4">How would you rate the quality of this item?</p>
+                <div className="flex justify-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <button key={star} className="text-yellow-400 hover:scale-110 transition-transform">
+                            <Icon name="Star" size={32} className="fill-current" />
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <textarea 
+                className="w-full border border-border rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none mb-6 min-h-[120px]"
+                placeholder="Write your experience with this product..."
+            />
+
+            <button 
+                onClick={() => {
+                    alert("Review submitted successfully!");
+                    setShowReviewModal(false);
+                }}
+                className="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+            >
+                Submit Review
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+    </RoleProtectedRoute>
   );
 };
 
-const ProductDetailPage = () => (
-  <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-12 h-12 border-4 border-[#E0921C] border-t-transparent rounded-full animate-spin"></div></div>}>
-    <ProductDetail />
-  </Suspense>
-);
-
-export default ProductDetailPage;
+export default UserProfile;
