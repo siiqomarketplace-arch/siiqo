@@ -2,13 +2,11 @@
 import React, { useState, useEffect } from "react";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
-import MyListings from "../user-profile/components/MyListings";
 import PurchaseHistory from "../user-profile/components/PurchaseHistory";
 import SavedItems from "../user-profile/components/SavedItems";
 import Settings from "../user-profile/components/Settings";
 import { useRouter } from "next/navigation";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
-import { userService } from "@/services/userService";
 import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
 
 // --- DUMMY FALLBACK DATA ---
@@ -33,7 +31,6 @@ const UserProfile = () => {
 
   // Review Modal States
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [selectedProductForReview, setSelectedProductForReview] = useState<any>(null);
 
   // Persistence Helper for testing locally
   const updateLocalStorageUser = (key: string, value: string) => {
@@ -206,7 +203,7 @@ const UserProfile = () => {
         );
       case "saved": return <SavedItems />;
       case "settings": return <Settings userProfile={userProfile} />;
-      default: return <PurchaseHistory />;
+      default: return <PurchaseHistory onViewDetails={handleViewDetails} onWriteReview={handleWriteReview} />;
     }
   };
 
@@ -410,3 +407,7 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+
+function setSelectedProductForReview(product: any) {
+  throw new Error("Function not implemented.");
+}

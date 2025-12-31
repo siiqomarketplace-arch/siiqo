@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import Image from '@/components/ui/AppImage';
 
+interface PurchaseHistoryProps {
+    onViewDetails: (productId: string | number) => void;
+    onWriteReview: (product: any) => void;
+}
+
 interface Purchase {
     id: number;
     title: string;
@@ -26,7 +31,7 @@ interface Purchase {
     rating: number | null;
 }
 
-const PurchaseHistory = () => {
+const PurchaseHistory = ({ onViewDetails, onWriteReview }: PurchaseHistoryProps) => {
     const [filter, setFilter] = useState('all');
     const router = useRouter();
 

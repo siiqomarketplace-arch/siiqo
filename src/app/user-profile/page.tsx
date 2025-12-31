@@ -517,6 +517,8 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<string>("history");
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+  
   const router = useRouter();
   
   // Edit States
@@ -531,6 +533,16 @@ const UserProfile = () => {
 
   const [uploading, setUploading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Logic for the requested actions in Purchase History
+  const handleViewDetails = (productId: string | number) => {
+    router.push(`/product/${productId}`);
+  };
+
+  const handleWriteReview = (product: any) => {
+    setSelectedProductForReview(product);
+    setShowReviewModal(true);
+  };
 
   // Persistence Helper
   const updateLocalStorageUser = (updates: Partial<UserProfileData> | Record<string, any>) => {
@@ -743,7 +755,7 @@ const UserProfile = () => {
                     ))}
                   </div>
                   <div className="p-6">
-                    {activeTab === "history" && <PurchaseHistory />}
+                    {activeTab === "history" && <PurchaseHistory onViewDetails={handleViewDetails} onWriteReview={handleWriteReview} />}
                     {activeTab === "saved" && <SavedItems />}
                     {activeTab === "settings" && <Settings userProfile={userProfile as any} />}
                   </div>
@@ -758,3 +770,6 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+function setSelectedProductForReview(product: any) {
+  throw new Error("Function not implemented.");
+}

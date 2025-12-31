@@ -536,7 +536,15 @@ const VendorProfile = () => {
     if (!profileView) return null;
     switch (activeTab) {
       case "listings": return <MyListings />;
-      case "orders": return <PurchaseHistory />;
+      const handleViewDetails = (productId: string | number) => {
+        router.push(`/product/${productId}`);
+      };
+
+        const handleWriteReview = (product: any) => {
+          router.push(`/product/${product.id}/review`);
+        };
+
+return <PurchaseHistory onViewDetails={handleViewDetails} onWriteReview={handleWriteReview} />;
       case "saved": return <SavedItems />;
       case "settings": return <Settings userProfile={profileView as any} />;
       default: return <MyListings />;
