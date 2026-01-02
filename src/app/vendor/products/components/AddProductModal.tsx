@@ -378,7 +378,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
- className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[80vh] md:max-h-[90vh]  flex flex-col mb-10 mt-14 md:mt-0 md:ml-12"        role="dialog"
+ className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[80vh] md:max-h-[90vh]  flex flex-col mb-10 mt-14 md:mt-0 md:ml-12"        target_view="dialog"
         aria-modal="true"
       >
         {/* Header */}

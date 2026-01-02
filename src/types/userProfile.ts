@@ -11,7 +11,7 @@ export interface UserProfileData {
   address?: string;
   referral_code?: string;
   referred_by?: string | null;
-  role?: string;
+  target_view?: string;
   profile_pic_url?: string; //just added
 }
 

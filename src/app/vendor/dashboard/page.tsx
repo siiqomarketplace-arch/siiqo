@@ -12,7 +12,7 @@ import PerformanceChart from "./components/PerformanceChart";
 import NotificationPanel from "./components/NotificationPanel";
 import RecentOrders from "./components/RecentOrders";
 import ProductOverview from "./components/ProductOverview";
-import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
+import target_viewProtectedRoute from "@/components/auth/target_viewProtectedRoute";
 
 // --- DUMMY DATA FOR LOCAL STORAGE INITIALIZATION ---
 const MOCK_DASHBOARD_DATA = {
@@ -113,7 +113,7 @@ const VendorDashboard: React.FC = () => {
   }
 
   return (
-    <RoleProtectedRoute allowedRoles={["vendor"]}>
+    <target_viewProtectedRoute allowedtarget_views={["vendor"]}>
       <div className="min-h-screen bg-background mt-14 md:mt-0 pb-10">
         <main className="w-full md:max-w-[85vw] mx-auto px-4 py-4 md:py-6">
           
@@ -171,7 +171,7 @@ const VendorDashboard: React.FC = () => {
           </div>
         </main>
       </div>
-    </RoleProtectedRoute>
+    </target_viewProtectedRoute>
   );
 };
 

@@ -16,7 +16,7 @@ interface GalleryImage {
 
 interface TeamMember {
 	name: string;
-	role: string;
+	target_view: string;
 	photo: string;
 }
 
@@ -163,7 +163,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ business }) => {
 									/>
 								</div>
 								<h4 className="font-medium text-text-primary">{member.name}</h4>
-								<p className="text-sm text-text-secondary">{member.role}</p>
+								<p className="text-sm text-text-secondary">{member.target_view}</p>
 							</div>
 						))}
 					</div>

@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext"; // Import your context hook
 import { Loader2 } from "lucide-react";
 
-interface RoleProtectedRouteProps {
+interface target_viewProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles: string[]; // e.g., ["vendor"] or ["shopper", "admin"]
+  allowedtarget_views: string[]; // e.g., ["vendor"] or ["shopper", "admin"]
 }
 
-export default function RoleProtectedRoute({ children, allowedRoles }: RoleProtectedRouteProps) {
+export default function target_viewProtectedRoute({ children, allowedtarget_views }: target_viewProtectedRouteProps) {
   const { user, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
 
@@ -18,19 +18,19 @@ export default function RoleProtectedRoute({ children, allowedRoles }: RoleProte
     if (!isLoading) {
       if (!isLoggedIn || !user) {
         router.push("/auth/login");
-      } else if (!allowedRoles.includes(user.role)) {
-        // If logged in but wrong role, send them to their appropriate home
-        if (user.role === "vendor") {
+      } else if (!allowedtarget_views.includes(user.target_view)) {
+        // If logged in but wrong target_view, send them to their appropriate home
+        if (user.target_view === "vendor") {
           router.push("/vendor/dashboard");
         } else {
           router.push("/user-profile");
         }
       }
     }
-  }, [isLoading, isLoggedIn, user, allowedRoles, router]);
+  }, [isLoading, isLoggedIn, user, allowedtarget_views, router]);
 
   // While checking auth status, show a loading spinner
-  if (isLoading || !isLoggedIn || !user || !allowedRoles.includes(user.role)) {
+  if (isLoading || !isLoggedIn || !user || !allowedtarget_views.includes(user.target_view)) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-gray-50">
         <Loader2 className="h-10 w-10 animate-spin text-blue-600" />

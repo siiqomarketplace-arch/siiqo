@@ -17,7 +17,7 @@ export interface User {
   email: string;
   name: string;
   phone: string;
-  role: string;
+  target_view: string;
   account_type: string;
   referral_code: string;
   referred_by: string | null;

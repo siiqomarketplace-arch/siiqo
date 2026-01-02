@@ -165,7 +165,7 @@
 //           sellerRating: 4.8,
 //           totalReviews: 32,
 //         },
-//         bio: `Member of our marketplace community. ${user.role ? `Role: ${user.role}` : ""}`,
+//         bio: `Member of our marketplace community. ${user.target_view ? `target_view: ${user.target_view}` : ""}`,
 //       }
 //     : null;
 
@@ -412,9 +412,9 @@
 //               <p className="text-sm text-text-secondary leading-relaxed">{userProfile.bio}</p>
 
 //               <div className="mt-3">
-//                 {user?.role && (
+//                 {user?.target_view && (
 //                   <span className="inline-block px-2 py-1 text-xs rounded-full bg-primary-50 text-primary">
-//                     {user.role}
+//                     {user.target_view}
 //                   </span>
 //                 )}
 //               </div>
@@ -500,7 +500,7 @@ import Settings from "./components/Settings";
 import { useRouter } from "next/navigation";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
 import { userService } from "@/services/userService";
-import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
+import target_viewProtectedRoute from "@/components/auth/target_viewProtectedRoute";
 
 const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
   id: 999,
@@ -510,7 +510,7 @@ const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
   profile_pic_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
   country: "Nigeria",
   state: "Lagos",
-  role: "shopper",
+  target_view: "shopper",
 };
 
 const UserProfile = () => {
@@ -631,7 +631,7 @@ const UserProfile = () => {
   if (loading || !userProfile) return <div className="p-10 text-center">Loading...</div>;
 
   return (
-    <RoleProtectedRoute allowedRoles={["shopper", "customer", "shopping", "vendor"]}>
+    <target_viewProtectedRoute allowedtarget_views={["shopper", "customer", "shopping", "vendor"]}>
       <div className="min-h-screen bg-background pb-10">
         {/* Header/Cover Section */}
         <div className="relative">
@@ -765,7 +765,7 @@ const UserProfile = () => {
         </div>
         <input id="profile-pic-input" type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleProfilePictureUpload(e.target.files[0])} className="hidden" />
       </div>
-    </RoleProtectedRoute>
+    </target_viewProtectedRoute>
   );
 };
 

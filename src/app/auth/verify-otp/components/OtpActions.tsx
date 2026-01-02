@@ -21,8 +21,8 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
 
   const email =
     typeof window !== "undefined" ? sessionStorage.getItem("signupEmail") : null;
-  const role =
-    typeof window !== "undefined" ? sessionStorage.getItem("signupRole") : null;
+  const target_view =
+    typeof window !== "undefined" ? sessionStorage.getItem("signuptarget_view") : null;
   const password =
     typeof window !== "undefined" ? sessionStorage.getItem("RSPassword") : null;
 
@@ -80,9 +80,9 @@ const OtpActions: React.FC<Props> = ({ otp }) => {
             verifyResponse.data.message || "Email verified successfully!",
         });
 
-        console.log("User Role: ", role);
+        console.log("User target_view: ", target_view);
 
-        if (role === "vendor" && password) {
+        if (target_view === "vendor" && password) {
           try {
             const loginResponse = await authService.login(email, password);
 
@@ -138,7 +138,7 @@ if (access_token) {
           description: "Redirecting to login...",
         });
 
-        sessionStorage.removeItem("signupRole");
+        sessionStorage.removeItem("signuptarget_view");
         sessionStorage.removeItem("signupEmail");
 
         router.replace("/auth/login");

@@ -1,16 +1,15 @@
-//types/auth.ts
 export interface UserData {
   id?: string | number;
   account_id?: string;
   name?: string;
   email: string;
-  role: string;
+  target_view: string; // 'shopper', 'vendor', or 'admin'
   phone?: string;
   business_name?: string;
   business_type?: string;
   country?: string;
   state?: string;
-  kyc_status?: string;
+  kyc_status?: string; // 'pending', 'verified', 'rejected'
   profile_pic?: string | null;
   referral_code?: string;
   referred_by?: string | null;
@@ -29,6 +28,14 @@ export interface LoginResponse {
   message?: string;
 }
 
+export interface SignupResponse {
+  message: string;
+  status: string;
+  user?: UserData;
+  error?: string;
+  errors?: string[];
+}
+
 export interface AuthContextType {
   isLoggedIn: boolean;
   user: UserData | null;
@@ -36,38 +43,6 @@ export interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  // Note: You might want to add a register function here too
+  register?: (userData: any) => Promise<void>; 
 }
-
-export interface SignupResponse {
-    message: string;
-    status: string;
-    user?: UserData;
-    error?: string;
-    errors?: string[];
-}
-
-// --- DUMMY DATA FOR TESTING ---
-export const MOCK_USER: UserData = {
-  id: "999",
-  account_id: "ACC-TEST-001",
-  name: "Test User",
-  email: "test@siiqo.com",
-  role: "shopper",
-  phone: "08012345678",
-  country: "Nigeria",
-  state: "Lagos",
-  is_verified: false,
-  created_at: new Date().toISOString()
-};
-
-export const DUMMY_SIGNUP_SUCCESS: SignupResponse = {
-  status: "success",
-  message: "Account created successfully. Mock OTP sent to your email.",
-  user: MOCK_USER
-};
-
-export const DUMMY_SIGNUP_ERROR: SignupResponse = {
-  status: "error",
-  message: "This email is already registered.",
-  error: "Conflict"
-};

@@ -59,7 +59,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
           name: "John Doe",
           email: "john.doe@example.com",
           phone: "+1234567890",
-          role: params.account_type as string,
+          target_view: params.account_type as string,
           account_type: params.account_type as string,
           referral_code: "JD123456",
           referred_by: null,
@@ -234,7 +234,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
                 <p className="text-white/80 text-lg mb-3">{user.email}</p>
                 <div className="flex items-center gap-4">
                   <span className="inline-flex px-4 py-2 text-sm font-bold rounded-xl bg-white/20 backdrop-blur-sm border border-white/30">
-                    {user.role}
+                    {user.target_view}
                   </span>
                   <span
                     className={`inline-flex px-4 py-2 text-sm font-bold rounded-xl ${
@@ -263,7 +263,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
 
           <div className="p-6 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {user.role === "vendor" ? (
+              {user.target_view === "vendor" ? (
                 <>
                   <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
                     <Package className="h-8 w-8 text-green-600 mx-auto mb-2" />
@@ -426,7 +426,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
 
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                {user.role === "vendor" ? (
+                {user.target_view === "vendor" ? (
                   <>
                     <Building2 className="h-6 w-6 text-green-600" />
                     Business Information
@@ -440,7 +440,7 @@ const UserProfileClient: React.FC<UserProfileClientProps> = ({ params }) => {
               </h3>
 
               <div className="space-y-4">
-                {user.role === "vendor" && user.business_name && (
+                {user.target_view === "vendor" && user.business_name && (
                   <>
                     <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
                       <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">

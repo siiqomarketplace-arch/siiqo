@@ -1,19 +1,47 @@
+import api from "@/lib/api_client";
 import { APIResponse } from "@/types/storeFront";
-import { DUMMY_STOREFRONTS } from "@/types/storeFront";
-import api from "@/services/api"; // or the correct path to your api instance
+
 export const marketplaceService = {
-  getProducts: async (): Promise<APIResponse> => {
-    const response = await api.get("/marketplace/products");
+  /**
+   * Fetch all products for the marketplace main feed
+   */
+  getProducts: async (params = {}): Promise<APIResponse> => {
+    const response = await api.get("/marketplace/products", { params });
     return response.data;
   },
-  
-  getStorefronts: async (): Promise<any> => {
-    /* --- Temporarily disabled due to 500 error ---
-    const response = await api.get("/marketplace/storefronts");
+
+  /**
+   * Fetch all storefronts
+   * Replaces the dummy data logic now that your live endpoint is ready
+   */
+  getStorefronts: async (params = {}): Promise<any> => {
+    const response = await api.get("/marketplace/storefronts", { params });
     return response.data;
-    */
-    
-    // Return dummy structure so the app doesn't break
-    return { count: DUMMY_STOREFRONTS.length, storefronts: DUMMY_STOREFRONTS };
   },
+
+  /**
+   * Fetch only active storefronts (new endpoint from your api.ts)
+   */
+  getActiveStorefronts: async (): Promise<any> => {
+    const response = await api.get("/buyers/storefronts");
+    return response.data;
+  },
+
+  /**
+   * Fetch specific store details using the slug (e.g., 'nike-lagos')
+   */
+  getStoreDetails: async (storeSlug: string): Promise<any> => {
+    const response = await api.get(`/marketplace/store/${storeSlug}`);
+    return response.data;
+  },
+
+  /**
+   * Global search across the marketplace
+   */
+  search: async (query: string): Promise<any> => {
+    const response = await api.get("/marketplace/search", {
+      params: { q: query }
+    });
+    return response.data;
+  }
 };

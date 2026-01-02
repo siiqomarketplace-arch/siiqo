@@ -1,63 +1,46 @@
-//services/authService.ts
 import api from "@/lib/api_client";
 import { LoginResponse } from "@/types/auth";
 
 export const authService = {
-  // login: async (email: string, password: string): Promise<LoginResponse> => {
-  //   const response = await api.post("/auth/login", {
-  //     email,
-  //     password,
-  //   });
-  //   return response.data;
-  // },
-login: async (email: string, password: string) => {
-    // --- MOCK FOR LOCAL TESTING ---
-    console.log("Mock Login Triggered");
-    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
-    
-    return {
-      access_token: "mock_token_123",
-      user: {
-        id: 1,
-        email: email,
-        name: "Test User",
-        role: email.includes("admin") ? "admin" : "shopper"
-      }
-    };
-    
-    /* --- LIVE CODE (Commented) ---
-    return api.post("/auth/login", { email, password });
-    */
+  // Login remains the same structure
+  login: async (credentials: { email: string; password: string }): Promise<LoginResponse> => {
+    const response = await api.post("/auth/login", credentials);
+    return response.data;
   },
+
+  // Updated path from /auth/signup to /auth/register
   signup: async (userData: any) => {
-    const response = await api.post("/auth/signup", userData);
+    const response = await api.post("/auth/register", userData);
     return response.data;
   },
 
-  requestPasswordReset: async (email: string) => {
-    const response = await api.post("/auth/request-password-reset", { email });
+  // Updated path to /auth/forgot-password
+  forgotPassword: async (email: string) => {
+    const response = await api.post("/auth/forgot-password", { email });
     return response.data;
   },
 
+  // Standardized Reset Password
   resetPassword: async (passwordData: any) => {
     const response = await api.post("/auth/reset-password", passwordData);
     return response.data;
   },
 
-  forgotPassword: (email: string): Promise<void> => {
-    return api.post("/auth/request-password-reset", { email });
-  },
-
-  resendVerificationOtp: async (email: string) => {
-    const response = await api.post("/auth/resend-verification", { email });
+  // Updated to match /auth/verify-email
+  verifyEmail: async (email: string, otp: string) => {
+    const response = await api.post("/auth/verify-email", { email, otp });
     return response.data;
   },
 
-  verifyEmail: (email: string, otp: string): Promise<any> => {
-    return api.post("/auth/verify-email", { email, otp });
+  // Updated to match /auth/verify-reset-otp or /auth/resend-verification
+  resendOtp: async (email: string) => {
+    const response = await api.post("/auth/verify-reset-otp", { email });
+    return response.data;
   },
 
-  resendOtp: (email: string): Promise<any> => {
-    return api.post("/auth/resend-verification", { email });
+  // Added a specific method for resending email verification
+  resendVerification: async (email: string) => {
+    const response = await api.post("/auth/resend-verification", { email });
+    return response.data;
   },
 };

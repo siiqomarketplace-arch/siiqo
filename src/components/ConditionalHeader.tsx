@@ -17,7 +17,7 @@ const ConditionalHeader: React.FC = () => {
     sessionStorage.removeItem("RSEmail");
     sessionStorage.removeItem("RSToken");
     sessionStorage.removeItem("RSUser");
-    sessionStorage.removeItem("RSUserRole");
+    sessionStorage.removeItem("RSUsertarget_view");
     localStorage.removeItem("authToken");
     router.push("/auth/login");
   };

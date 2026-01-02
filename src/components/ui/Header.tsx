@@ -346,7 +346,7 @@
 //                     onClick={(e) => e.stopPropagation()}
 //                     className="absolute right-0 z-10 flex flex-col gap-3 p-4 mt-2 overflow-hidden bg-white border rounded-lg shadow-xl w-60 border-surface-border"
 //                   >
-//                     {user?.role !== "vendor" && user?.role !== "both" ? (
+//                     {user?.target_view !== "vendor" && user?.target_view !== "both" ? (
 //                       <Button
 //                         type="button"
 //                         onClick={() => router.push("/auth/vendor-onboarding")}
@@ -416,7 +416,7 @@
 //                   <ShoppingCart size={16} className="mr-2" /> Cart
 //                 </button>
 
-//                 {user?.role !== "vendor" && user?.role !== "both" ? (
+//                 {user?.target_view !== "vendor" && user?.target_view !== "both" ? (
 //                   <Button
 //                     type="button"
 //                     onClick={() => router.push("/auth/vendor-onboarding")}
@@ -715,7 +715,7 @@ const Header: React.FC = () => {
             {isLoading ? (
               <Skeleton type="rect" width="100px" height="36px" />
             ) : isLoggedIn ? (
-              <Button type="button" variant="navy" onClick={() => router.push(user?.role === 'vendor' ? "/vendor/dashboard" : "/user-profile")} className="px-5 py-2 text-sm font-medium">
+              <Button type="button" variant="navy" onClick={() => router.push(user?.target_view === 'vendor' ? "/vendor/dashboard" : "/user-profile")} className="px-5 py-2 text-sm font-medium">
                 Dashboard
               </Button>
             ) : (
@@ -756,12 +756,12 @@ const Header: React.FC = () => {
                 <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-lg hover:bg-surface-secondary"><Icon name="AlignJustify" size={20} /></button>
                 {isOpen && (
                   <div className="absolute right-0 z-10 flex flex-col gap-3 p-4 mt-2 bg-white border rounded-lg shadow-xl w-60 border-surface-border">
-                    <Button type="button" onClick={() => router.push(user?.role === 'vendor' ? "/vendor/dashboard" : "/user-profile")} className="w-full text-left p-3 hover:bg-surface-secondary flex items-center gap-2 text-sm font-medium">
+                    <Button type="button" onClick={() => router.push(user?.target_view === 'vendor' ? "/vendor/dashboard" : "/user-profile")} className="w-full text-left p-3 hover:bg-surface-secondary flex items-center gap-2 text-sm font-medium">
                         <Icon name="User" size={16} /> My Profile
                     </Button>
 
                     {/* VENDOR/SHOPPER LOGIC */}
-                    {user?.role === "shopper" ? (
+                    {user?.target_view === "shopper" ? (
                       <Button
                         type="button"
                         onClick={() => router.push("/auth/vendor-onboarding")}
@@ -802,7 +802,7 @@ const Header: React.FC = () => {
                      <button onClick={handleCartOpen} className="flex items-center px-4 py-2 text-sm font-medium bg-gray-100 rounded-lg"><ShoppingCart size={16} className="mr-2" /> Cart</button>
                      
                     {/* MOBILE VENDOR LOGIC */}
-                    {user?.role === "shopper" ? (
+                    {user?.target_view === "shopper" ? (
                       <Button
                         type="button"
                         onClick={() => router.push("/auth/vendor-onboarding")}

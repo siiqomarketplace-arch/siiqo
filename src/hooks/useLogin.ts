@@ -28,9 +28,9 @@ export const useLogin = () => {
                 description: "Redirecting to your dashboard...",
             });
 
-            if (data.user?.role === "vendor") {
+            if (data.user?.target_view === "vendor") {
                 router.push("/vendor/dashboard");
-            } else if (data.user?.role === "buyer") {
+            } else if (data.user?.target_view === "buyer") {
                 router.push("/marketplace");
             } else {
                 router.push("/");

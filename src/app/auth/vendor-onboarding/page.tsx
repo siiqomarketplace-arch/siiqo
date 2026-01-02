@@ -214,7 +214,7 @@ const onSubmit = async (data: VendorOnboardingData) => {
       const pendingData = JSON.parse(pendingDataStr);
       const updatedPendingData = {
         ...pendingData,
-        role: "vendor", // Change role here
+        target_view: "vendor", // Change target_view here
         onboardingComplete: true
       };
       localStorage.setItem("pendingUserData", JSON.stringify(updatedPendingData));
@@ -226,13 +226,13 @@ const onSubmit = async (data: VendorOnboardingData) => {
       const userData = JSON.parse(userStr);
       const updatedUser = { 
         ...userData, 
-        role: "vendor", 
+        target_view: "vendor", 
         storeName: data.store_name 
       };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       
       // Also update session storage for the AuthContext/Guard to see immediately
-      sessionStorage.setItem("RSUserRole", "vendor");
+      sessionStorage.setItem("RSUsertarget_view", "vendor");
     }
 
     toast({

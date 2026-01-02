@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (typeof window !== "undefined") {
             sessionStorage.setItem("RSToken", data.access_token);
             sessionStorage.setItem("RSEmail", email);
-            if (data.user?.role) {
-              sessionStorage.setItem("RSUserRole", data.user.role);
+            if (data.user?.target_view) {
+              sessionStorage.setItem("RSUsertarget_view", data.user.target_view);
             }
           }
 
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem("RSEmail");
       sessionStorage.removeItem("RSToken");
       sessionStorage.removeItem("RSUser");
-      sessionStorage.removeItem("RSUserRole");
+      sessionStorage.removeItem("RSUsertarget_view");
       localStorage.removeItem("rememberedEmail");
       localStorage.removeItem("authToken");
     }

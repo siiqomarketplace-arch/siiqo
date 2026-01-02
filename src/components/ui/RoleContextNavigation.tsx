@@ -1,86 +1,86 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-interface RoleContextType {
-  userRole: string;
+interface target_viewContextType {
+  usertarget_view: string;
   isAuthenticated: boolean;
-  switchRole: (role: string) => void;
-  login: (role?: string) => void;
+  switchtarget_view: (target_view: string) => void;
+  login: (target_view?: string) => void;
   logout: () => void;
 }
 
-const RoleContext = createContext<RoleContextType | undefined>(undefined);
+const target_viewContext = createContext<target_viewContextType | undefined>(undefined);
 
-export const useRole = (): RoleContextType => {
-  const context = useContext(RoleContext);
+export const usetarget_view = (): target_viewContextType => {
+  const context = useContext(target_viewContext);
   if (!context) {
-    throw new Error('useRole must be used within a RoleProvider');
+    throw new Error('usetarget_view must be used within a target_viewProvider');
   }
   return context;
 };
 
-interface RoleProviderProps {
+interface target_viewProviderProps {
   children: ReactNode;
 }
 
-export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
-  const [userRole, setUserRole] = useState<string>('customer');
+export const target_viewProvider: React.FC<target_viewProviderProps> = ({ children }) => {
+  const [usertarget_view, setUsertarget_view] = useState<string>('customer');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check localStorage for saved user role and auth status
-    const savedRole = localStorage.getItem('userRole');
+    // Check localStorage for saved user target_view and auth status
+    const savedtarget_view = localStorage.getItem('usertarget_view');
     const savedAuth = localStorage.getItem('isAuthenticated');
     
-    if (savedRole) {
-      setUserRole(savedRole);
+    if (savedtarget_view) {
+      setUsertarget_view(savedtarget_view);
     }
     if (savedAuth === 'true') {
       setIsAuthenticated(true);
     }
   }, []);
 
-  const switchRole = (role: string) => {
-    setUserRole(role);
-    localStorage.setItem('userRole', role);
+  const switchtarget_view = (target_view: string) => {
+    setUsertarget_view(target_view);
+    localStorage.setItem('usertarget_view', target_view);
   };
 
-  const login = (role: string = 'customer') => {
+  const login = (target_view: string = 'customer') => {
     setIsAuthenticated(true);
-    setUserRole(role);
+    setUsertarget_view(target_view);
     localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('userRole', role);
+    localStorage.setItem('usertarget_view', target_view);
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    setUserRole('customer');
+    setUsertarget_view('customer');
     localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userRole');
+    localStorage.removeItem('usertarget_view');
   };
 
   const value = {
-    userRole,
+    usertarget_view,
     isAuthenticated,
-    switchRole,
+    switchtarget_view,
     login,
     logout
   };
 
   return (
-    <RoleContext.Provider value={value}>
+    <target_viewContext.Provider value={value}>
       {children}
-    </RoleContext.Provider>
+    </target_viewContext.Provider>
   );
 };
 
-interface RoleContextNavigationProps {
+interface target_viewContextNavigationProps {
   children: ReactNode;
 }
 
-const RoleContextNavigation: React.FC<RoleContextNavigationProps> = ({ children }) => {
-  const { userRole, isAuthenticated } = useRole();
+const target_viewContextNavigation: React.FC<target_viewContextNavigationProps> = ({ children }) => {
+  const { usertarget_view, isAuthenticated } = usetarget_view();
 
-  // Render appropriate navigation based on user role
+  // Render appropriate navigation based on user target_view
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
@@ -89,7 +89,7 @@ const RoleContextNavigation: React.FC<RoleContextNavigationProps> = ({ children 
     );
   }
 
-  if (userRole === 'vendor') {
+  if (usertarget_view === 'vendor') {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex">
@@ -102,7 +102,7 @@ const RoleContextNavigation: React.FC<RoleContextNavigationProps> = ({ children 
     );
   }
 
-  // Customer role or default
+  // Customer target_view or default
   return (
     <div className="min-h-screen bg-background">
       {/* <CustomerGlobalHeader /> */}
@@ -117,4 +117,4 @@ const RoleContextNavigation: React.FC<RoleContextNavigationProps> = ({ children 
 // import VendorSidebarNavigation from './VendorSidebarNavigation';
 // import CustomerGlobalHeader from './CustomerGlobalHeader';
 
-export default RoleContextNavigation;
+export default target_viewContextNavigation;

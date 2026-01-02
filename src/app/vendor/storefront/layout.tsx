@@ -13,12 +13,12 @@ export default function StorefrontLayout({
   const { isLoggedIn, user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && (!isLoggedIn || user?.role !== "vendor")) {
+    if (!isLoading && (!isLoggedIn || user?.target_view !== "vendor")) {
       router.push("/auth/login");
     }
   }, [isLoggedIn, user, isLoading, router]);
 
-  if (isLoading || !isLoggedIn || user?.role !== "vendor") {
+  if (isLoading || !isLoggedIn || user?.target_view !== "vendor") {
     return (
       <div className="flex items-center justify-center h-screen">
         <AppLoader />

@@ -4,39 +4,64 @@ import { VendorInfo } from "@/types/seller-profile";
 import { VendorData as VendorSettingsData } from "@/types/vendor/settings";
 
 export const userService = {
+  /**
+   * Fetch current authenticated user profile
+   * Replaces mock data with a direct call to the live endpoint
+   */
   getUserProfile: async (): Promise<any> => {
-    // --- MOCK FOR LOCAL TESTING ---
-    const saved = localStorage.getItem("pendingUserData");
-    if (saved) return JSON.parse(saved);
-    
-    return { id: 999, name: "John Doe", role: "shopper", email: "test@test.com" };
+    const response = await api.get("/user/profile");
+    return response.data;
+  },
 
-    /* --- LIVE CODE ---
-    return api.get("/user/profile");
-    */
+  /**
+   * Get vendor details
+   * Note: In your new API, this might be getStorefrontDetails by slug,
+   * but if the backend still supports email, this remains valid.
+   */
+  getVendorByEmail: async (email: string): Promise<VendorInfo> => {
+    const response = await api.get(`/user/${email}`);
+    return response.data;
   },
-  getVendorByEmail: (email: string): Promise<VendorInfo> => {
-    return api.get(`/user/${email}`);
-  },
-  uploadProfilePicture: (formData: FormData): Promise<any> => {
-    return api.post("/upload-profile-pic", formData, {
+
+  /**
+   * Upload user profile picture
+   */
+  uploadProfilePicture: async (formData: FormData): Promise<any> => {
+    const response = await api.post("/upload-profile-pic", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return response.data;
   },
+
+  /**
+   * Profile verification / KYC
+   * Aligns with the vendor onboarding flow in your system
+   */
+  submitKyc: async (formData: FormData): Promise<any> => {
+    const response = await api.post("/user/kyc", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  /**
+   * Cleanup and Logout
+   * Clears all authentication storage to ensure a clean state
+   */
   logout: (): void => {
     if (typeof window !== "undefined") {
+      // Clear Session Storage (Used by your new interceptor)
       sessionStorage.removeItem("RSToken");
       sessionStorage.removeItem("RSUser");
+      sessionStorage.removeItem("RSEmail");
+      
+      // Clear Local Storage (Used by older versions/admin)
       localStorage.removeItem("authToken");
       localStorage.removeItem("isAdminLoggedIn");
+      localStorage.removeItem("pendingUserData");
+
+      // Redirect to login
+      window.location.href = "/auth/login";
     }
-  },
-  getVendorProfile: (): Promise<VendorSettingsData> => {
-    return api.get("/user/profile");
-  },
-  submitKyc: (formData: FormData): Promise<any> => {
-    return api.post("/user/kyc", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
   },
 };

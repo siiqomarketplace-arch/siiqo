@@ -1,109 +1,85 @@
-// services/vendorService
-import vendorApiClient from "@/lib/vendor_api_client";
+import api from "@/lib/api_client";
 import { ApiOrdersResponse } from "@/types/orders";
 
 export const vendorService = {
-  getDashboardStats: () => {
-    return vendorApiClient.get("/dashboard-stats").catch(e => {
-      console.error("Failed to load stats, using fallback data:", e);
-      return {
-        data: {
-          totalSales: 12450,
-          totalOrders: 87,
-          totalProducts: 23,
-          averageRating: 4.6,
-          monthlyGrowth: 15.2,
-          newCustomers: 34,
-          pendingOrders: 5,
-          lowStockItems: 3,
-        }
-      };
-    });
+  /**
+   * VENDOR ANALYTICS & DASHBOARD
+   */
+  getRevenueAnalytics: async () => {
+    // Matches your api.ts: /vendor-orders/analytics/revenue
+    const response = await api.get("/vendor-orders/analytics/revenue");
+    return response.data;
   },
-  getRecentOrders: () => {
-    return vendorApiClient.get("/dashboard/recent-orders").catch(e => {
-      console.error("Failed to load recent orders", e);
-      return { data: [] };
-    });
+
+  getDashboardStats: async () => {
+    // Pointing to your live settings/profile for basic stats
+    const response = await api.get("/vendor/settings");
+    return response.data;
   },
-  getPerformanceData: () => {
-    return vendorApiClient.get("/dashboard/performance-data").catch(e => {
-      console.error("Failed to load performance data", e);
-      return { data: [] };
-    });
+
+  /**
+   * ORDER MANAGEMENT
+   */
+  getVendorOrders: async (): Promise<ApiOrdersResponse> => {
+    // Matches your api.ts: /vendor/orders
+    const response = await api.get("/vendor/orders");
+    return response.data;
   },
-  getNotifications: () => {
-    return vendorApiClient.get("/dashboard/notifications").catch(e => {
-      console.error("Failed to load notifications", e);
-      return { data: [] };
-    });
+
+  confirmPayment: async (orderId: string | number) => {
+    // Matches your api.ts: /vendor-orders/orders/${order_id}/confirm-payment/
+    const response = await api.patch(`/vendor-orders/orders/${orderId}/confirm-payment/`);
+    return response.data;
   },
-  getPendingOrders: () => {
-    return vendorApiClient.get("/dashboard/pending-orders").catch(e => {
-      console.error("Failed to load pending orders", e);
-      return { data: { count: 0 } };
-    });
+
+  updateShippingStatus: async (orderId: string | number, status: string) => {
+    // Matches your api.ts: /vendor-orders/orders/${order_id}/status/
+    const response = await api.patch(`/vendor-orders/orders/${orderId}/status/`, { status });
+    return response.data;
   },
-  getNewCustomers: () => {
-    return vendorApiClient.get("/dashboard/new-customers").catch(e => {
-      console.error("Failed to load new customers", e);
-      return { data: { count: 0 } };
-    });
-  },
-  getActiveProducts: () => {
-    return vendorApiClient.get("/dashboard/active-products").catch(e => {
-      console.error("Failed to load active products", e);
-      return { data: { count: 0 } };
-    });
-  },
-  getLowStockItems: () => {
-    return vendorApiClient.get("/dashboard/low-stock-items").catch(e => {
-      console.error("Failed to load low stock items", e);
-      return { data: { count: 0 } };
-    });
-  },
-  vendorOnboarding: (formData: FormData) => {
-    return vendorApiClient.post("/onboarding", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-  },
-  getVendorOrders: (): Promise<ApiOrdersResponse> => {
-    return vendorApiClient.get("/vendor/orders");
-  },
-  getVendorProfile: () => {
-    return vendorApiClient.get("/user/profile");
-  },
-  updateOrderStatus: (orderId: string, newStatus: string) => {
-    return vendorApiClient.put(`/vendor/orders/${orderId}/status`, { status: newStatus });
-  },
-  uploadImage: (file: File): Promise<{ urls: string[] }> => {
-    const formData = new FormData();
-    formData.append("files", file);
-    return vendorApiClient.post("/vendor/upload-file", formData, {
+
+  /**
+   * VENDOR ONBOARDING & SETTINGS
+   */
+  vendorOnboarding: async (formData: FormData) => {
+    // Matches your api.ts: /vendor/onboard
+    const response = await api.post("/vendor/onboard", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return response.data;
   },
-  uploadProfilePicture: (file: File) => {
+
+  updateVendorSettings: async (data: FormData | any) => {
+    // Matches your api.ts: /vendor/update-settings
+    const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+    const response = await api.patch("/vendor/update-settings", data, { headers });
+    return response.data;
+  },
+
+  getVendorProfile: async () => {
+    const response = await api.get("/user/profile");
+    return response.data;
+  },
+
+  /**
+   * INVENTORY MANAGEMENT
+   */
+  getMyProducts: async (): Promise<MyProductsResponse> => {
+    // Matches your api.ts: /products/my-products
+    const response = await api.get("/products/my-products");
+    return response.data;
+  },
+
+  uploadFile: async (file: File): Promise<{ urls: string[] }> => {
     const formData = new FormData();
-    formData.append("profile_pic", file);
-    return vendorApiClient.post("/upload-profile-pic", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    formData.append("file", file); // Ensure key matches 'uploadFile' in api.ts
+    const response = await api.post("/vendor/upload-file", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
-  },
-  getMyProducts: (): Promise<MyProductsResponse> => {
-    return vendorApiClient.get("/vendor/my-products");
-  },
-  getStorefront: () => {
-    return vendorApiClient.get("/vendor/storefront");
-  },
-  updateStorefront: (data: any) => {
-    return vendorApiClient.post("/vendor/storefront", data);
-  },
+    return response.data;
+  }
 };
+
 interface MyProductsResponse {
   products: any[];
 }

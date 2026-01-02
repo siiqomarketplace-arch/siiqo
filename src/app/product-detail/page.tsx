@@ -7,7 +7,7 @@ import SavedItems from "../user-profile/components/SavedItems";
 import Settings from "../user-profile/components/Settings";
 import { useRouter } from "next/navigation";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
-import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
+import target_viewProtectedRoute from "@/components/auth/target_viewProtectedRoute";
 
 // --- DUMMY FALLBACK DATA ---
 const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
@@ -18,7 +18,7 @@ const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
   profile_pic_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
   country: "Nigeria",
   state: "Lagos",
-  role: "shopper",
+  target_view: "shopper",
 };
 
 const UserProfile = () => {
@@ -221,7 +221,7 @@ const UserProfile = () => {
   if (!userProfile) return null;
 
   return (
-    <RoleProtectedRoute allowedRoles={["shopper", "customer", "shopping"]}>
+    <target_viewProtectedRoute allowedtarget_views={["shopper", "customer", "shopping"]}>
     <div className="min-h-screen h-full bg-background pb-10">
       <div className="relative">
         <div
@@ -402,7 +402,7 @@ const UserProfile = () => {
         </div>
       )}
     </div>
-    </RoleProtectedRoute>
+    </target_viewProtectedRoute>
   );
 };
 

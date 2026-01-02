@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
   const handleBackToLogin = () => {
     // detect where they're coming from and navigate user to the right page.
     const origin = sessionStorage.getItem("reset_origin");
-    // console.log("reset password role: ", origin);
+    // console.log("reset password target_view: ", origin);
 
     setTimeout(() => {
       if (origin === "vendor") {

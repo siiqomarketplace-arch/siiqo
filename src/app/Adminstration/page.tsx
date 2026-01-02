@@ -108,7 +108,7 @@ const AdminDashboard: React.FC = () => {
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.business_name &&
         user.business_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesFilter = filterType === "all" || user.role === filterType;
+    const matchesFilter = filterType === "all" || user.target_view === filterType;
     return matchesSearch && matchesFilter;
   });
 
@@ -488,7 +488,7 @@ const AdminDashboard: React.FC = () => {
                         User
                       </th>
                       <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider hidden sm:table-cell">
-                        Role
+                        target_view
                       </th>
                       <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider hidden md:table-cell">
                         Contact
@@ -533,16 +533,16 @@ const AdminDashboard: React.FC = () => {
                                   {user.business_name}
                                 </div>
                               )}
-                              {/* Mobile role display */}
+                              {/* Mobile target_view display */}
                               <div className="sm:hidden">
                                 <span
                                   className={`inline-flex px-2 py-1 text-xs font-bold rounded-full shadow-sm mt-1 ${
-                                    user.role === "vendor"
+                                    user.target_view === "vendor"
                                       ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200"
                                       : "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200"
                                   }`}
                                 >
-                                  {user.role}
+                                  {user.target_view}
                                 </span>
                               </div>
                             </div>
@@ -551,12 +551,12 @@ const AdminDashboard: React.FC = () => {
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                           <span
                             className={`inline-flex px-3 py-1 text-xs font-bold rounded-full shadow-sm ${
-                              user.role === "vendor"
+                              user.target_view === "vendor"
                                 ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200"
                                 : "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200"
                             }`}
                           >
-                            {user.role}
+                            {user.target_view}
                           </span>
                           {user.business_type && (
                             <div className="text-xs text-gray-500 mt-1 capitalize">
@@ -786,7 +786,7 @@ const AdminDashboard: React.FC = () => {
                       {selectedUser.email}
                     </p>
                     <span className="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-white/20 backdrop-blur-sm mt-2">
-                      {selectedUser.role}
+                      {selectedUser.target_view}
                     </span>
                   </div>
                 </div>

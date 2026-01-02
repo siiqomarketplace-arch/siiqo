@@ -327,12 +327,12 @@ const SearchResults = () => {
             {/* Top Search Area */}
             <div className={`flex-none p-5 transition-all duration-700 ${!hasSearched ? 'flex flex-col items-center justify-center h-full' : 'pb-2'}`}>
                 
-                {!hasSearched && (
+                {/* {!hasSearched && (
                     <div className="mb-8 text-center animate-in fade-in zoom-in duration-1000">
                         <h1 className="text-4xl md:text-5xl font-black text-[#1B3F61] mb-2 tracking-tight">Explore your city.</h1>
                         <p className="text-slate-500 font-medium">Find anything from products to local storefronts</p>
                     </div>
-                )}
+                )} */}
 
                 {/* Search Bar Container - Logic for Bing-style Long Bar */}
                 <div className={`relative z-50 transition-all duration-700 ${!hasSearched ? 'w-full max-w-3xl' : 'w-full mb-4'}`}>
