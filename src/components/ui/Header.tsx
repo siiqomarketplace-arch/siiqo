@@ -47,10 +47,9 @@ const Header: React.FC = () => {
   // --- Derived State (Logic from Code 1) ---
   const userData = (user as any)?.data;
   const isRegisteredVendor = userData?.store_settings?.initialized === true;
-
   // --- Configuration ---
   const appPages = [
-    "/home-dashboard",
+    "/vendor/dashboard",
     "/map-view",
     "/search-results",
     "/product-detail",
@@ -242,7 +241,7 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-4">
             {isLoading ? <Skeleton type="rect" width="100px" height="36px" /> : 
              isLoggedIn ? (
-              <Button variant="navy" onClick={() => router.push(user?.active_view === 'vendor' ? "/vendor/dashboard" : "/home-dashboard")}>
+              <Button variant="navy" onClick={() => router.push(user?.active_view === 'vendor' ? "/vendor/dashboard" : "/user-profile")}>
                 Dashboard
               </Button>
             ) : (

@@ -114,14 +114,14 @@ const UserProfile = () => {
 
         <div className="flex flex-col gap-3">
           <button 
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/auth/login')}
             className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
             Sign In to Account
           </button>
           
           <button 
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/marketplace')}
             className="w-full py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all"
           >
             Return to Marketplace

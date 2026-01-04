@@ -18,29 +18,64 @@ type TabId = "public" | "preview" | "customize";
 
 const VendorStorefront: React.FC = () => {
   const router = useRouter();
-  const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [storefrontData, setStorefrontData] = useState<StorefrontData | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("public");
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
 
-  // --- LOCAL STORAGE & API SYNC ---
-  useEffect(() => {
-   const loadData = async () => {
+  // --- DATA FETCHING LOGIC ---
+  const loadData = async () => {
     setLoading(true);
     try {
-      const [storefrontRes, productsRes] = await Promise.all([
-        storefrontService.getStorefronts(),
-        productService.getMyProducts(),
-      ]);
-      
-      // Use the 'data' object directly from your API response structure
-      setStorefrontData({
-        ...storefrontRes.data,
-        products: productsRes.products,
+      // 1. Fetch from the specific settings API
+      const settingsResponse = await fetch("https://server.siiqo.com/api/vendor/settings", {
+        headers: {
+          // Add your authentication headers here if needed
+          "Content-Type": "application/json",
+        }
       });
+      const settingsResult = await settingsResponse.json();
+
+      // 2. Fetch products
+      const productsRes = await productService.getMyProducts();
+
+      if (settingsResult.status === "success") {
+        const store = settingsResult.data.store_settings;
+        
+        // Map API response to the local StorefrontData interface
+        const mappedData: any = {
+          id: store.storefront_link,
+          businessName: store.business_name,
+          description: store.description,
+          bannerImage: store.banner_url,
+          logo: store.logo_url,
+          isPublished: store.is_published,
+          slug: store.storefront_link,
+          address: store.address,
+          template_options: {
+            theme: store.template_options?.layout_style || 'light',
+            primaryColor: store.template_options?.primary_color,
+            secondaryColor: store.template_options?.secondary_color,
+          },
+          socialLinks: store.social_links,
+          businessHours: store.working_hours,
+          products: productsRes.products || [],
+          // Metadata from personal info
+          vendorEmail: settingsResult.data.personal_info?.email,
+          vendorName: settingsResult.data.personal_info?.fullname,
+        };
+
+        setStorefrontData(mappedData);
+      } else {
+        throw new Error("API returned failure status");
+      }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to fetch live settings", variant: "destructive" });
+      console.error("Fetch error:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to fetch live settings from server", 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
@@ -49,54 +84,18 @@ const VendorStorefront: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-  }, []);
+
   const handleSaveStorefront = async (updatedData: Partial<StorefrontData>) => {
     setSaving(true);
     try {
-      // --- LOCAL STORAGE PERSISTENCE ---
-      // We save the updated data locally first so the "Preview" and "Public View" tabs 
-      // can read it immediately.
+      // LOCAL PERSISTENCE for immediate UI feedback
       const currentLocal = JSON.parse(localStorage.getItem("vendorStorefrontDetails") || "{}");
       const mergedData = { ...currentLocal, ...updatedData };
       localStorage.setItem("vendorStorefrontDetails", JSON.stringify(mergedData));
 
-      // --- LIVE API LOGIC (COMMENTED OUT) ---
-      /*
-      let bannerUrl = storefrontData?.bannerImage;
-      let logoUrl = storefrontData?.logo;
-
-      if (updatedData.bannerFile) {
-        const response = await vendorService.uploadImage(updatedData.bannerFile);
-        bannerUrl = response.urls[0];
-      }
-
-      if (updatedData.logoFile) {
-        const response = await vendorService.uploadImage(updatedData.logoFile);
-        logoUrl = response.urls[0];
-      }
-
-      const payload = {
-        business_name: updatedData.businessName || storefrontData?.businessName,
-        description: updatedData.description || storefrontData?.description,
-        business_banner: [bannerUrl, logoUrl],
-        template_options: {
-          theme: updatedData.template_options?.theme || storefrontData?.template_options?.theme || 'light',
-          font: updatedData.template_options?.font || storefrontData?.template_options?.font || 'Arial',
-        },
-        about: updatedData.about || storefrontData?.about,
-        show_call_button: updatedData.showCallButton,
-        team_size: updatedData.teamSize,
-        business_hours: updatedData.businessHours,
-        established: updatedData.established,
-      };
-
-      const response = await vendorService.updateStorefront(payload);
-      const data = response.data;
-      */
-
-      // Update local state to trigger re-renders in other tabs
+      // Update local state to trigger re-renders
       setStorefrontData((prev) =>
-        prev ? { ...prev, ...mergedData } : mergedData
+        prev ? { ...prev, ...mergedData } : (mergedData as StorefrontData)
       );
 
       toast({
@@ -110,13 +109,13 @@ const VendorStorefront: React.FC = () => {
     }
   };
 
-  // Rest of the functions (handlePublishStorefront, getStorefrontUrl) remain unchanged 
-  // as they deal with the Published state which is fine to keep live.
   const handlePublishStorefront = async () => {
     setSaving(true);
     try {
       const newPublishedState = !storefrontData?.isPublished;
-      // await storefrontService.publishStorefront(newPublishedState); // Live toggle
+      
+      // OPTIONAL: Call API to toggle publish state
+      // await fetch(`https://server.siiqo.com/api/vendor/publish`, { method: 'POST', ... });
 
       setStorefrontData(prev =>
         prev ? { ...prev, isPublished: newPublishedState } : prev
@@ -149,14 +148,10 @@ const VendorStorefront: React.FC = () => {
     </div>
   );
 
-  function loadData(): void {
-    throw new Error("Function not implemented.");
-  }
-
   return (
     <>
       <Head>
-        <title>Storefront Manager</title>
+        <title>Storefront Manager | {storefrontData?.businessName || "Vendor"}</title>
       </Head>
 
       <div className="min-h-screen bg-background">
@@ -165,7 +160,7 @@ const VendorStorefront: React.FC = () => {
           <div className="flex flex-col mb-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-text-primary">Storefront Manager</h1>
-              <p className="text-text-muted">Manage your local and live presence</p>
+              <p className="text-text-muted">Manage your business: <strong>{storefrontData?.businessName}</strong></p>
             </div>
             <div className="flex items-center mt-4 space-x-3 lg:mt-0">
               <Button variant="outline" onClick={() => setActiveTab("preview")}>
@@ -175,8 +170,9 @@ const VendorStorefront: React.FC = () => {
               <Button 
                 variant={storefrontData?.isPublished ? "secondary" : "primary"}
                 onClick={handlePublishStorefront}
+                disabled={saving}
               >
-                {storefrontData?.isPublished ? "Unpublish" : "Publish Store"}
+                {saving ? "Processing..." : (storefrontData?.isPublished ? "Unpublish" : "Publish Store")}
               </Button>
             </div>
           </div>
@@ -211,10 +207,10 @@ const VendorStorefront: React.FC = () => {
             )}
 
             {activeTab === "customize" && (
-    <StorefrontCustomization
-      initialData={storefrontData}
-      onSuccess={loadData} // Refresh data after save
-    />
+              <StorefrontCustomization
+                initialData={storefrontData}
+                onSuccess={loadData} // Refresh data after save
+              />
             )}
           </div>
         </main>
