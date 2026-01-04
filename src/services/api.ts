@@ -32,7 +32,7 @@ apiClient.interceptors.request.use(
  * USER & PROFILE ENDPOINTS
  */
 export const switchMode = (mode: "vendor" | "shopper") => {
-  return apiClient.post("/auth/switch-mode", { mode });
+  return apiClient.post("/auth/switch-mode", { active_view: mode });
 }
 export const getUserProfile = () => {
   return apiClient.get("/user/profile");
@@ -134,8 +134,8 @@ export const getCategories = () => {
 export const getSettings = () => {
   return apiClient.get("/vendor/settings") 
 }
-export const revenueAnalytics = () => {
-  return apiClient.get("/vendor-orders/analytics/revenue")
+export const revenueAnalytics = (params?: { start_date: string, end_date: string }) => {
+    return apiClient.get("/vendor-orders/analytics/revenue", { params });
 }
 /**
  * VENDOR ONBOARDING (Replaces switch-to-vendor)
@@ -208,7 +208,7 @@ export const fetchFavoriteItems = () => {
 /**
  * AUTHENTICATION ENDPOINTS
  */
-export const login = (data: any) => {
+export const login = (data: any, ) => {
   return apiClient.post("/auth/login", data);
 };
 

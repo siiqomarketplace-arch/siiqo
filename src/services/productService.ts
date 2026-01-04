@@ -24,7 +24,9 @@ export const productService = {
   },
 
   // 2. Vendor Management (Updated Paths)
-  getMyProducts: async (): Promise<{ data: { products: VendorProduct[] } }> => {
+  getMyProducts: async (): Promise<{
+    products: any; data: { products: VendorProduct[] } 
+}> => {
     // Matches your api.ts: /products/my-products
     const response = await api.get("/products/my-products");
     return response.data;
@@ -40,18 +42,14 @@ export const productService = {
     return response.data;
   },
 
-  editProduct: async (id: number | string, productData: FormData | EditProductRequest): Promise<any> => {
-    // Matches your api.ts: /products/update/${product_id} using PATCH
-    const headers = productData instanceof FormData 
-      ? { "Content-Type": "multipart/form-data" } 
-      : {};
-
-    const response = await api.patch(`/products/update/${id}`, productData, { headers });
+  editProduct: async (productId: number, data: any) => {
+    const response = await api.patch(`/products/update/${productId}`, data);
     return response.data;
   },
 
-  deleteProduct: async (id: number | string) => {
-    const response = await api.delete(`/products/delete/${id}`);
+ deleteProduct: async (productId: number) => {
+    // Matches your endpoint: /products/delete/{id}
+    const response = await api.delete(`/products/delete/${productId}`);
     return response.data;
   },
 

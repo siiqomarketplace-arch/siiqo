@@ -16,7 +16,7 @@ interface ProductCardProps {
   product: Product & any;
   onAddToCart: (product: Product) => void;
   onQuickView: (product: Product) => void;
-  onAddToWishlist: (productId: number | string, isWishlisted: boolean) => void;
+  onAddToWishlist: (productId: number , isWishlisted: boolean) => void;
   cartQuantities: { [key: number]: number };
   isAddingToCart: { [key: number]: boolean };
   id?: number | string;

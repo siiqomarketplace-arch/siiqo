@@ -10,6 +10,7 @@ interface SearchSuggestionsProps {
     popularSearches: string[];
     onSelectSuggestion: (suggestion: string) => void;
     onClose: () => void;
+    onSelect: (query: string) => void;
 }
 
 const SearchSuggestions = ({

@@ -1,6 +1,6 @@
 import api from "@/lib/api_client";
 import { APIResponse } from "@/types/storeFront";
-
+import { MarketplaceSearchResponse } from "@/types/marketplace";
 export const marketplaceService = {
   /**
    * Fetch all products for the marketplace main feed
@@ -38,10 +38,15 @@ export const marketplaceService = {
   /**
    * Global search across the marketplace
    */
-  search: async (query: string): Promise<any> => {
-    const response = await api.get("/marketplace/search", {
-      params: { q: query }
-    });
-    return response.data;
-  }
-};
+  // In your marketplaceService object:
+search: async (query: string): Promise<MarketplaceSearchResponse> => {
+  const response = await api.get("/marketplace/search", {
+    params: { q: query }
+  });
+  
+  // Ensure we return the expected structure even if the API data is slightly different
+  return {
+    products: response.data?.products || response.data || []
+  };
+}
+}

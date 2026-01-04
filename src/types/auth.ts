@@ -1,8 +1,12 @@
 export interface UserData {
   id?: string | number;
   account_id?: string;
+  fullname?: string;
+  role?: string; // 'shopper', 'vendor', or 'admin'
+
   name?: string;
   email: string;
+  active_view?: string;
   target_view: string; // 'shopper', 'vendor', or 'admin'
   phone?: string;
   business_name?: string;

@@ -2,7 +2,7 @@ import api from "@/lib/api_client";
 
 export const cartService = {
   // Matches your api.ts: apiClient.post("/cart/add", data)
-  addToCart: async (productId: number | string, quantity: number) => {
+  addToCart: async (productId: number , quantity: number) => {
     const response = await api.post("/cart/add", { 
       product_id: productId, 
       quantity 

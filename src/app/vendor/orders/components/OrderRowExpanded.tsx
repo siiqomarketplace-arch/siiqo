@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '@/components/AppIcon';
 import Image from '@/components/ui/AppImage';
-
+import { ProductOrder } from '@/types/orders';
 interface OrderItem {
   id: string;
   name: string;
@@ -43,7 +43,8 @@ interface Order {
 }
 
 interface OrderRowExpandedProps {
-	order: Order;
+	// order: Order;
+	order: ProductOrder;
 }
 
 const OrderRowExpanded: React.FC<OrderRowExpandedProps> = ({ order }) => {

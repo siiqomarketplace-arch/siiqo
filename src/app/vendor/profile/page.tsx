@@ -162,7 +162,7 @@ const UserProfile: React.FC = () => {
 
     setUploading(true);
     try {
-      const response = await vendorService.uploadProfilePicture(file);
+      const response = await vendorService.getVendorProfile();
       const data = response.data as UploadProfilePicResponse;
 
       // Update the user profile with new avatar URL if returned

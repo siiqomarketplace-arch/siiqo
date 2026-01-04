@@ -14,12 +14,14 @@ type DateRange = '7d' | '30d' | '90d' | '1y' | 'custom' | string;
 
 interface SalesChartProps {
     data: SalesData[];
-    dateRange: DateRange;
+    // dateRange: DateRange;
+    isLoading?: boolean;
 }
 
 // --- END OF TYPESCRIPT CONVERSION ---
 
-const SalesChart: React.FC<SalesChartProps> = ({ data, dateRange }) => {
+const SalesChart: React.FC<SalesChartProps> = ({ data, isLoading }) => {
+    const [DateRange, setDateRange] = React.useState<DateRange>('7d');
     const formatTooltipValue = (value: ValueType, name: NameType): [string, NameType] => {
         if (name === 'revenue') {
             return [`$${(value as number).toLocaleString()}`, 'Revenue'];
@@ -29,9 +31,9 @@ const SalesChart: React.FC<SalesChartProps> = ({ data, dateRange }) => {
 
     const formatXAxisLabel = (tickItem: string): string => {
         const date = new Date(tickItem);
-        if (dateRange === '7d') {
+        if (DateRange === '7d') {
             return date.toLocaleDateString('en-US', { weekday: 'short' });
-        } else if (dateRange === '30d') {
+        } else if (DateRange === '30d') {
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         return date.toLocaleDateString('en-US', { month: 'short' });

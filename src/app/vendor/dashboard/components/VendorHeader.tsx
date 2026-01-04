@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Icon from "@/components/AppIcon";
-import { LucidePanelLeftClose, LucidePanelRightClose, Menu, X } from "lucide-react";
-// import { vendorService } from "@/services/vendorService"; // Commented out for LocalStorage use
+import { LucidePanelLeftClose, LucidePanelRightClose, Menu, X, Loader2 } from "lucide-react";
+import { vendorService } from "@/services/vendorService"; 
 
 interface VendorData {
   business_name?: string;
-  first_name?: string;
-  last_name?: string;
+  fullname?: string;
   email?: string;
   isVerified?: boolean;
+  logo_url?: string | null;
 }
 
 interface VendorHeaderProps {
@@ -37,97 +37,78 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [vendorData, setVendorData] = useState<VendorData | null>(
-    propVendorData || null
-  );
+  const [vendorData, setVendorData] = useState<VendorData | null>(propVendorData || null);
+  const [loading, setLoading] = useState(!propVendorData);
+  
+  // New state for navigation/action loading
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
   const isAuthPage = () => {
-    const authPatterns = [
-      "/auth/",
-      "/auth/login",
-      "/vendor/signup",
-      "/vendor/verify-otp",
-      "/vendor/forgot-password",
-      "/vendor/reset-password",
-      "verify-otp",
-      "login",
-      "signup",
-      "forgot-password",
-      "reset-password",
-    ];
-
-    return authPatterns.some(
-      (pattern) => pathname.includes(pattern) || pathname.endsWith(pattern)
-    );
+    const authPatterns = ["/auth/", "/vendor/signup", "login", "signup"];
+    return authPatterns.some((pattern) => pathname.includes(pattern));
   };
+
+  useEffect(() => {
+    const fetchLiveProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await vendorService.getVendorProfile();
+        const apiData = response.data;
+        
+        setVendorData({
+          fullname: apiData.personal_info?.fullname || "Vendor",
+          email: apiData.personal_info?.email || "",
+          business_name: apiData.store_settings?.business_name || "My Store",
+          isVerified: apiData.store_settings?.initialized || false,
+          logo_url: apiData.store_settings?.logo_url,
+        });
+      } catch (err) {
+        console.error("Error fetching live vendor profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!propVendorData) {
+      fetchLiveProfile();
+    }
+  }, [propVendorData]);
+
+  // Turn off loader when the pathname changes (navigation finished)
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, [pathname]);
 
   if (isAuthPage()) return null;
 
   const handleNavigation = (path: string) => {
+    if (pathname === path) return;
+    setIsPageLoading(true); // Trigger blur and loader
     router.push(path);
     setIsMobileMenuOpen(false);
+    setShowUserMenu(false);
   };
 
-  useEffect(() => {
-    if (!propVendorData) {
-      // --- LOCAL STORAGE DATA FETCHING ---
-      const loadLocalData = () => {
-        try {
-          const userStr = localStorage.getItem("user");
-          const storeStr = localStorage.getItem("vendorStoreDetails");
-          
-          if (userStr) {
-            const userData = JSON.parse(userStr);
-            const storeData = storeStr ? JSON.parse(storeStr) : {};
-            
-            setVendorData({
-              first_name: userData.firstName || userData.first_name || "Vendor",
-              last_name: userData.lastName || userData.last_name || "",
-              email: userData.email || "",
-              business_name: storeData.business_name || "My Store",
-              isVerified: storeData.status === "approved" || false,
-            });
-                                  console.log(storeData.business_name)
-
-          }
-
-        } catch (err) {
-          console.error("Error loading local vendor data:", err);
-        }
-
-      };
-
-      loadLocalData();
-
-      /* --- ORIGINAL API SERVICE (COMMENTED OUT) ---
-      const fetchProfile = async () => {
-        try {
-          const res = await vendorService.getVendorProfile();
-          setVendorData(res.data);
-        } catch (err) {
-          console.error("Error fetching vendor profile:", err);
-        }
-      };
-      fetchProfile();
-      */
-    }
-  }, [propVendorData]);
+  const handleLogoutAction = () => {
+    setIsPageLoading(true);
+    onLogout();
+  };
 
   // --- Shared Navigation Content ---
   const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
     <>
-      {/* Navigation Links */}
       <nav className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-1">
           {navigationItems.map((item) => (
             <button
               key={item.path}
+              disabled={isPageLoading}
               onClick={() => handleNavigation(item.path)}
-              className={`flex items-center w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
+              className={`flex items-center w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 pathname === item.path
-                  ? "bg-gray-500 text-primary-foreground"
+                  ? "bg-gray-500 text-white shadow-sm"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface"
-              } ${isCollapsed && !mobile ? "justify-center" : "space-x-3"}`}
+              } ${isCollapsed && !mobile ? "justify-center" : "space-x-3"} ${isPageLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               title={isCollapsed && !mobile ? item.label : ""}
             >
               <Icon name={item.icon as any} size={isCollapsed && !mobile ? 28 : 20} />
@@ -137,116 +118,45 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
         </div>
       </nav>
 
-      {/* User Menu Section */}
       <div className="relative p-4 border-t border-border">
-        {showUserMenu && (
-          <div
-            className="fixed inset-0 z-[4000]"
-            onClick={() => setShowUserMenu(false)}
-          ></div>
-        )}
-
+        {showUserMenu && <div className="fixed inset-0 z-[4000]" onClick={() => setShowUserMenu(false)}></div>}
         <div className="relative z-[5001]">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className={`flex items-center w-full p-2 transition-colors rounded-lg hover:bg-surface ${
-              isCollapsed && !mobile ? "justify-center" : "space-x-3"
-            }`}
+            className={`flex items-center w-full p-2 transition-colors rounded-lg hover:bg-surface ${isCollapsed && !mobile ? "justify-center" : "space-x-3"}`}
           >
-            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full bg-primary">
-              <span className="text-sm font-medium text-white">
-                {vendorData?.first_name?.charAt(0) || "V"}
-              </span>
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden rounded-full bg-primary">
+              {vendorData?.logo_url ? (
+                <img src={vendorData.logo_url} alt="Logo" className="object-cover w-full h-full" />
+              ) : (
+                <span className="text-sm font-medium text-white">{vendorData?.fullname?.charAt(0) || "V"}</span>
+              )}
             </div>
-
             {(!isCollapsed || mobile) && (
               <>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium truncate text-text-primary">
-                    {vendorData?.first_name} {vendorData?.last_name}
-                  </p>
-                  <p className="text-xs truncate text-text-muted">
-                    {vendorData?.email}
-                  </p>
+                  <p className="text-sm font-medium truncate text-text-primary">{vendorData?.fullname}</p>
+                  <p className="text-xs truncate text-text-muted">{vendorData?.email}</p>
                 </div>
-                <Icon
-                  name="ChevronDown"
-                  size={16}
-                  className={`text-text-muted transition-transform flex-shrink-0 ${
-                    showUserMenu ? "rotate-180" : ""
-                  }`}
-                />
+                <Icon name="ChevronDown" size={16} className={`text-text-muted transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
               </>
             )}
           </button>
 
           {showUserMenu && (
-            <div
-              className={`absolute bottom-full mb-2 border rounded-lg bg-card border-border shadow-elevated z-[5002] ${
-                isCollapsed && !mobile ? "left-full ml-2 w-56" : "left-0 right-0"
-              }`}
-            >
+            <div className={`absolute bottom-full mb-2 border rounded-lg bg-white border-border shadow-xl z-[5002] ${isCollapsed && !mobile ? "left-full ml-2 w-56" : "left-0 right-0"}`}>
               <div className="p-4 border-b border-border">
-                <p className="font-medium text-text-primary">
-                  {vendorData?.first_name} {vendorData?.last_name}
-                </p>
-                <p className="text-sm truncate text-text-muted">
-                  {vendorData?.email}
-                </p>
-                <div className="flex items-center mt-2">
-                  <div
-                    className={`w-2 h-2 rounded-full mr-2 ${
-                      vendorData?.isVerified ? "bg-green-500" : "bg-yellow-500"
-                    }`}
-                  ></div>
-                  <span className="text-xs text-text-muted">
-                    {vendorData?.isVerified ? "Verified" : "Pending Verification"}
-                  </span>
+                <p className="font-medium text-text-primary">{vendorData?.fullname}</p>
+                <div className="flex items-center mt-1">
+                   <div className={`w-2 h-2 rounded-full mr-2 ${vendorData?.isVerified ? "bg-green-500" : "bg-yellow-500"}`}></div>
+                   <span className="text-[10px] uppercase tracking-wider text-text-muted">{vendorData?.isVerified ? "Initialized" : "Pending"}</span>
                 </div>
               </div>
-
               <div className="p-2">
-                <button
-                  onClick={() => {
-                    handleNavigation("/vendor/profile");
-                    setShowUserMenu(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 space-x-3 text-left transition-colors rounded-lg hover:bg-surface"
-                >
-                  <Icon name="User" size={16} className="text-text-muted" />
-                  <span className="text-sm text-text-secondary">Profile</span>
-                </button>
-                <button
-                  onClick={() => {
-                    handleNavigation("/vendor/settings");
-                    setShowUserMenu(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 space-x-3 text-left transition-colors rounded-lg hover:bg-surface"
-                >
-                  <Icon name="Settings" size={16} className="text-text-muted" />
-                  <span className="text-sm text-text-secondary">Settings</span>
-                </button>
-                <button
-                  onClick={() => {
-                    router.push("/");
-                    setShowUserMenu(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 space-x-3 text-left transition-colors rounded-lg hover:bg-surface"
-                >
-                  <Icon name="ExternalLink" size={16} className="text-text-muted" />
-                  <span className="text-sm text-text-secondary">View Customer App</span>
-                </button>
+                <button onClick={() => handleNavigation("/vendor/settings")} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"><Icon name="User" size={16} /><span>Profile</span></button>
+                <button onClick={() => handleNavigation("/")} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"><Icon name="ExternalLink" size={16} /><span>Customer View</span></button>
                 <hr className="my-2 border-border" />
-                <button
-                  onClick={() => {
-                    onLogout();
-                    setShowUserMenu(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 space-x-3 text-left transition-colors rounded-lg hover:bg-surface"
-                >
-                  <Icon name="LogOut" size={16} />
-                  <span className="text-sm text-red-500">Sign Out</span>
-                </button>
+                <button onClick={handleLogoutAction} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-red-500"><Icon name="LogOut" size={16} /><span>Sign Out</span></button>
               </div>
             </div>
           )}
@@ -257,73 +167,55 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
 
   return (
     <>
+      {/* ACTION LOADER & BLUR OVERLAY */}
+      {isPageLoading && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/40 backdrop-blur-md transition-all duration-300">
+          <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-2xl border border-border">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-sm font-medium text-text-primary animate-pulse">Processing...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Top Bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-[4999] flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 -ml-2 rounded-md hover:bg-surface text-text-primary"
-          >
-            <Menu size={24} />
-          </button>
+          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 rounded-md hover:bg-surface"><Menu size={24} /></button>
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-              <Icon name="Store" size={16} color="white" />
-            </div>
-            <h1 className="text-base font-semibold truncate font-heading text-text-primary max-w-[150px]">
-              {vendorData?.business_name || "My Store"}
-            </h1>
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary"><Icon name="Store" size={16} color="white" /></div>
+            <h1 className="text-base font-semibold truncate max-w-[150px]">{vendorData?.business_name || "My Store"}</h1>
           </div>
         </div>
       </div>
 
+      {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[6000] lg:hidden">
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <aside className="absolute top-0 left-0 bottom-0 w-64 bg-white border-r border-border flex flex-col shadow-2xl">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+          <aside className="absolute top-0 left-0 bottom-0 w-64 bg-white border-r border-border flex flex-col">
              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                      <Icon name="Store" size={16} color="white" />
-                   </div>
-                   <span className="font-bold text-lg">Menu</span>
-                </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-md hover:bg-surface">
-                   <X size={20} />
-                </button>
+                <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><Icon name="Store" size={16} color="white" /></div><span className="font-bold">Menu</span></div>
+                <button onClick={() => setIsMobileMenuOpen(false)}><X size={20} /></button>
              </div>
              <NavContent mobile={true} />
           </aside>
         </div>
       )}
 
-      <aside
-        className={`hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-border flex-col z-[5000] transition-all duration-300 ${
-          isCollapsed ? "w-18" : "w-60"
-        }`}
-      >
+      {/* Desktop Sidebar */}
+      <aside className={`hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-border flex-col z-[5000] transition-all duration-300 ${isCollapsed ? "w-18" : "w-60"}`}>
         <div className="absolute top-3 left-5 z-[5100]">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex items-center justify-center w-8 h-8 transition-colors rounded-md hover:bg-surface"
-          >
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-surface">
             {isCollapsed ? <LucidePanelRightClose size={20} /> : <LucidePanelLeftClose size={20} />}
           </button>
         </div>
-
         <div className="p-4 border-b pt-14 border-border">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-lg bg-primary">
-              <Icon name="Store" size={20} color="white" />
-            </div>
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-lg bg-primary"><Icon name="Store" size={20} color="white" /></div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-semibold truncate font-heading text-text-primary">
-                  {vendorData?.business_name || "My Store"}
-                </h1>
-                <p className="text-sm truncate text-text-muted">Vendor Dashboard</p>
+                <h1 className="text-lg font-semibold truncate">{vendorData?.business_name || "My Store"}</h1>
+                <p className="text-xs text-text-muted">Vendor Dashboard</p>
               </div>
             )}
           </div>

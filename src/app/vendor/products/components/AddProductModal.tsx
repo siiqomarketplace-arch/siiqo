@@ -15,7 +15,8 @@ import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 import Select from "@/components/ui/new/NewSelect";
 import { vendorService } from "@/services/vendorService";
-
+import { toast } from "sonner";
+import { productService } from "@/services/productService";
 /* ===========================
    Types
    =========================== */
@@ -78,7 +79,7 @@ interface AddProductWizardProps {
   onClose: () => void;
   onSave: (formData: ProductFormData) => void;
   editingProduct?: any | null;
-  loading?: boolean;
+  // loading?: boolean;
 }
 
 /* Select option type */
@@ -93,14 +94,14 @@ interface SelectOption {
 
 const MAX_IMAGES = 10;
 
-const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
-  // kept your same vendorService upload usage; vendorService.uploadImage should return { urls: [string] } or similar
-  const response = await vendorService.uploadImage(file);
-  if (!response.urls || response.urls.length === 0) {
-    throw new Error("API did not return an image URL.");
-  }
-  return { url: response.urls[0] };
-};
+// const uploadImageToServer = async (file: File): Promise<{ url: string }> => {
+//   // kept your same vendorService upload usage; vendorService.uploadImage should return { urls: [string] } or similar
+//   const response = await vendorService.uploadImage(file);
+//   if (!response.urls || response.urls.length === 0) {
+//     throw new Error("API did not return an image URL.");
+//   }
+//   return { url: response.urls[0] };
+// };
 
 const initialFormData: ProductFormData = {
   name: "",
@@ -136,15 +137,15 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   onClose,
   onSave,
   editingProduct = null,
-  loading = false,
+  // loading = false,
 }) => {
-  const [currentStep, setCurrentStep] = useState<WizardStep>("photos");
+  const [currentStep, setCurrentStep] = useState<WizardStep>("details");
   const [formData, setFormData] =
     useState<ProductFormData>(initialFormData);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [saveAsDraft, setSaveAsDraft] = useState<boolean>(false);
-
+  const [loading, setLoading] = useState<boolean>(false);
   const categoryOptions: SelectOption[] = [
     { value: "electronics", label: "Electronics" },
     { value: "clothing", label: "Clothing" },
@@ -219,7 +220,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
       } else {
         setFormData(initialFormData);
       }
-      setCurrentStep("photos");
+      setCurrentStep("details");
       setUploadErrors([]);
     }
   }, [isOpen, editingProduct]);
@@ -249,61 +250,61 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
   /* ---------- Image upload / drag & drop ---------- */
 
-  const handleImageUpload = (files: FileList | null) => {
-    if (!files) return;
-    setUploadErrors([]);
-    const incoming = Array.from(files).slice(0, MAX_IMAGES - formData.images.length);
+  // const handleImageUpload = (files: FileList | null) => {
+  //   if (!files) return;
+  //   setUploadErrors([]);
+  //   const incoming = Array.from(files).slice(0, MAX_IMAGES - formData.images.length);
 
-    incoming.forEach((file) => {
-      const tempId = Date.now() + Math.random();
-      const tempImage: ManagedImage = {
-        id: tempId,
-        file,
-        url: URL.createObjectURL(file),
-        alt: file.name,
-        isUploading: true,
-        isUploaded: false,
-      };
+  //   incoming.forEach((file) => {
+  //     const tempId = Date.now() + Math.random();
+  //     const tempImage: ManagedImage = {
+  //       id: tempId,
+  //       file,
+  //       url: URL.createObjectURL(file),
+  //       alt: file.name,
+  //       isUploading: true,
+  //       isUploaded: false,
+  //     };
 
-      setFormData((prev) => ({ ...prev, images: [...prev.images, tempImage] }));
+  //     setFormData((prev) => ({ ...prev, images: [...prev.images, tempImage] }));
 
-      uploadImageToServer(file)
-        .then((result) => {
-          setFormData((prev) => ({
-            ...prev,
-            images: prev.images.map((img) =>
-              img.id === tempId
-                ? {
-                    ...img,
-                    url: result.url,
-                    isUploaded: true,
-                    isUploading: false,
-                    file: undefined,
-                  }
-                : img
-            ),
-          }));
-        })
-        .catch((error: any) => {
-          console.error("Image upload failed:", error);
-          setFormData((prev) => ({
-            ...prev,
-            images: prev.images.filter((img) => img.id !== tempId),
-          }));
-          setUploadErrors((prev) => [
-            ...prev,
-            `Failed to upload ${file.name}: ${error.message || "Upload error"}`,
-          ]);
-        });
-    });
+  //     uploadImageToServer(file)
+  //       .then((result) => {
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           images: prev.images.map((img) =>
+  //             img.id === tempId
+  //               ? {
+  //                   ...img,
+  //                   url: result.url,
+  //                   isUploaded: true,
+  //                   isUploading: false,
+  //                   file: undefined,
+  //                 }
+  //               : img
+  //           ),
+  //         }));
+  //       })
+  //       .catch((error: any) => {
+  //         console.error("Image upload failed:", error);
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           images: prev.images.filter((img) => img.id !== tempId),
+  //         }));
+  //         setUploadErrors((prev) => [
+  //           ...prev,
+  //           `Failed to upload ${file.name}: ${error.message || "Upload error"}`,
+  //         ]);
+  //       });
+  //   });
 
-    if (incoming.length === 0 && formData.images.length >= MAX_IMAGES) {
-      setUploadErrors((prev) => [
-        ...prev,
-        `Maximum of ${MAX_IMAGES} images allowed.`,
-      ]);
-    }
-  };
+  //   if (incoming.length === 0 && formData.images.length >= MAX_IMAGES) {
+  //     setUploadErrors((prev) => [
+  //       ...prev,
+  //       `Maximum of ${MAX_IMAGES} images allowed.`,
+  //     ]);
+  //   }
+  // };
 
   const removeImage = (imageId: number) => {
     setFormData((prev) => ({
@@ -319,15 +320,15 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
     else if (e.type === "dragleave") setDragActive(false);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleImageUpload(e.dataTransfer.files);
-      e.dataTransfer.clearData();
-    }
-  };
+  // const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   setDragActive(false);
+  //   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+  //     handleImageUpload(e.dataTransfer.files);
+  //     e.dataTransfer.clearData();
+  //   }
+  // };
 
   /* ---------- Step helpers ---------- */
 
@@ -355,17 +356,54 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
   const hasUploadingImages = formData.images.some((img) => img.isUploading);
 
-  const handleSubmit = (e?: FormEvent) => {
-    if (e) e.preventDefault();
-    if (hasUploadingImages) {
-      alert("Please wait for all images to finish uploading.");
-      return;
-    }
-    // keep the published flag
-    const payload = { ...formData };
-    onSave(payload);
-  };
+const processSubmission = async (isPublished: boolean) => {
+  if (hasUploadingImages) {
+    toast.error("Please wait for images to finish uploading");
+    return;
+  }
+  if (loading) return;
 
+  setLoading(true);
+  try {
+    // This object must strictly follow the AddProductRequest interface
+    const payload = {
+      name: formData.name,              // Matches 'product_name'
+      description: formData.description, // Likely match for 'product_description'
+      category: formData.category,              // Matches 'category'
+      price: Number(formData.price),    // Matches 'product_price'
+      compare_at_price: formData.comparePrice ? Number(formData.comparePrice) : undefined,
+      cost_per_item: formData.cost ? Number(formData.cost) : undefined,
+      sku: formData.sku,
+      barcode: formData.barcode,
+      quantity: Number(formData.stock) || 0,
+      low_stock_threshold: Number(formData.lowStockThreshold) || 0,
+      weight: Number(formData.weight) || 0,
+      dimensions: JSON.stringify(formData.dimensions), // APIs often want dimensions as a string or specific object
+      seo_title: formData.seoTitle,
+      seo_description: formData.seoDescription,
+      status: isPublished ? "active" : "draft", // Matches 'status'
+      images: formData.images.map((img) => img.url),
+      is_published: isPublished,
+    };
+
+    let response;
+    if (editingProduct) {
+      // For EditProductRequest, ensure keys match similarly
+      response = await productService.editProduct(editingProduct.id, payload as any);
+    } else {
+      response = await productService.addProduct(payload as any);
+    }
+
+    toast.success(editingProduct ? "Product updated!" : "Product created!");
+    onSave(response.data);
+    onClose();
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || "Failed to save product.";
+    toast.error(errorMsg);
+  } finally {
+    setLoading(false);
+  }
+};
   if (!isOpen) return null;
 
   /* ===========================
@@ -378,53 +416,31 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
- className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[80vh] md:max-h-[90vh]  flex flex-col mb-10 mt-14 md:mt-0 md:ml-12"        target_view="dialog"
+        className="bg-card border border-border rounded-lg w-full max-w-4xl max-h-[80vh] md:max-h-[90vh]  flex flex-col mb-10 mt-14 md:mt-0 md:ml-12"
+        role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold">
-              {editingProduct ? "Edit Product" : "Create Listing"}
-            </h3>
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              {currentStep.toUpperCase()}
-            </p>
-          </div>
+        {/* Header Action Buttons */}
+        <div className="flex justify-between items-center p-4">
+<button
+  type="button"
+  onClick={() => processSubmission(false)} // Save as Draft
+  className="text-xs px-3 py-2 rounded-md border border-border hover:bg-muted"
+  disabled={loading || hasUploadingImages}
+>
+  {loading ? "Processing..." : "Save draft"}
+</button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSaveAsDraft(true);
-                handleSubmit();
-              }}
-              className="text-xs w-full px-3 py-1 rounded-md border border-border hover:bg-muted"
-              disabled={loading || hasUploadingImages}
-            >
-              Save draft
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setFormData((p) => ({ ...p, publish: true }));
-                handleSubmit();
-              }}
-              className="text-sm px-3 py-1 rounded-md bg-primary text-white hover:opacity-95"
-              disabled={loading || hasUploadingImages}
-            >
-              Publish
-            </button>
-
-            <button
-              onClick={onClose}
-              className="p-2 ml-2 rounded-md hover:bg-muted"
-              aria-label="Close"
-            >
-              <Icon name="X" size={18} />
-            </button>
-          </div>
+<button
+  type="button"
+  onClick={() => processSubmission(true)} // Publish
+  className="text-sm px-3 py-1 rounded-md bg-primary text-white hover:opacity-95"
+  disabled={loading || hasUploadingImages}
+>
+  Publish
+</button>
         </div>
+
 
         {/* Stepper nav */}
         <div className="hidden md:flex items-center gap-2 px-4 py-3 border-b border-border overflow-x-auto">
@@ -449,7 +465,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (currentStep === "preview") handleSubmit(e);
+            if (currentStep === "preview") processSubmission(true);
             else goNext();
           }}
           className="flex-1 overflow-hidden flex flex-col"
@@ -457,7 +473,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
           <div className="flex-1 overflow-y-auto p-6">
             <AnimatePresence mode="wait">
               {/* PHOTOS */}
-              {currentStep === "photos" && (
+              {/* {currentStep === "photos" && (
                 <motion.div
                   key="photos"
                   initial={{ opacity: 0, x: 20 }}
@@ -491,7 +507,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                       onDragEnter={handleDrag}
                       onDragLeave={handleDrag}
                       onDragOver={handleDrag}
-                      onDrop={handleDrop}
+                      // onDrop={handleDrop}
                       className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                         dragActive ? "border-primary bg-primary/5" : "border-border"
                       }`}
@@ -508,7 +524,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                           accept="image/*"
                           id="wizard-image-input"
                           className="hidden"
-                          onChange={(e) => handleImageUpload(e.target.files)}
+                          // onChange={(e) => handleImageUpload(e.target.files)}
                         />
                         <Button
                           type="button"
@@ -569,7 +585,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                     )}
                   </div>
                 </motion.div>
-              )}
+              )} */}
 
               {/* DETAILS */}
               {currentStep === "details" && (
@@ -907,66 +923,24 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
               )}
             </AnimatePresence>
           </div>
-
-          {/* Footer nav */}
-          <div className="border-t border-border p-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={goBack}
-                disabled={steps.findIndex((s) => s.id === currentStep) === 0}
-                className="px-3 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50"
-              >
-                Back
-              </button>
-
-              {currentStep !== "preview" && (
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="px-4 py-2 rounded-md bg-primary text-white hover:opacity-95"
-                >
-                  Next
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-muted-foreground mr-4 hidden sm:block">
-                {formData.images.length} images • {formData.stock || 0} in stock
-              </div>
-
-              {/* <button
-                type="button"
-                onClick={() => {
-                  // quick-save current progress as draft without leaving wizard
-                  setFormData((p) => ({ ...p, status: "draft" }));
-                  onSave({ ...formData, status: "draft" });
-                }}
-                className="px-3 py-2 rounded-md border border-border hover:bg-muted"
-                disabled={hasUploadingImages}
-              >
-                Save progress
-              </button> */}
-
-              {currentStep === "preview" ? (
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-md bg-success text-white hover:opacity-95"
-                  disabled={loading || hasUploadingImages}
-                >
-                  {loading ? "Saving..." : "Save & Publish"}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-md bg-primary text-white hover:opacity-95"
-                >
-                  Continue
-                </button>
-              )}
-            </div>
-          </div>
+{/* footer */}
+          {currentStep === "preview" ? (
+  <button
+    type="button" // Change to button to control the click
+    onClick={() => processSubmission(true)}
+    className="px-4 py-2 w-full m-4 rounded-md bg-success text-white hover:opacity-95"
+    disabled={loading || hasUploadingImages}
+  >
+    {loading ? "Saving..." : "Save & Publish"}
+  </button>
+) : (
+  <button
+    type="submit" // This triggers form onSubmit -> goNext()
+    className="px-4 py-2 m-4 rounded-md bg-primary text-white hover:opacity-95"
+  >
+    Continue
+  </button>
+)}
         </form>
       </motion.div>
     </div>

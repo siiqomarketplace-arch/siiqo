@@ -6,12 +6,12 @@ import Button from '@/components/ui/new/Button';
 
 // Define the shape of a product variant
 interface ProductVariant {
-    id: number | string;
+    id: number ;
     name: string;
 }
 
 interface ProductDetails {
-    id: number | string;
+    id: number ;
     name: string;
     image: string; // Main fallback image
     images?: string[];
@@ -40,7 +40,7 @@ interface QuickViewModalProps {
     isOpen: boolean;
     onClose: () => void;
     onAddToCart?: (payload: AddToCartPayload) => void;
-    onAddToWishlist?: (productId: number | string, isWishlisted: boolean) => void;
+    onAddToWishlist?: (productId: number , isWishlisted: boolean) => void;
 }
 
 const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen, onClose, onAddToCart, onAddToWishlist }) => {

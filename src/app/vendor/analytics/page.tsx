@@ -1,371 +1,203 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-// import BusinessSidebar from '@/components/ui/BusinessSidebar';
+import React, { useState, useEffect, useCallback } from 'react';
 import NotificationCenter from '@/components/ui/NotificationCenter';
-// import LocationHeader from '@/components/ui/LocationHeader';
 import MetricsCard from './components/MetricsCard';
 import DateRangeSelector from './components/DateRangeSelector';
 import SalesChart from './components/SalesChart';
 import CategoryBreakdown from './components/CategoryBreakdown';
 import TopProductsTable from './components/TopProductsTable';
-import CustomerDemographics from './components/CustomerDemographics';
-import PeakHoursHeatmap from './components/PeakHoursHeatmap';
 import FilterPanel from './components/FilterPanel';
 import Button from '@/components/ui/new/Button';
 import Icon from '@/components/AppIcon';
 
-// Type Definitions
-interface DateRange {
-    startDate: Date;
-    endDate: Date;
-    range: string;
-}
-
-interface Filters {
-    category: string;
-    customerType: string;
-    promotionStatus: string;
-    priceRange: string;
-}
-
-interface MetricData {
-    title: string;
-    value: string;
-    change: string;
-    changeType: 'positive' | 'negative';
-    icon: string;
-    color: 'success' | 'primary' | 'accent' | 'warning';
-}
-
-interface SalesChartDataPoint {
-    date: string;
-    revenue: number;
-    orders: number;
-}
-
-interface CategoryData {
-    name: string;
-    value: number;
-}
-
-interface TopProduct {
-    id: number;
-    name: string;
-    category: string;
-    image: string;
-    revenue: number;
-    unitsSold: number;
-    rating: number;
-    stock: number;
-}
-
-interface CustomerDemographic {
-    ageGroup: string;
-    customers: number;
-}
-
-interface ReportData {
-    dateRange: string;
-    metrics: MetricData[];
-    topProducts: TopProduct[];
-    totalRevenue: string;
-    totalOrders: number;
-}
+// API Services
+import { revenueAnalytics, getVendorOrders, getMyProducts } from '@/services/api';
+import { toast } from 'sonner';
 
 const BusinessAnalytics: React.FC = () => {
-    const [dateRange, setDateRange] = useState<DateRange>({
+    // --- States ---
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isExporting, setIsExporting] = useState<boolean>(false);
+    
+    // API Data States
+    const [metrics, setMetrics] = useState<any[]>([]);
+    const [topProducts, setTopProducts] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<any[]>([]);
+    
+    const [dateRange, setDateRange] = useState({
         startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         endDate: new Date(),
         range: '7d'
     });
 
-    const [filters, setFilters] = useState<Filters>({
-        category: 'all',
-        customerType: 'all',
-        promotionStatus: 'all',
-        priceRange: 'all'
-    });
+    // --- Data Fetching Logic ---
+    const fetchAnalyticsData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const startStr = dateRange.startDate.toISOString().split('T')[0];
+            const endStr = dateRange.endDate.toISOString().split('T')[0];
 
-    const [isExporting, setIsExporting] = useState<boolean>(false);
+            // 1. Fetch Revenue Analytics
+            const revRes = await revenueAnalytics({ start_date: startStr, end_date: endStr });
+            const summary = revRes.data.summary;
 
-    // Mock analytics data
-    const metricsData: MetricData[] = [
-        {
-            title: 'Total Revenue',
-            value: '$12,847',
-            change: '+12.5%',
-            changeType: 'positive',
-            icon: 'DollarSign',
-            color: 'success'
-        },
-        {
-            title: 'Total Orders',
-            value: '342',
-            change: '+8.2%',
-            changeType: 'positive',
-            icon: 'ShoppingBag',
-            color: 'primary'
-        },
-        {
-            title: 'New Customers',
-            value: '89',
-            change: '+15.3%',
-            changeType: 'positive',
-            icon: 'Users',
-            color: 'primary'
-        },
-        {
-            title: 'Average Order Value',
-            value: '$37.56',
-            change: '-2.1%',
-            changeType: 'negative',
-            icon: 'TrendingUp',
-            color: 'warning'
+            // 2. Map API Summary to Metrics Cards
+            const liveMetrics = [
+                {
+                    title: 'Total Revenue',
+                    value: `${summary.currency} ${summary.total_revenue.toLocaleString()}`,
+                    change: 'Live', // You can calculate % change if API provides prev_period
+                    changeType: 'positive',
+                    icon: 'DollarSign',
+                    color: 'success'
+                },
+                {
+                    title: 'Total Orders',
+                    value: summary.orders_count.toString(),
+                    change: 'Settled',
+                    changeType: 'positive',
+                    icon: 'ShoppingBag',
+                    color: 'primary'
+                },
+                {
+                    title: 'Pending Revenue',
+                    value: `${summary.currency} ${summary.pending_revenue.toLocaleString()}`,
+                    change: 'In Escrow',
+                    changeType: 'neutral',
+                    icon: 'Clock',
+                    color: 'warning'
+                },
+                {
+                    title: 'Pending Orders',
+                    value: summary.pending_count.toString(),
+                    change: 'Action Required',
+                    changeType: 'negative',
+                    icon: 'Package',
+                    color: 'accent'
+                }
+            ];
+            setMetrics(liveMetrics);
+
+            // 3. Fetch Top Products (Derived from your products API)
+            const prodRes = await getMyProducts();
+            // Sorting mock logic since backend might not have a 'top' endpoint yet
+            const sortedProducts = (prodRes.data.data || prodRes.data).slice(0, 5);
+            setTopProducts(sortedProducts);
+
+            // 4. Chart Data (Note: Use revRes.data.daily_breakdown if available in your API)
+            setChartData(revRes.data.breakdown || []);
+
+        } catch (error) {
+            toast.error("Failed to sync with live servers");
+            console.error(error);
+        } finally {
+            setLoading(false);
         }
-    ];
-
-    const salesChartData: SalesChartDataPoint[] = [
-        { date: '2025-01-20', revenue: 1200, orders: 32 },
-        { date: '2025-01-21', revenue: 1450, orders: 38 },
-        { date: '2025-01-22', revenue: 1100, orders: 29 },
-        { date: '2025-01-23', revenue: 1680, orders: 45 },
-        { date: '2025-01-24', revenue: 1920, orders: 51 },
-        { date: '2025-01-25', revenue: 2100, orders: 56 },
-        { date: '2025-01-26', revenue: 1850, orders: 49 },
-        { date: '2025-01-27', revenue: 2250, orders: 60 }
-    ];
-
-    const categoryData: CategoryData[] = [
-        { name: 'Coffee & Beverages', value: 4850 },
-        { name: 'Food Items', value: 3200 },
-        { name: 'Pastries & Desserts', value: 2400 },
-        { name: 'Merchandise', value: 1200 },
-        { name: 'Seasonal Items', value: 800 },
-        { name: 'Gift Cards', value: 397 }
-    ];
-
-    const topProductsData: TopProduct[] = [
-        {
-            id: 1,
-            name: 'Premium Espresso Blend',
-            category: 'Coffee',
-            image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=100&h=100&fit=crop',
-            revenue: 2450,
-            unitsSold: 245,
-            rating: 4.8,
-            stock: 45
-        },
-        {
-            id: 2,
-            name: 'Artisan Croissant',
-            category: 'Pastries',
-            image: 'https://images.unsplash.com/photo-1555507036-ab794f4ade6a?w=100&h=100&fit=crop',
-            revenue: 1890,
-            unitsSold: 189,
-            rating: 4.6,
-            stock: 23
-        },
-        {
-            id: 3,
-            name: 'Signature Latte',
-            category: 'Beverages',
-            image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=100&h=100&fit=crop',
-            revenue: 1650,
-            unitsSold: 165,
-            rating: 4.7,
-            stock: 0
-        },
-        {
-            id: 4,
-            name: 'Avocado Toast',
-            category: 'Food',
-            image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=100&h=100&fit=crop',
-            revenue: 1420,
-            unitsSold: 142,
-            rating: 4.5,
-            stock: 12
-        },
-        {
-            id: 5,
-            name: 'Cold Brew Coffee',
-            category: 'Beverages',
-            image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=100&h=100&fit=crop',
-            revenue: 1280,
-            unitsSold: 128,
-            rating: 4.4,
-            stock: 67
-        }
-    ];
-
-    const customerDemographicsData: CustomerDemographic[] = [
-        { ageGroup: '18-25', customers: 45 },
-        { ageGroup: '26-35', customers: 78 },
-        { ageGroup: '36-45', customers: 62 },
-        { ageGroup: '46-55', customers: 34 },
-        { ageGroup: '56+', customers: 23 }
-    ];
-
-    const peakHoursData: number[][] = [
-        // Monday to Sunday, 24 hours each
-        [0, 0, 0, 0, 0, 0, 2, 5, 8, 12, 15, 18, 22, 20, 16, 14, 12, 18, 25, 22, 15, 8, 3, 1],
-        [0, 0, 0, 0, 0, 1, 3, 6, 10, 14, 17, 20, 25, 23, 18, 16, 14, 20, 28, 25, 18, 10, 4, 1],
-        [0, 0, 0, 0, 0, 1, 4, 7, 11, 15, 18, 22, 27, 25, 20, 18, 16, 22, 30, 27, 20, 12, 5, 2],
-        [0, 0, 0, 0, 0, 2, 5, 8, 12, 16, 20, 24, 29, 27, 22, 20, 18, 24, 32, 29, 22, 14, 6, 2],
-        [0, 0, 0, 0, 0, 2, 6, 9, 13, 17, 22, 26, 31, 29, 24, 22, 20, 26, 35, 32, 25, 16, 8, 3],
-        [0, 0, 0, 0, 0, 1, 3, 5, 8, 12, 16, 20, 24, 28, 32, 35, 38, 42, 45, 40, 32, 22, 12, 5],
-        [0, 0, 0, 0, 0, 0, 2, 4, 6, 10, 14, 18, 22, 26, 30, 33, 36, 40, 42, 38, 30, 20, 10, 3]
-    ];
-
-    const handleDateRangeChange = (newRange: DateRange): void => {
-        setDateRange(newRange);
-        // In a real app, this would trigger data refetch
-        console.log('Date range changed:', newRange);
-    };
-
-    const handleFiltersChange = (newFilters: Filters): void => {
-        setFilters(newFilters);
-        // In a real app, this would trigger filtered data fetch
-        console.log('Filters changed:', newFilters);
-    };
-
-    const handleExportReport = async (): Promise<void> => {
-        setIsExporting(true);
-
-        // Simulate export process
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Create mock PDF report
-        const reportData: ReportData = {
-            dateRange: `${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}`,
-            metrics: metricsData,
-            topProducts: topProductsData.slice(0, 3),
-            totalRevenue: '$12,847',
-            totalOrders: 342
-        };
-
-        console.log('Exporting report:', reportData);
-        setIsExporting(false);
-    };
+    }, [dateRange]);
 
     useEffect(() => {
-        // Simulate real-time data updates
-        const interval = setInterval(() => {
-            // In a real app, this would fetch updated metrics
-            console.log('Refreshing analytics data...');
-        }, 30000); // Update every 30 seconds
+        fetchAnalyticsData();
+    }, [fetchAnalyticsData]);
 
-        return () => clearInterval(interval);
-    }, []);
+    const handleExportReport = async () => {
+        setIsExporting(true);
+        // Trigger report logic or redirect to a PDF generation endpoint
+        toast.info("Generating live report...");
+        setTimeout(() => setIsExporting(false), 2000);
+    };
 
     return (
-        <div className="min-h-screen bg-surface">
-            {/* <BusinessSidebar /> */}
-
-            <div className="max-w-[85vw] mx-auto">
-                {/* <LocationHeader context="business" /> */}
-
+        <div className="min-h-screen bg-[#F8FAFC]">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+                
                 {/* Header */}
-                <div className="bg-white border-b border-border px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold text-text-primary">Business Analytics</h1>
-                            <p className="text-text-secondary mt-1">
-                                Track your performance and make data-driven decisions
-                            </p>
-                        </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between py-8 mt-14 gap-4">
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Business Insights</h1>
+                        <p className="text-sm font-medium text-slate-500">Live data from your Siiqo storefront.</p>
+                    </div>
 
-                        <div className="flex items-center space-x-4">
-                            <Button
-                                variant="outline"
-                                onClick={handleExportReport}
-                                loading={isExporting}
-                                iconName="FileText"
-                                iconPosition="left"
-                            >
-                                Export Report
-                            </Button>
-                            <NotificationCenter userContext="business" />
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={handleExportReport}
+                            loading={isExporting}
+                            iconName="FileText"
+                        >
+                            Export PDF
+                        </Button>
+                        <NotificationCenter userContext="business" />
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Date Range Selector */}
-                    <div className="relative">
-                        <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
+                <div className="space-y-6 pb-12">
+                    {/* Date Selector triggers re-fetch via useEffect */}
+                    <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm inline-block">
+                        <DateRangeSelector 
+                            onDateRangeChange={(range) => setDateRange(range as any)} 
+                        />
                     </div>
 
-                    {/* Key Metrics */}
+                    {/* Metrics Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {metricsData.map((metric, index) => (
-                            <MetricsCard
-                                key={index}
-                                title={metric.title}
-                                value={metric.value}
-                                change={metric.change}
-                                changeType={metric.changeType}
-                                icon={metric.icon}
-                                color={metric.color}
-                            />
+                        {metrics.map((metric, index) => (
+                            <MetricsCard key={index} {...metric} isLoading={loading} />
                         ))}
                     </div>
 
-                    {/* Advanced Filters */}
-                    <FilterPanel onFiltersChange={handleFiltersChange} />
+                    <FilterPanel onFiltersChange={() => {}} />
 
-                    {/* Charts Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Main Analytics Content */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2">
-                            <SalesChart data={salesChartData} dateRange={dateRange.range} />
+                            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                                <h3 className="font-bold mb-4">Revenue Trend</h3>
+                                <SalesChart data={chartData} isLoading={loading} />
+                            </div>
                         </div>
-                        <CategoryBreakdown data={categoryData} />
-                        <CustomerDemographics data={customerDemographicsData} />
+                        
+                        <div className="space-y-8">
+                             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                                <h3 className="font-bold mb-4">Category Performance</h3>
+                                <CategoryBreakdown isLoading={loading} />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Peak Hours Heatmap */}
-                    <PeakHoursHeatmap data={peakHoursData} />
-
-                    {/* Top Products Table */}
-                    <TopProductsTable data={topProductsData} />
-
-                    {/* Insights Panel */}
-                    <div className="bg-white rounded-lg border border-border p-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                            <Icon name="Lightbulb" size={20} className="text-warning" />
-                            <h3 className="text-lg font-semibold text-text-primary">AI-Powered Insights</h3>
+                    {/* Tables */}
+                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+                            <h3 className="font-bold text-lg">Top Performing Products</h3>
+                            <button className="text-sm font-bold text-blue-600">View Catalog</button>
                         </div>
+                        <TopProductsTable data={topProducts} isLoading={loading} />
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <Icon name="TrendingUp" size={16} className="text-success" />
-                                    <span className="text-sm font-medium text-success">Growth Opportunity</span>
-                                </div>
-                                <p className="text-sm text-text-secondary">
-                                    Your weekend evening sales are 35% higher. Consider extending hours on Fri-Sun.
-                                </p>
-                            </div>
-
-                            <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <Icon name="AlertTriangle" size={16} className="text-warning" />
-                                    <span className="text-sm font-medium text-warning">Stock Alert</span>
-                                </div>
-                                <p className="text-sm text-text-secondary">
-                                    Signature Latte is out of stock but has high demand. Restock to avoid lost sales.
-                                </p>
-                            </div>
-
-                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <Icon name="Target" size={16} className="text-primary" />
-                                    <span className="text-sm font-medium text-primary">Marketing Tip</span>
-                                </div>
-                                <p className="text-sm text-text-secondary">
-                                    26-35 age group is your largest customer segment. Target them with loyalty programs.
-                                </p>
-                            </div>
+                    {/* AI Insights (Static logic based on Live Data) */}
+                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Icon name="Lightbulb" className="text-yellow-400" />
+                            <h3 className="text-xl font-bold">Smart Recommendations</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <InsightCard 
+                                title="Inventory Alert"
+                                text={topProducts.find(p => p.stock < 5) 
+                                    ? `Low stock on ${topProducts.find(p => p.stock < 5).name}.` 
+                                    : "All top products are well stocked."}
+                                type="warning"
+                            />
+                            <InsightCard 
+                                title="Sales Peak"
+                                text="Your orders typically peak between 12 PM and 2 PM."
+                                type="info"
+                            />
+                            <InsightCard 
+                                title="Revenue Goal"
+                                text={`You are at ${metrics[0]?.value || 0} this period. Keep it up!`}
+                                type="success"
+                            />
                         </div>
                     </div>
                 </div>
@@ -373,5 +205,12 @@ const BusinessAnalytics: React.FC = () => {
         </div>
     );
 };
+
+const InsightCard = ({ title, text, type }: { title: string, text: string, type: string }) => (
+    <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+        <h4 className="font-bold mb-2 text-white/90">{title}</h4>
+        <p className="text-sm text-white/60">{text}</p>
+    </div>
+);
 
 export default BusinessAnalytics;

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { productService } from "@/services/productService";
-
+import { vendorService } from "@/services/vendorService";
+import { toast } from "sonner";
 import Icon from "@/components/AppIcon";
 import Button from "@/components/ui/new/Button";
 import CategoryTree from "@/app/vendor/products/components/CategoryTree";
@@ -22,6 +23,9 @@ import {
   ProductFormData,
 } from "@/types/vendor/products";
 import { ChevronDown, ChevronUp } from "lucide-react";
+
+
+
 
 // --- Toast Component ---
 export interface Toast {
@@ -137,6 +141,23 @@ const ProductManagement: React.FC = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
 
+
+  const loadProducts = async () => {
+  try {
+    const response = await vendorService.getMyProducts();
+    // CRITICAL: Navigating your specific JSON structure
+    // response.data[0].products
+    if (response.data && response.data[0]?.products) {
+      setProducts(response.data[0].products);
+    }
+  } catch (error) {
+    toast.error("Failed to fetch products");
+  }
+};
+
+useEffect(() => {
+  loadProducts();
+}, []);
   const addToast = (toast: Omit<Toast, "id">): string => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { ...toast, id }]);
@@ -155,20 +176,21 @@ const ProductManagement: React.FC = () => {
         const { data } = await productService.getMyProducts();
         if (data.products) {
           const formattedProducts: Product[] = data.products.map(
-            (product: any) => ({
-              id: product.id || product._id,
-              name: product.product_name,
-              image: product.images?.[0] || "https://via.placeholder.com/150",
-              category: product.category,
-              sku: product.sku || `SKU-${product.id}`,
-              price: product.product_price,
-              stock: product.quantity || 0,
-              status: product.status || "active",
-              createdAt: product.createdAt || new Date().toISOString(),
-              views: product.views || 0,
-              description: product.description,
-            })
-          );
+          (product: any) => ({
+            id: product.id || product._id,
+            name: product.product_name,
+            image: product.images?.[0] || "https://via.placeholder.com/150",
+            images: product.images || [], // Add this line to set the images array
+            category: product.category,
+            sku: product.sku || `SKU-${product.id}`,
+            price: product.product_price,
+            stock: product.quantity || 0,
+            status: product.status || "active",
+            createdAt: product.createdAt || new Date().toISOString(),
+            views: product.views || 0,
+            description: product.description,
+          })
+        )
           setProducts(formattedProducts);
         } else {
           throw new Error("Unexpected response format");
@@ -216,7 +238,7 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleProductSelect = (
-    productId: number | string,
+    productId: number ,
     isSelected: boolean
   ): void => {
     setSelectedProducts((prev) =>
@@ -242,15 +264,15 @@ const ProductManagement: React.FC = () => {
     setShowAddModal(true);
   };
 
-  const handleEditProduct = (productId: number | string): void => {
-    const product = products.find((p) => p.id === productId);
-    if (product) {
-      setEditingProduct(product);
-      setShowAddModal(true);
-    }
-  };
+  // const handleEditProduct = (productId: number): void => {
+  //   const product = products.find((p) => p.id === productId);
+  //   if (product) {
+  //     setEditingProduct(product);
+  //     setShowAddModal(true);
+  //   }
+  // };
 
-  const handleDuplicateProduct = (productId: number | string): void => {
+  const handleDuplicateProduct = (productId: number): void => {
     const product = products.find((p) => p.id === productId);
     if (product) {
       const loadingToastId = addToast({
@@ -281,7 +303,7 @@ const ProductManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = (productId: number | string): void => {
+  const handleDeleteProduct = (productId: number): void => {
     if (
       typeof window !== "undefined" &&
       window.confirm("Are you sure you want to delete this product?")
@@ -311,54 +333,98 @@ const ProductManagement: React.FC = () => {
     }
   };
 
-  const handleQuickEdit = (
-    productId: string | number,
-    field: string,
-    value: string | number
-  ): void => {
+  // 1. Full Edit (Opens the Wizard)
+const handleEditProduct = (productId: number) => {
+  const productToEdit = products.find(p => p.id === productId);
+  if (productToEdit) {
+    setEditingProduct(productToEdit); // This triggers your AddProductWizard modal
+    setShowAddModal(true);
+  }
+};
+
+// 2. Quick Edit (Updates price directly from table)
+const handleQuickEdit = async (productId: number, field: string, value: string | number) => {
+  try {
+    // Call API to update only the specific field
+    await productService.editProduct(productId, { [field]: value });
+    
+    // Update local state so UI reflects the new price immediately
     setProducts((prev) =>
-      prev.map((product) => {
-        if (String(product.id) === productId) {
-          const isNumericField = [
-            "price",
-            "stock",
-            "views",
-            "comparePrice",
-            "cost",
-            "weight",
-          ].includes(field);
-
-          const finalValue = isNumericField ? Number(value) : value;
-          return { ...product, [field]: finalValue };
-        }
-        return product;
-      })
+      prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p))
     );
-  };
+    
+    toast.success("Price updated successfully");
+  } catch (error: any) {
+    toast.error("Failed to update price");
+    console.error(error);
+  }
+};
 
-  const transformFormDataToApiRequest = (
+  // const handleQuickEdit = (
+  //   productId:  number,
+  //   field: string,
+  //   value: string | number
+  // ): void => {
+  //   setProducts((prev) =>
+  //     prev.map((product) => {
+  //       if (Number(product.id) === productId) {
+  //         const isNumericField = [
+  //           "price",
+  //           "stock",
+  //           "views",
+  //           "comparePrice",
+  //           "cost",
+  //           "weight",
+  //         ].includes(field);
+
+  //         const finalValue = isNumericField ? Number(value) : value;
+  //         return { ...product, [field]: finalValue };
+  //       }
+  //       return product;
+  //     })
+  //   );
+  // };
+
+ const transformFormDataToApiRequest = (
     formData: ProductFormData
   ): AddProductRequest => {
-    const imageUrls = formData.images
-      .filter((img: any) => img && img.isUploaded && img.url)
-      .map((img: any) => img.url);
+    // 1. Safety check: If formData is missing, throw a descriptive error or return default
+    if (!formData) {
+      throw new Error("Form data is missing");
+    }
 
+    // 2. Safely extract image URLs (fallback to empty array if not present/uploaded)
+    const imageUrls = Array.isArray(formData.images)
+      ? formData.images
+          .filter((img: any) => img && img.url)
+          .map((img: any) => img.url)
+      : [];
+
+    // 3. Construct apiData with safety fallbacks for every field
     const apiData: AddProductRequest = {
-      product_name: formData.name,
+      product_name: (formData.name || "").trim(),
       description: (formData.description || "").trim(),
       category: (formData.category || "Uncategorized").trim(),
-      product_price: Math.round((parseFloat(formData.price) || 0) * 100),
-      quantity: parseInt(formData.stock, 10) || 0,
+      // Ensure price is a string before parsing, fallback to 0
+      product_price: Math.round((parseFloat(String(formData.price)) || 0) * 100),
+      quantity: parseInt(String(formData.stock), 10) || 0,
       status: formData.status || "active",
-      visibility: formData.visibility === "visible",
+      visibility: formData.visibility === "visible" ,
       images: imageUrls,
     };
+    
     return apiData;
   };
 
   const handleSaveProduct = async (
     formData: ProductFormData
   ): Promise<void> => {
+    // Immediate check before starting the process
+    if (!formData || !formData.name) {
+      toast.error("Product name is required");
+      return;
+    }
+
     const isEditing = !!editingProduct;
     const actionText = isEditing ? "Updating" : "Adding";
     const successText = isEditing ? "updated" : "added";
@@ -377,7 +443,9 @@ const ProductManagement: React.FC = () => {
       const apiData = transformFormDataToApiRequest(formData);
 
       if (editingProduct) {
+        // Use the link: https://server.siiqo.com/api/products/update/{id}
         await productService.editProduct(editingProduct.id, apiData);
+        
         setProducts((prev) =>
           prev.map((p) =>
             p.id === editingProduct.id
@@ -386,7 +454,7 @@ const ProductManagement: React.FC = () => {
                   name: apiData.product_name,
                   description: apiData.description,
                   category: apiData.category,
-                  price: apiData.product_price,
+                  price: apiData.product_price / 100, // Convert back from cents if necessary
                   stock: apiData.quantity,
                   status: apiData.status as ProductStatus,
                   image: apiData.images[0] || p.image,
@@ -397,17 +465,15 @@ const ProductManagement: React.FC = () => {
       } else {
         const response = await productService.addProduct(apiData);
         const newProduct: Product = {
-          id: response.data.id || Date.now(),
+          id: response.data?.id || Date.now(),
           name: apiData.product_name,
           description: apiData.description,
           category: apiData.category,
-          price: apiData.product_price,
+          price: apiData.product_price / 100,
           status: apiData.status as ProductStatus,
-          image:
-            apiData.images[0] ||
-            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
+          image: apiData.images[0] || "https://via.placeholder.com/150",
           sku: `SKU-${Date.now()}`,
-          stock: parseInt(formData.stock, 10) || 0,
+          stock: apiData.quantity,
           createdAt: new Date().toISOString(),
           views: 0,
         };
@@ -415,31 +481,21 @@ const ProductManagement: React.FC = () => {
       }
 
       removeToast(loadingToastId);
-      addToast({
-        type: "success",
-        title: `Product ${successText} successfully!`,
-        message: `${apiData.product_name} has been ${successText} to your catalog.`,
-        duration: 4000,
-      });
-
+      toast.success(`Product ${successText} successfully!`);
       setShowAddModal(false);
       setEditingProduct(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving product:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save product";
       removeToast(loadingToastId);
-      addToast({
-        type: "error",
-        title: `Failed to ${actionText.toLowerCase()} product`,
-        message: errorMessage,
-        duration: 6000,
-      });
-      setError(errorMessage);
+      const msg = err.response?.data?.message || "Failed to save product";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
+
+ 
 
   const lowStockCount = products.filter(
     (p) => p.stock > 0 && p.stock <= 10
@@ -624,7 +680,10 @@ const ProductManagement: React.FC = () => {
                 // Wrapper to allow table scrolling on mobile
                 <div className="w-full overflow-x-auto">
                     <ProductTable
-                    products={filteredProducts}
+                    products={filteredProducts.map(p => ({
+                      ...p,
+                      images: p.images || []
+                    }))}
                     selectedProducts={selectedProducts}
                     onProductSelect={handleProductSelect}
                     onSelectAll={handleSelectAll}

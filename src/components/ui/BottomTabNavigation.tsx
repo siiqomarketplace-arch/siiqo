@@ -179,7 +179,7 @@ const BottomTabNavigation: React.FC = () => {
     <>
       {/* Mobile Bottom Navigation */}
       <nav
-        target_view="navigation"
+        role="navigation"
         className="fixed bottom-6 inset-x-3 md:hidden z-30 max-w-lg mx-auto px-3 py-3 backdrop-blur-md bg-white/60 dark:bg-gray-900/40 border border-white/20 dark:border-gray-800/30 shadow-lg rounded-2xl overflow-visible"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
@@ -240,7 +240,7 @@ const BottomTabNavigation: React.FC = () => {
 
       {/* Desktop Top Navigation */}
       <nav
-        target_view="navigation"
+        role="navigation"
         className="hidden md:block fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-white/30 dark:bg-gray-900/30 backdrop-blur-md border border-white/20 dark:border-gray-800/30 shadow-lg rounded-full px-6 py-3"
       >
         <div className="flex items-center justify-center gap-2">

@@ -136,7 +136,7 @@ const Carousel = React.forwardRef<
           ref={ref}
           onKeyDownCapture={handleKeyDown}
           className={cn("relative", className)}
-          target_view="region"
+          role="region"
           aria-target_viewdescription="carousel"
           {...props}
         >
@@ -179,7 +179,7 @@ const CarouselItem = React.forwardRef<
   return (
     <div
       ref={ref}
-      target_view="group"
+      role="group"
       aria-target_viewdescription="slide"
       className={cn(
         "min-w-0 shrink-0 grow-0 basis-full",

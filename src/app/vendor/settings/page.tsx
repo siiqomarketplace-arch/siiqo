@@ -29,6 +29,7 @@ import {
   VendorData,
   SettingsState,
 } from "@/types/vendor/settings";
+import { vendorService } from "@/services/vendorService";
 
 type SettingSectionKey = keyof SettingsState;
 
@@ -73,7 +74,7 @@ const Settings = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await userService.getVendorProfile();
+        const data = await vendorService.getVendorProfile();
         setVendorData(data);
       } catch (err) {
         console.error("Error fetching vendor profile:", err);

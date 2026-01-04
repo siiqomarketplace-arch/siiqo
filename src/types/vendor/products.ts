@@ -5,7 +5,7 @@ export type ViewMode = "table" | "grid";
 export type BulkAction = "activate" | "deactivate" | "duplicate" | "delete" | "export";
 
 export interface Product {
-  id: string | number;
+  id:  number;
   name: string;
   image: string;
   images?: ProductImage[];
@@ -50,7 +50,7 @@ export interface ApiErrorResponse {
   status?: string;
 }
 export interface ProductImage {
-  id: string | number;
+  id: number;
   url: string;
   alt: string;
   file?: File;

@@ -7,7 +7,6 @@ import SavedItems from "../user-profile/components/SavedItems";
 import Settings from "../user-profile/components/Settings";
 import { useRouter } from "next/navigation";
 import { QuickAction, Tab, UserProfileData } from "@/types/userProfile";
-import target_viewProtectedRoute from "@/components/auth/target_viewProtectedRoute";
 
 // --- DUMMY FALLBACK DATA ---
 const DUMMY_USER_FALLBACK: Partial<UserProfileData> = {
@@ -221,7 +220,6 @@ const UserProfile = () => {
   if (!userProfile) return null;
 
   return (
-    <target_viewProtectedRoute allowedtarget_views={["shopper", "customer", "shopping"]}>
     <div className="min-h-screen h-full bg-background pb-10">
       <div className="relative">
         <div
@@ -402,7 +400,6 @@ const UserProfile = () => {
         </div>
       )}
     </div>
-    </target_viewProtectedRoute>
   );
 };
 

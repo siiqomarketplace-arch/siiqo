@@ -20,10 +20,10 @@ interface StockStatusConfig {
 interface ProductGridProps {
     products: Product[];
     selectedProducts: number[];
-    onProductSelect: (productId: string | number, selected: boolean) => void;
-    onEditProduct: (productId: any) => void;
-    onDuplicateProduct: (productId: string | number) => void;
-    onDeleteProduct: (productId: string | number) => void;
+    onProductSelect: (productId:  number, selected: boolean) => void;
+    onEditProduct: (productId: number) => void;
+    onDuplicateProduct: (productId: number) => void;
+    onDeleteProduct: (productId: number) => void;
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({

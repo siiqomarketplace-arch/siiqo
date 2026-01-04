@@ -183,30 +183,36 @@ const SearchResults = () => {
     };
   };
 
-  const fetchProducts = async (): Promise<void> => {
+ const fetchProducts = async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      let transformedProducts: any[] = [];
+      let backendProducts: any[] = [];
       try {
-        const data: ApiResponse = await productService.getProducts();
+        // Fix: Explicitly type the response from the service
+        const data = (await productService.getProducts()) as ApiResponse;
+        
         if (data && data.products) {
-            transformedProducts = data.products
-                .filter(p => p.product_name)
-                .map(transformApiProduct);
+          backendProducts = data.products
+            .filter((p: ApiProduct) => p.product_name)
+            .map(transformApiProduct);
         }
       } catch (e) {
         console.warn("Backend fetch failed, using mocks.");
       }
 
+      // Convert mock IDs to strings for a consistent comparison
       const mockIds = new Set(MOCK_PRODUCTS.map(p => String(p.id)));
-      const uniqueBackendProducts = transformedProducts.filter(p => !mockIds.has(String(p.id)));
+      
+      // Filter out backend items that might duplicate our mocks
+      const uniqueBackendProducts = backendProducts.filter(
+        p => !mockIds.has(String(p.id))
+      );
 
-      const allProducts = [...MOCK_PRODUCTS, ...uniqueBackendProducts];
-      setProducts(allProducts);
+      setProducts([...MOCK_PRODUCTS, ...uniqueBackendProducts]);
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Critical Fetch Error:", err);
       setProducts(MOCK_PRODUCTS);
     } finally {
       setIsLoading(false);

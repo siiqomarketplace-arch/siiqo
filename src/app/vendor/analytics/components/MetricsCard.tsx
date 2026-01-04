@@ -1,27 +1,32 @@
 import React from 'react';
 import Icon, { LucideIconName } from '@/components/AppIcon';
 
-// --- START OF TYPESCRIPT CONVERSION ---
-
 type ChangeType = 'positive' | 'negative' | 'neutral';
 type CardColor = 'primary' | 'success' | 'warning' | 'accent';
 
 interface MetricsCardProps {
     title: string;
-    value: string;
+    value: string | number;
     change: string;
     changeType: ChangeType;
-    icon: LucideIconName | string;
+    icon: LucideIconName;
     color?: CardColor;
+    isLoading?: boolean;
 }
 
-// --- END OF TYPESCRIPT CONVERSION ---
-
-const MetricsCard: React.FC<MetricsCardProps> = ({ title, value, change, changeType, icon, color = 'primary' }) => {
+const MetricsCard: React.FC<MetricsCardProps> = ({ 
+    title, 
+    value, 
+    change, 
+    changeType, 
+    icon, 
+    color = 'primary',
+    isLoading = false 
+}) => {
     const getChangeColor = (): string => {
-        if (changeType === 'positive') return 'text-success';
-        if (changeType === 'negative') return 'text-error';
-        return 'text-text-secondary';
+        if (changeType === 'positive') return 'text-emerald-600';
+        if (changeType === 'negative') return 'text-rose-600';
+        return 'text-slate-500';
     };
 
     const getChangeIcon = (): LucideIconName => {
@@ -32,29 +37,37 @@ const MetricsCard: React.FC<MetricsCardProps> = ({ title, value, change, changeT
 
     const getColorClasses = (): string => {
         const colorMap: Record<CardColor, string> = {
-            primary: 'bg-primary/10 text-primary',
-            success: 'bg-success/10 text-success',
-            warning: 'bg-warning/10 text-warning',
-            accent: 'bg-accent/10 text-accent'
+            primary: 'bg-blue-50 text-blue-600',
+            success: 'bg-emerald-50 text-emerald-600',
+            warning: 'bg-amber-50 text-amber-600',
+            accent: 'bg-purple-50 text-purple-600'
         };
-        return colorMap[color] || colorMap.primary;
+        return colorMap[color];
     };
 
     return (
-        <div className="bg-white rounded-lg border border-border p-6 hover:shadow-md transition-shadow duration-200">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300">
             <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${getColorClasses()}`}>
+                <div className={`p-3 rounded-xl ${getColorClasses()}`}>
                     <Icon name={icon} size={24} />
                 </div>
-                <div className={`flex items-center space-x-1 ${getChangeColor()}`}>
-                    <Icon name={getChangeIcon()} size={16} />
-                    <span className="text-sm font-medium">{change}</span>
-                </div>
+                {!isLoading && (
+                    <div className={`flex items-center space-x-1 px-2 py-1 rounded-full bg-slate-50 ${getChangeColor()}`}>
+                        <Icon name={getChangeIcon()} size={14} />
+                        <span className="text-xs font-bold">{change}</span>
+                    </div>
+                )}
             </div>
 
             <div>
-                <h3 className="text-2xl font-bold text-text-primary mb-1">{value}</h3>
-                <p className="text-sm text-text-secondary">{title}</p>
+                {isLoading ? (
+                    <div className="h-8 w-24 bg-slate-100 animate-pulse rounded mb-1" />
+                ) : (
+                    <h3 className="text-2xl font-black text-slate-900 mb-1 tracking-tight">
+                        {value}
+                    </h3>
+                )}
+                <p className="text-sm font-medium text-slate-500">{title}</p>
             </div>
         </div>
     );

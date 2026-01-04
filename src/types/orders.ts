@@ -40,7 +40,7 @@ export interface ProductOrder {
   tax: number;
   total: number;
   status: OrderStatus;
-  createdAt: Date;
+  createdAt: Date ;
   shippingAddress: ShippingAddress;
   customerNotes?: string | null;
   trackingNumber?: string | null;

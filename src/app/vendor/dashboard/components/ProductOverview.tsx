@@ -47,7 +47,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={() => router.push('../products')}
+					onClick={() => router.push('/vendor/products')}
 				>
 					View All
 				</Button>
@@ -102,7 +102,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({ products }) => {
 				<Button
 					variant="outline"
 					                    className="w-full"
-					                    onClick={() => router.push('/create-listing')}				>
+					                    onClick={() => router.push('/vendor/products')}				>
 					<Icon name="Plus" size={16} className="mr-2" />
 				<p>Add New Product</p>	
 				</Button>

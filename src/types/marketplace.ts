@@ -14,6 +14,8 @@ export interface ApiProduct {
   status: string;
   visibility: boolean;
   vendor: ApiVendor;
+    products: ApiProduct[];
+
 }
 
 export interface ApiResponse {
@@ -82,4 +84,11 @@ export interface Notification {
   id: string;
   type: "success" | "error" | "info";
   message: string;
+}
+// Define this in your service file or types file
+export interface MarketplaceSearchResponse {
+  products: ApiProduct[];
+  total?: number;
+  
+  // add other fields your API returns (e.g., categories, stores)
 }

@@ -24,7 +24,7 @@ const QuickActions: React.FC = () => {
       icon: 'Plus',
       iconColor: 'text-primary',
       iconBg: 'bg-primary-50',
-      action: () => router.push('../products/')
+      action: () => router.push('/vendor/products')
     },
     {
       title: 'View Orders',
@@ -32,7 +32,7 @@ const QuickActions: React.FC = () => {
       icon: 'ShoppingCart',
       iconColor: 'text-success',
       iconBg: 'bg-success-50',
-      action: () => router.push('../orders')
+      action: () => router.push('/vendor/orders')
     },
     {
       title: 'Update Storefront',
@@ -40,7 +40,7 @@ const QuickActions: React.FC = () => {
       icon: 'Store',
       iconColor: 'text-success',
       iconBg: 'bg-accent-50',
-      action: () => router.push('../storefront')
+      action: () => router.push('/vendor/storefront')
     },
     {
       title: 'View Analytics',
@@ -48,7 +48,7 @@ const QuickActions: React.FC = () => {
       icon: 'BarChart3',
       iconColor: 'text-secondary-600',
       iconBg: 'bg-secondary-50',
-      action: () => router.push('../analytics')
+      action: () => router.push('/vendor/analytics')
     }
   ];
 

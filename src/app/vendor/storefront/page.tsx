@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { storefrontService } from "@/services/storefrontService";
 import { vendorService } from "@/services/vendorService";
 import BusinessStorefrontPreview from "./business-view/components/BusinessStorefrontPreview";
+import { productService } from "@/services/productService";
 
 type TabId = "public" | "preview" | "customize";
 
@@ -39,8 +40,8 @@ const VendorStorefront: React.FC = () => {
         // 2. Fetch Live Data (Products are needed for the grid)
         // Keep the API calls but we will merge them with local storage
         const [storefrontRes, productsRes] = await Promise.all([
-          vendorService.getStorefront(),
-          vendorService.getMyProducts(),
+          storefrontService.getStorefronts(),
+          productService.getMyProducts(),
         ]);
         
         const apiStorefront = storefrontRes.data;

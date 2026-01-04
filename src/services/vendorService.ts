@@ -56,7 +56,7 @@ vendorOnboarding: async (payload: any) => {
   },
 
   getVendorProfile: async () => {
-    const response = await api.get("/user/profile");
+    const response = await api.get("/vendor/settings");
     return response.data;
   },
 
@@ -81,4 +81,5 @@ vendorOnboarding: async (payload: any) => {
 
 interface MyProductsResponse {
   products: any[];
+  data: any;
 }
