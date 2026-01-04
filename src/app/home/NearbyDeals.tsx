@@ -7,97 +7,7 @@ import { Product } from "@/types/products";
 import Skeleton from "@/components/skeleton";
 import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard";
 
-// --- Updated Dummy Data ---
-const DUMMY_PRODUCTS: Product[] = [
-  {
-    id: 1,
-    product_name: "iPhone 13 Pro Max - 256GB Gold",
-    product_price: 750000,
-    originalPrice: 820000,
-    salePrice: 750000,
-    description: "Premium iPhone 13 Pro Max in excellent condition. Battery health is at 98%.",
-    category: "Smartphones",
-    images: ["https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=800"],
-    status: "active",
-    visibility: true,
-    isWishlisted: false,
-    rating: 4.8,
-    reviewCount: 24,
-    stock: 5,
-    condition: "New",
-    vendor: { business_name: "Tech Haven Stores", email: "sales@techhaven.ng", id: 101 },
-  },
-  {
-    id: 2,
-    product_name: "Sony WH-1000XM4 Wireless Headphones",
-    product_price: 220000,
-    originalPrice: 250000,
-    salePrice: 220000,
-    description: "Industry-leading noise canceling with Dual Noise Sensor technology.",
-    category: "Electronics",
-    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800"],
-    status: "active",
-    visibility: true,
-    isWishlisted: true,
-    rating: 4.9,
-    reviewCount: 156,
-    stock: 12,
-    condition: "New",
-    vendor: { business_name: "Gadget Hub", email: "contact@gadgethub.ng", id: 102 },
-  },
-  {
-    id: 3,
-    product_name: "Luxury Velvet 3-Seater Sofa",
-    product_price: 450000,
-    originalPrice: 500000,
-    description: "Add a touch of elegance to your living room with this handcrafted velvet sofa.",
-    category: "Home & Furniture",
-    images: ["https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800"],
-    status: "active",
-    visibility: true,
-    isWishlisted: false,
-    rating: 4.5,
-    reviewCount: 8,
-    stock: 2,
-    condition: "Like New",
-    vendor: { business_name: "Interiors by siiqo", email: "info@siiqointeriors.com", id: 103 },
-  },
-  {
-    id: 4,
-    product_name: "Nike Air Jordan 1 Retro High",
-    product_price: 125000,
-    originalPrice: 125000,
-    description: "The classic silhouette that started it all.",
-    category: "Fashion",
-    images: ["https://images.unsplash.com/photo-1584908197066-394ffac0a7b7?auto=format&fit=crop&q=80&w=800"],
-    status: "active",
-    visibility: true,
-    isWishlisted: false,
-    rating: 4.7,
-    reviewCount: 42,
-    stock: 8,
-    condition: "Open Box",
-    vendor: { business_name: "Sneaker Head", email: "support@sneakerhead.ng", id: 104 },
-  },
-  {
-    id: 5,
-    product_name: "MacBook Air M2 Chip - 512GB",
-    product_price: 1100000,
-    originalPrice: 1250000,
-    salePrice: 1100000,
-    description: "Strikingly thin design with the powerful M2 chip.",
-    category: "Computers",
-    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800"],
-    status: "active",
-    visibility: true,
-    isWishlisted: false,
-    rating: 5.0,
-    reviewCount: 15,
-    stock: 4,
-    condition: "Like New",
-    vendor: { business_name: "Apple Store NG", email: "orders@appleng.com", id: 105 },
-  }
-];
+
 
 interface NearbyDealsProps {
   onRefresh: () => Promise<void>;
@@ -106,15 +16,16 @@ interface NearbyDealsProps {
 const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+   const fetchProducts = async () => {
     setIsLoading(true);
     try {
       setError(null);
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setProducts(DUMMY_PRODUCTS);
+      const response = await fetch("https://server.siiqo.com/api/marketplace/search");
+      const data = await response.json();
+      setProducts(data.data.nearby_products);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
     } finally {
@@ -126,7 +37,9 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
     fetchProducts();
   }, []);
 
-  const generateDealData = (product: Product): DealData => {
+ 
+
+  const generateDealData = (product: any): DealData => {
     const seed = typeof product.id === 'string' ? parseInt(product.id, 10) || 123 : product.id;
     const random = (min: number, max: number) =>
       Math.floor((Math.sin(seed * 9999) * 10000) % (max - min + 1)) + min;
@@ -136,12 +49,18 @@ const NearbyDeals: React.FC<NearbyDealsProps> = ({ onRefresh }) => {
       : random(10, 35);
 
     return {
-      originalPrice: product.originalPrice || Math.round(product.product_price * 1.2),
-      discount: discount,
-      distance: `${(random(1, 20) / 10).toFixed(1)} km`,
-      rating: product.rating || 4.5,
-      condition: product.condition || "New",
-    };
+price: product.originalPrice || Math.round(product.price * 1.2),
+  discount: discount,
+  distance_km: null,
+  rating: product.rating || 4.5,
+  condition: product.condition || "New",
+
+  id: 0,
+  image: null,
+  name: null,
+  vendor_name: null,
+  crypto_price: null
+};
   };
 
   const handleDealClick = (name: string) => {

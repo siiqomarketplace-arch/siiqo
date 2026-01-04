@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<string>("history");
-  const [user, setUser] = useState<any>(null); // State to hold the full JSON response
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { logout } = useAuth();
   const router = useRouter();
@@ -25,19 +25,15 @@ const UserProfile = () => {
 
   const [uploading, setUploading] = useState(false);
 
-  // 1. Fetch Live Data on Load
   useEffect(() => {
     const fetchLiveProfile = async () => {
       try {
         setLoading(true);
         const response = await userService.getUserProfile();
-        
-        // Structure: response.data.personal_info & response.data.store_settings
         const profileData = response.data;
 
         setUser(profileData);
         
-        // Mapping the specific JSON keys to our edit form
         setEditData({
           name: profileData.personal_info?.fullname || profileData.store_settings?.business_name || "User",
           email: profileData.personal_info?.email || "",
@@ -54,13 +50,12 @@ const UserProfile = () => {
     fetchLiveProfile();
   }, []);
 
-  // 2. Handle Live Profile Update
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-      // Logic for updating would go here using updateVendorSettings or similar
+      // Mocking update logic
       setIsEditing(false);
-      alert("Profile changes saved locally (Integration with Patch API needed)");
+      alert("Profile changes saved locally!");
     } catch (error) {
       alert("Failed to update profile.");
     } finally {
@@ -75,7 +70,6 @@ const UserProfile = () => {
       const formData = new FormData();
       formData.append("profile_pic", file);
       const response = await userService.uploadProfilePicture(formData);
-      // Update the local state with new logo/avatar URL
       setUser((prev: any) => ({
         ...prev,
         store_settings: { ...prev.store_settings, logo_url: response.url }
@@ -88,16 +82,62 @@ const UserProfile = () => {
     }
   };
 
+  // ---------------------------------------------------------
+  // LOADING STATE
+  // ---------------------------------------------------------
   if (loading) return (
-    <div className="flex flex-col h-screen items-center justify-center">
-      <Icon name="Loader2" className="animate-spin text-primary mb-2" size={32} />
-      <p className="text-sm font-bold text-gray-500">Fetching live profile...</p>
+    <div className="flex flex-col h-[80vh] items-center justify-center">
+      <div className="relative">
+        <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+            <Icon name="User" className="text-primary" size={20} />
+        </div>
+      </div>
+      <p className="mt-4 text-sm font-bold text-gray-500 animate-pulse">Synchronizing your profile...</p>
     </div>
   );
 
-  if (!user) return <div className="p-10 text-center">No user data found. Please log in.</div>;
+  // ---------------------------------------------------------
+  // BEAUTIFUL "NOT FOUND / LOGGED OUT" STATE
+  // ---------------------------------------------------------
+  if (!user) return (
+    <div className="min-h-[90vh] flex flex-col items-center justify-center px-4 bg-gray-50/50">
+      <div className="max-w-md w-full bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-gray-200/50 text-center border border-gray-100">
+        <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Icon name="UserX" size={48} className="text-orange-500" />
+        </div>
+        
+        <h2 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Profile Not Found</h2>
+        <p className="text-gray-500 text-sm leading-relaxed mb-8">
+          We couldn't retrieve your profile data. You may have been logged out or your session has expired.
+        </p>
 
-  // Destructuring for cleaner UI code
+        <div className="flex flex-col gap-3">
+          <button 
+            onClick={() => router.push('/login')}
+            className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            Sign In to Account
+          </button>
+          
+          <button 
+            onClick={() => router.push('/')}
+            className="w-full py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all"
+          >
+            Return to Marketplace
+          </button>
+        </div>
+
+        <p className="mt-8 text-xs text-gray-400">
+          Need help? <span className="underline cursor-pointer text-primary">Contact Support</span>
+        </p>
+      </div>
+    </div>
+  );
+
+  // ---------------------------------------------------------
+  // MAIN PROFILE VIEW (RETAINED STYLES)
+  // ---------------------------------------------------------
   const { personal_info, store_settings } = user;
   const avatarImage = store_settings?.logo_url || "https://ui-avatars.com/api/?name=" + editData.name;
   const coverImage = store_settings?.banner_url || "https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=80";
@@ -110,7 +150,6 @@ const UserProfile = () => {
           <div className="absolute inset-0 bg-black/20" />
         </div>
         
-        {/* AVATAR (Logo) */}
         <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
           <div className="relative w-24 h-24 md:w-36 md:h-36 rounded-full border-[6px] border-white bg-gray-100 shadow-xl overflow-hidden group">
             <Image src={avatarImage} alt="Profile" fill className="object-cover" />
@@ -168,17 +207,27 @@ const UserProfile = () => {
             </div>
 
             <div className="p-6 border rounded-2xl bg-white shadow-sm">
-              <h3 className="text-xs font-black uppercase tracking-widest mb-4">Location</h3>
-              <div className="flex items-center gap-2 text-gray-600">
-                <Icon name="MapPin" size={16} />
-                <span className="text-xs font-bold">{store_settings?.address || "Lagos, Nigeria"}</span>
+              <h3 className="text-xs font-black uppercase tracking-widest mb-4 text-gray-400">Contact Details</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-gray-600">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <Icon name="MapPin" size={14} className="text-primary" />
+                  </div>
+                  <span className="text-xs font-bold">{store_settings?.address || "Lagos, Nigeria"}</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-600">
+                   <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <Icon name="Phone" size={14} className="text-primary" />
+                  </div>
+                  <span className="text-xs font-bold">{personal_info?.phone || "Not provided"}</span>
+                </div>
               </div>
             </div>
 
             <div className="p-6 border rounded-2xl bg-white shadow-sm">
               <h3 className="text-xs font-black uppercase tracking-widest mb-4">Status</h3>
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl">
-                <Icon name="CheckCircle" size={16} />
+              <div className={`flex items-center gap-2 p-3 rounded-xl ${store_settings?.is_published ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'}`}>
+                <Icon name={store_settings?.is_published ? "CheckCircle" : "AlertCircle"} size={16} />
                 <span className="text-xs font-bold">
                     {store_settings?.is_published ? "Store Live" : "Draft Mode"}
                 </span>
@@ -188,21 +237,27 @@ const UserProfile = () => {
 
           {/* MAIN CONTENT */}
           <main className="md:col-span-8">
-             <div className="mb-6 border rounded-2xl bg-white shadow-sm overflow-hidden min-h-[500px]">
+             <div className="mb-6 border rounded-3xl bg-white shadow-sm overflow-hidden min-h-[500px]">
                 <div className="flex border-b bg-gray-50/50">
                   {['history', 'saved', 'settings'].map((tab) => (
                     <button 
                       key={tab} 
                       onClick={() => setActiveTab(tab)}
-                      className={`flex-1 py-4 text-sm font-bold transition-all ${activeTab === tab ? "border-b-2 border-primary text-primary bg-white" : "text-gray-500"}`}
+                      className={`flex-1 py-5 text-xs font-black tracking-widest transition-all ${activeTab === tab ? "border-b-2 border-primary text-primary bg-white" : "text-gray-400"}`}
                     >
                       {tab.toUpperCase()}
                     </button>
                   ))}
                 </div>
-                <div className="p-6">
+                <div className="p-8">
                   {activeTab === "saved" && <SavedItems />}
                   {activeTab === "settings" && <Settings userProfile={user} />}
+                  {activeTab === "history" && (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                          <Icon name="History" size={48} className="text-gray-200 mb-4" />
+                          <p className="text-gray-400 font-medium italic">No recent activity to show.</p>
+                      </div>
+                  )}
                 </div>
              </div>
           </main>

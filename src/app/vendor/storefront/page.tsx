@@ -26,50 +26,30 @@ const VendorStorefront: React.FC = () => {
 
   // --- LOCAL STORAGE & API SYNC ---
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // 1. Check for Local Storage first for immediate UI responsiveness
-        const savedLocal = localStorage.getItem("vendorStorefrontDetails");
-        let initialData: any = null;
+   const loadData = async () => {
+    setLoading(true);
+    try {
+      const [storefrontRes, productsRes] = await Promise.all([
+        storefrontService.getStorefronts(),
+        productService.getMyProducts(),
+      ]);
+      
+      // Use the 'data' object directly from your API response structure
+      setStorefrontData({
+        ...storefrontRes.data,
+        products: productsRes.products,
+      });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to fetch live settings", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (savedLocal) {
-          initialData = JSON.parse(savedLocal);
-        }
-
-        // 2. Fetch Live Data (Products are needed for the grid)
-        // Keep the API calls but we will merge them with local storage
-        const [storefrontRes, productsRes] = await Promise.all([
-          storefrontService.getStorefronts(),
-          productService.getMyProducts(),
-        ]);
-        
-        const apiStorefront = storefrontRes.data;
-        const products = productsRes.products;
-
-        // 3. Merge Strategy: Local Storage takes precedence for customization fields
-        setStorefrontData({
-          ...apiStorefront,
-          ...initialData,
-          products, // Products usually stay live from DB
-          businessName: initialData?.business_name || apiStorefront?.businessName,
-          template_options: initialData?.template_options || apiStorefront?.template_options,
-        });
-
-      } catch (error) {
-        console.error("Failed to load storefront data", error);
-        // Fallback to local storage if API fails
-        const savedLocal = localStorage.getItem("vendorStorefrontDetails");
-        if (savedLocal) {
-            setStorefrontData(JSON.parse(savedLocal));
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
     loadData();
   }, []);
-
+  }, []);
   const handleSaveStorefront = async (updatedData: Partial<StorefrontData>) => {
     setSaving(true);
     try {
@@ -169,6 +149,10 @@ const VendorStorefront: React.FC = () => {
     </div>
   );
 
+  function loadData(): void {
+    throw new Error("Function not implemented.");
+  }
+
   return (
     <>
       <Head>
@@ -227,11 +211,10 @@ const VendorStorefront: React.FC = () => {
             )}
 
             {activeTab === "customize" && (
-              <StorefrontCustomization
-                // storefrontData={storefrontData}
-                // onSave={handleSaveStorefront}
-                // saving={saving}
-              />
+    <StorefrontCustomization
+      initialData={storefrontData}
+      onSuccess={loadData} // Refresh data after save
+    />
             )}
           </div>
         </main>

@@ -10,6 +10,7 @@ import QuickActions from "./home/QuickActions";
 import LocationIndicator from "./home/LocationIndicator";
 import LandingPage from "./home/LandingPage";
 import Homepage from "./home/Homepage";
+
 import Footer from "./home/Footer";
 
 // interface QuickFilter {
@@ -85,7 +86,7 @@ export default function ProductFinder() {
               <NearbyDeals onRefresh={handlePullToRefresh} />
             </section>
 
-            <section className="mb-8">
+            {/* <section className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold font-heading text-text-primary">
                   Recently Viewed
@@ -98,11 +99,11 @@ export default function ProductFinder() {
                 </button>
               </div>
               <RecentlyViewed />
-            </section>
-
+            </section> */}
+{/* 
             <section className="mb-8">
               <PopularInArea />
-            </section>
+            </section> */}
 
           </div>
 

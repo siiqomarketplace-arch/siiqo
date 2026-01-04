@@ -1,258 +1,233 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import LocationHeader from "@/components/ui/LocationHeader";
-import TabNavigation from "./TabNavigation";
-import ProductGrid from "./ProductGrid";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Lock, Clock, Building, Globe, CheckCircle2, 
-  ChevronLeft, User, Search, Home, ShoppingBag, 
-  Settings, Info
+  ChevronLeft, User, Search, Loader2, Settings, ShoppingBag
 } from "lucide-react";
-
-const DUMMY_PRODUCTS = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro",
-    description: "Laptops",
-    product_price: 20.90,
-    images: ["https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=800"],
-    stock: 5,
-  },
-  {
-    id: 2,
-    name: "Phone Accessories",
-    description: "Electronics",
-    product_price: 20.00,
-    images: ["https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&q=80&w=800"],
-    stock: 4,
-  }
-];
 
 const BusinessStorefrontPreview = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("products");
+  const [loading, setLoading] = useState(true);
   const [business, setBusiness] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [catalogs, setCatalogs] = useState<any[]>([]);
 
   useEffect(() => {
-    const savedLocal = localStorage.getItem("vendorStorefrontDetails");
-    if (savedLocal) {
-      const parsed = JSON.parse(savedLocal);
-      if (!parsed.products || parsed.products.length === 0) parsed.products = DUMMY_PRODUCTS;
-      setBusiness(parsed);
-    }
-  }, []);
+    const fetchPreviewData = async () => {
+      setLoading(true);
+      try {
+        // Fetch Business Settings, Products, and Catalogs in parallel
+        const [settingsRes, productsRes, catalogsRes] = await Promise.all([
+          fetch("https://server.siiqo.com/api/vendor/settings"),
+          fetch("https://server.siiqo.com/api/products/my-products"),
+          fetch("https://server.siiqo.com/api/products/catalogs")
+        ]);
+
+        const settingsData = await settingsRes.json();
+        const productsData = await productsRes.json();
+        const catalogsData = await catalogsRes.json();
+
+        if (settingsData.status === "success") {
+          setBusiness(settingsData.data);
+        }
+
+        if (productsData.status === "success") {
+          // Accessing products from the nested array structure provided
+          const extractedProducts = productsData.data?.[0]?.products || [];
+          setProducts(extractedProducts);
+        }
+
+        if (catalogsData.status === "success") {
+          setCatalogs(catalogsData.catalogs);
+        }
+
+      } catch (error) {
+        console.error("Preview fetch error:", error);
+        toast({
+          title: "Connection Error",
+          description: "Could not load live preview data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPreviewData();
+  }, [toast]);
+
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+      <Loader2 className="animate-spin text-slate-400 mb-2" size={32} />
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Preview...</p>
+    </div>
+  );
 
   if (!business) return null;
 
-  const themeColor = business?.themeColor || "#1E293B";
+  // Mapping API names to the UI variables
+  const storeSettings = business.store_settings;
+  const personalInfo = business.personal_info;
+  const themeColor = storeSettings?.template_options?.primary_color || "#1E293B";
 
   return (
     <div className="min-h-screen bg-[#F1F5F9] pb-40 font-sans">
-      {/* 1. TOP BANNER - Matching Pic 1 & 2 */}
+      {/* 1. TOP BANNER */}
       <div className="bg-[#EF8E52] text-white py-2 px-4 flex items-center justify-center gap-2 text-[10px] font-bold sticky top-0 z-[100]">
         <Lock size={12} fill="currentColor" />
-        <span className="tracking-tight">PRIVATE DRAFT — Not visible to customers</span>
+        <span className="tracking-tight">LIVE PREVIEW — Current Cloud Settings</span>
       </div>
 
-    {/* 2. HEADER SECTION - Professional Cover Image Layout */}
-<div className="relative w-full overflow-hidden font-sans">
-  {/* Cover Image Container */}
-  <div className="relative h-64 w-full bg-slate-200">
-    {business.coverImage ? (
-      <>
-        <img 
-          src={business.coverImage} 
-          className="w-full h-full object-cover" 
-          alt="Cover" 
-        />
-        {/* Dark Gradient Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-      </>
-    ) : (
-      <div 
-        className="w-full h-full flex items-center justify-center" 
-        style={{ backgroundColor: themeColor }}
-      >
-        <Building size={48} className="text-white/20" />
-      </div>
-    )}
-
-    {/* Top Navigation Icons (Absolute on top of Image) */}
-    <div className="absolute top-6 left-6 right-6 flex justify-between items-center text-white">
-      <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl hover:bg-black/40 transition-colors">
-        <ChevronLeft size={20} />
-      </button>
-      <div className="flex gap-3">
-        <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl">
-          <Search size={20} />
-        </button>
-        <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl">
-          <User size={20} />
-        </button>
-      </div>
-    </div>
-  </div>
-
-  {/* Business Info - Overlapping the cover image slightly */}
-  <div className="relative px-6 -mt-12 mb-6 flex items-end gap-4">
-    {/* Profile Image / Logo */}
-    <div className="relative flex-shrink-0">
-      <div className="w-20 h-20 bg-white rounded-[2rem] p-1 shadow-xl">
-        <div className="w-full h-full bg-slate-50 rounded-[1.8rem] flex items-center justify-center overflow-hidden border border-slate-100">
-          {business.profileImage ? (
-            <img src={business.profileImage} className="w-full h-full object-cover" alt="Profile" />
+      {/* 2. HEADER SECTION */}
+      <div className="relative w-full overflow-hidden font-sans">
+        <div className="relative h-64 w-full bg-slate-200">
+          {storeSettings?.banner_url ? (
+            <>
+              <img 
+                src={storeSettings.banner_url} 
+                className="w-full h-full object-cover" 
+                alt="Cover" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            </>
           ) : (
-            <Building size={32} className="text-slate-300" />
+            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: themeColor }}>
+              <Building size={48} className="text-white/20" />
+            </div>
           )}
+
+          <div className="absolute top-6 left-6 right-6 flex justify-between items-center text-white">
+            <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl"><ChevronLeft size={20} /></button>
+            <div className="flex gap-3">
+              <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl"><Search size={20} /></button>
+              <button className="p-2 bg-black/20 backdrop-blur-md rounded-xl"><User size={20} /></button>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative px-6 -mt-12 mb-6 flex items-end gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="w-20 h-20 bg-white rounded-[2rem] p-1 shadow-xl">
+              <div className="w-full h-full bg-slate-50 rounded-[1.8rem] flex items-center justify-center overflow-hidden border border-slate-100">
+                {storeSettings?.logo_url ? (
+                  <img src={storeSettings.logo_url} className="w-full h-full object-cover" alt="Logo" />
+                ) : (
+                  <Building size={32} className="text-slate-300" />
+                )}
+              </div>
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-blue-500 p-1.5 rounded-full border-4 border-[#F1F5F9]">
+              <CheckCircle2 size={12} className="text-white" />
+            </div>
+          </div>
+
+          <div className="pb-10 text-black">
+            <h2 className="text-xl font-black text-white drop-shadow-md leading-tight">
+              {storeSettings?.business_name || "New Store"}
+            </h2>
+            <div className="flex items-center gap-1.5 text-white/80">
+              <Globe size={10} />
+              <p className="text-[10px] font-bold tracking-wide">
+                siiqo.com/{storeSettings?.storefront_link}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      {/* Verified Badge */}
-      <div className="absolute -bottom-1 -right-1 bg-blue-500 p-1.5 rounded-full border-4 border-[#F1F5F9]">
-        <CheckCircle2 size={12} className="text-white" />
-      </div>
-    </div>
 
-    {/* Name and Slug - White text when over image, or styled for visibility */}
-    <div className="pb-10 text-black">
-      <h2 className="text-xl font-black text-white drop-shadow-md leading-tight">
-        {business.business_name}
-      </h2>
-      <div className="flex items-center gap-1.5 text-white/80">
-        <Globe size={10} />
-        <p className="text-[10px] font-bold tracking-wide">
-          siiqo.com/{business.slug || 'store'}
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
-
-      {/* 3. CONTENT WRAPPER (Overlapping Card Style) */}
+      {/* 3. CONTENT WRAPPER */}
       <div className="px-4 mt-4 space-y-4 relative z-50">
         
-        {/* ABOUT CARD - Matching Pic 1 */}
+        {/* ABOUT CARD */}
         <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100">
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="flex-1">
               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">About</h4>
+              <h3 className="text-sm font-bold text-slate-900 mb-2">{storeSettings?.business_name}</h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-3 mb-4">
+                {storeSettings?.description || "No description provided."}
+              </p>
               
-              <h3 className="text-sm font-bold text-slate-900">{business.business_name}</h3>
-               <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-3">
-            {business.about}
-          </p>
-      <div className="flex flex-col gap-2 px-2">
-  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-    Availability
-  </span>
-  
-  <div className="flex flex-col items-start gap-3">
-    {/* Days Row */}
-    <div className="flex -space-x-1.5">
-      {business.selectedDays.map((day:string, index:number)  => (
-        <div 
-          key={index} 
-          className="w-8 h-8 rounded-xl text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm transition-transform hover:scale-110" 
-          style={{ 
-            backgroundColor: business.themeColor,
-            zIndex: business.selectedDays.length - index 
-          }}
-          title={day}
-        >
-          {day.charAt(0)}
-        </div>
-      ))}
-    </div>
-
-    {/* Time Column */}
-    <div className="flex flex-col">
-      <div className="flex items-center gap-1 text-slate-900 font-bold text-xs">
-        <Clock size={12} className="text-slate-400" />
-        <span>{business.openTime} — {business.closeTime}</span>
-      </div>
-      <p className="text-[9px] text-slate-400 font-medium">Daily Operating Hours</p>
-    </div>
-  </div>
-</div>
-            </div>
-            <div className="w-20 h-20 bg-slate-100 rounded-xl overflow-hidden">
-               {/* Mock image from your screenshot */}
-               <img src="https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover opacity-50" />
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Address</span>
+                <p className="text-[11px] font-bold text-slate-700">{storeSettings?.address || "Lagos, Nigeria"}</p>
+              </div>
             </div>
           </div>
-         
         </div>
 
-        {/* STYLE PREVIEW SECTION - Matching Pic 1 (Side-by-side Cards) */}
+        {/* CATALOGS / CATEGORIES */}
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          {catalogs.map((cat) => (
+            <div key={cat.id} className="bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm whitespace-nowrap">
+              <span className="text-[10px] font-black text-slate-900 uppercase">{cat.name}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* STYLE PREVIEW SECTION */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-[1.5rem] p-4 flex items-center gap-3 border border-slate-50 shadow-sm">
-            <div className="w-8 h-8 rounded-full shadow-inner" style={{ backgroundColor: business.themeColor }} />
+            <div className="w-8 h-8 rounded-full shadow-inner" style={{ backgroundColor: themeColor }} />
             <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Primary Color</p>
-              <p className="text-[11px] font-bold text-slate-800">Theme Color</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Theme</p>
+              <p className="text-[11px] font-bold text-slate-800">Primary</p>
             </div>
           </div>
           <div className="bg-white rounded-[1.5rem] p-4 flex items-center gap-3 border border-slate-50 shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
-              <Globe size={14} />
+            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+              <Settings size={14} />
             </div>
             <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Font</p>
-              <p className="text-[11px] font-bold text-slate-800">{business.fontFamily}</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Layout</p>
+              <p className="text-[11px] font-bold text-slate-800 capitalize">{storeSettings?.template_options?.layout_style}</p>
             </div>
           </div>
         </div>
 
-        {/* SETTINGS TOGGLES - Matching Pic 1 */}
-        <div className="space-y-3">
-          <div className="bg-white rounded-2xl p-4 flex justify-between items-center border border-slate-50 shadow-sm">
-             <span className="text-xs font-bold text-slate-700">Font Style</span>
-             <div className="w-10 h-5 bg-slate-200 rounded-full relative"><div className="w-4 h-4 bg-white rounded-full absolute right-1 top-0.5" /></div>
-          </div>
-          <div className="bg-white rounded-2xl p-4 flex justify-between items-center border border-slate-50 shadow-sm">
-             <span className="text-xs font-bold text-slate-700">Storefront Visibility</span>
-             <div className="w-10 h-5 bg-slate-200 rounded-full relative"><div className="w-4 h-4 bg-white rounded-full absolute right-1 top-0.5" /></div>
-          </div>
-        </div>
-
-        {/* NEW ARRIVALS - Matching Pic 1 (List Layout) */}
+        {/* PRODUCTS FROM API */}
         <div className="pt-4">
           <div className="flex justify-between items-end mb-4 px-2">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">New Arrivals</h3>
-            <span className="text-[10px] font-bold text-orange-500">View All</span>
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Store Products</h3>
+            <span className="text-[10px] font-bold text-orange-500">{products.length} Items</span>
           </div>
           
           <div className="space-y-3">
-            {business.products.map((product: any) => (
+            {products.length > 0 ? products.map((product: any) => (
               <div key={product.id} className="bg-white rounded-[1.5rem] p-3 flex items-center justify-between border border-slate-50 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden">
-                    <img src={product.images?.[0]} className="w-full h-full object-cover" />
+                    {product.images?.[0] ? (
+                       <img src={product.images[0]} className="w-full h-full object-cover" />
+                    ) : (
+                      <ShoppingBag size={20} className="m-auto mt-3 text-slate-300" />
+                    )}
                   </div>
                   <div>
                     <h4 className="text-[11px] font-bold text-slate-900">{product.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-medium">{product.description}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">{product.category}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-black text-slate-900">${product.product_price.toFixed(2)}</span>
+                <span className="text-[11px] font-black text-slate-900">₦{product.price?.toLocaleString()}</span>
               </div>
-            ))}
+            )) : (
+              <div className="bg-white rounded-3xl p-8 text-center border-2 border-dashed border-slate-100">
+                <p className="text-xs font-bold text-slate-400">No products found in this store.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 4. BOTTOM NAVIGATION - Matching Pic 1 (Floating Button) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-4 flex items-center justify-between z-[100]">
-       
-        
+      {/* 4. BOTTOM NAVIGATION */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-4 flex items-center justify-center z-[100]">
         <button 
-          className="bg-[#1E293B] text-white px-8 py-3 rounded-full text-xs font-black shadow-lg shadow-slate-200 transform -translate-y-2 active:scale-95 transition-all"
-          onClick={() => toast({ title: "Store Published!" })}
+          className="bg-[#1E293B] text-white px-10 py-4 rounded-full text-xs font-black shadow-lg transform -translate-y-2 active:scale-95 transition-all w-full max-w-xs"
+          onClick={() => toast({ title: "Storefront is Live!" })}
         >
-          Publish Storefront
+          {storeSettings?.is_published ? "Manage Published Store" : "Publish Storefront"}
         </button>
-        
-     
       </div>
     </div>
   );

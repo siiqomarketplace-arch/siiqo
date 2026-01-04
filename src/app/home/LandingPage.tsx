@@ -1,16 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, ShoppingBag, AlertCircle, MapPin, X, RefreshCw, ChevronRight } from "lucide-react";
-import { storefrontService } from "@/services/storefrontService";
-import { Storefront, APIResponse } from "@/types/storeFront";
-import { motion, AnimatePresence, Variants } from "framer-motion"; // Import Framer Motion
+import { Search, ShoppingBag, AlertCircle, MapPin, X, RefreshCw, ChevronRight, Store } from "lucide-react";
+import { Storefront } from "@/types/storeFront";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
-  DUMMY_STOREFRONTS,
   StorefrontCard,
   StorefrontSkeleton,
 } from "@/app/home/ui/StoreFrontCard";
 import { useRouter } from "next/navigation";
+
 // Animation Variants
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -32,38 +31,38 @@ const itemVariants: Variants = {
   },
 };
 
-const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> }) => {
+const LandingPage: React.FC<{ onRefresh?: () => Promise<void> }> = ({ onRefresh }) => {
   const [distance, setDistance] = useState<string>("2 km");
   const [verifiedOnly, setVerifiedOnly] = useState<boolean>(false);
   const [storefronts, setStorefronts] = useState<Storefront[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  const router = useRouter();
+
+  // 2. The single source of truth for fetching
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("https://server.siiqo.com/api/marketplace/search");
+      if (!response.ok) throw new Error("Failed to fetch data from server");
+      
+      const result = await response.json();
+      const apiStores = result.data?.nearby_stores || [];
+      setStorefronts(apiStores);
+      
+    } catch (err: any) {
+      setError(err.message);
+      setStorefronts([]); 
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStorefronts = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const data: APIResponse = await storefrontService.getStorefronts();
-        // if (data && Array.isArray(data.storefronts)) {
-        //   setStorefronts(data.storefronts);
-        // } else {
-        //   setStorefronts([]);
-        //   setError("Failed to load storefronts due to unexpected response.");
-        // }
-         // --- Directly use Dummy Data to stop the 500 error ---
-    setStorefronts(DUMMY_STOREFRONTS); 
-      } catch (err: any) {
-        setError(err.message || "Failed to load storefronts");
-        console.error("Error fetching storefronts:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStorefronts();
+    loadData();
   }, []);
 
   const filteredStorefronts = storefronts.filter((store) => {
@@ -74,9 +73,7 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
     ) {
       return false;
     }
-
     if (verifiedOnly && !store.vendor) return false;
-
     return true;
   });
 
@@ -85,36 +82,18 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
     setVerifiedOnly(false);
     setDistance("2 km");
   };
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [stores, setStores] = useState<Storefront[]>([]);
-
-  const fetchStores = async () => {
-    setIsLoading(true);
-    try {
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setStores(DUMMY_STOREFRONTS);
-    } catch (err) {
-      console.error("Failed to fetch storefronts", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStores();
-  }, []);
 
   const handleRefresh = async () => {
-    setIsLoading(true);
-    await fetchStores();
+    await loadData();
     if (onRefresh) await onRefresh();
-    setIsLoading(false);
   };
 
   const handleViewAll = () => {
     router.push("/marketplace");
+  };
+
+  const handleSignUp = () => {
+    router.push("/auth/signup"); // Adjust based on your actual route
   };
 
   return (
@@ -145,7 +124,6 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
           className="bg-white rounded-2xl shadow-xl p-4 md:p-6 border border-gray-100"
         >
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            
             {/* Search Input */}
             <div className="w-full md:flex-1 relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -162,8 +140,6 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
 
             {/* Filters Container */}
             <div className="w-full md:w-auto flex flex-wrap items-center gap-4">
-              
-              {/* Distance Select */}
               <div className="relative flex items-center bg-gray-50 rounded-xl border border-gray-200 px-3 py-3 w-full md:w-auto group focus-within:ring-2 focus-within:ring-[#E0921C] focus-within:border-transparent transition-all">
                 <MapPin className="w-4 h-4 text-gray-500 mr-2 group-focus-within:text-[#E0921C]" />
                 <span className="text-sm text-gray-500 mr-2">Within:</span>
@@ -179,7 +155,6 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
                 </select>
               </div>
 
-              {/* Verified Toggle Switch */}
               <label className="flex items-center cursor-pointer select-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 w-full md:w-auto hover:bg-gray-100 transition-colors">
                 <div className="relative">
                   <input
@@ -200,7 +175,6 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
                 <span className="ml-3 text-sm font-medium text-[#212830]">Verified Only</span>
               </label>
 
-              {/* Clear Filters Button */}
               <AnimatePresence>
                 {(searchTerm || verifiedOnly || distance !== "2 km") && (
                   <motion.button
@@ -209,7 +183,6 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
                     exit={{ opacity: 0, scale: 0.9 }}
                     onClick={handleClearFilters}
                     className="flex items-center justify-center p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all w-full md:w-auto"
-                    title="Clear Filters"
                   >
                     <X className="w-5 h-5" />
                     <span className="md:hidden ml-2 text-sm font-medium">Clear Filters</span>
@@ -219,10 +192,9 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
             </div>
           </div>
 
-          {!loading && (
+          {!isLoading && (
             <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
               className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between"
             >
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -235,7 +207,7 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Loading State */}
-        {loading && (
+        {isLoading && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StorefrontSkeleton count={8} />
           </div>
@@ -262,67 +234,80 @@ const LandingPage: React.FC = ({ onRefresh }: { onRefresh?: () => Promise<void> 
           </motion.div>
         )}
 
-        {/* No Results */}
-        {!loading && !error && filteredStorefronts.length === 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-center"
-          >
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <ShoppingBag className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-[#212830] mb-2">
-              No storefronts matches found
-            </h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-8">
-              {searchTerm || verifiedOnly
-                ? "We couldn't find any stores matching your current filters. Try adjusting your search keywords or distance."
-                : "Be the first to create a storefront in your area!"}
-            </p>
+        {/* Content Header */}
+        <div className="flex items-center justify-between pt-10 mb-6 px-1">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold text-gray-900">Featured Stores</h2>
             <button
-              onClick={handleClearFilters}
-              className="px-6 py-3 bg-[#E0921C] text-white font-medium rounded-lg hover:bg-[#c78219] transition-colors shadow-lg shadow-orange-500/20"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
             >
-              Clear All Filters
+              <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+              <span>Refresh</span>
             </button>
-          </motion.div>
-        )}
-{/* Header with Refresh and View All */}
-      <div className="flex items-center justify-between pt-20 mb-6 px-1">
-        <div className="flex items-center gap-4">
-           <h2 className="text-xl font-bold text-gray-900">Featured Stores</h2>
-           <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+          </div>
+          <button 
+            onClick={handleViewAll}
+            className="flex items-center gap-1 text-sm font-semibold text-[#E0921C] hover:underline"
           >
-            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
-            <span>Refresh</span>
+            View All <ChevronRight size={16} />
           </button>
         </div>
 
-        <button 
-          onClick={handleViewAll}
-          className="flex items-center gap-1 text-sm font-semibold text-[#E0921C] hover:underline"
-        >
-          View All <ChevronRight size={16} />
-        </button>
-      </div>
-        {/* Storefront Grid with Staggered Animation */}
-        {!loading && !error && filteredStorefronts.length > 0 && (
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          >
-            {filteredStorefronts.map((store) => (
-              <motion.div key={store.id} variants={itemVariants}>
-                <StorefrontCard storefront={store} />
+        {/* RESULTS AREA */}
+        {!isLoading && !error && (
+          <>
+            {filteredStorefronts.length > 0 ? (
+              <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              >
+                {filteredStorefronts.map((store) => (
+                  <motion.div key={store.id} variants={itemVariants}>
+                    <StorefrontCard stores={store} />
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </motion.div>
+            ) : (
+              /* THE NEW EMPTY STATE */
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200 text-center px-6"
+              >
+                <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-6">
+                  <Store className="w-10 h-10 text-[#E0921C]" />
+                </div>
+                <h3 className="text-xl font-bold text-[#212830] mb-2">
+                  No storefronts available at the moment
+                </h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-8">
+                  {searchTerm || verifiedOnly
+                    ? "We couldn't find any stores matching your current filters. Try clearing them to see all stores."
+                    : "Be the first to showcase your business to the community! Create your storefront today."}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleSignUp}
+                    className="px-8 py-3 bg-[#E0921C] text-white font-bold rounded-xl hover:bg-[#c78219] transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    Sign Up Now
+                  </button>
+                  {(searchTerm || verifiedOnly) && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="px-8 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </section>

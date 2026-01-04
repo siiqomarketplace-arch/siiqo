@@ -6,20 +6,25 @@ import Image from "@/components/ui/AppImage";
 import Button from "@/components/Button";
 
 export interface DealData {
-  originalPrice: number;
   discount: number;
-  distance: string;
+  distance_km: string | null;
   rating: number;
   condition: string;
+  id:number;
+  image: null | string;
+  name: null | string;
+  price:  number;
+  vendor_name: null | string;
+  crypto_price: null | number;
 }
 
 export interface NearbyDealCardProps {
   product: {
     id: number | string;
-    product_name: string;
-    product_price: number;
+  name: string;
+  price: number;
     images: string[];
-    vendor?: { business_name?: string } | null;
+    vendor: { vendor_name?: string } | null;
   };
   dealData: DealData;
   onClick: (id: any) => void;
@@ -44,16 +49,16 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
             product.images?.[0] ||
             "https://via.placeholder.com/400x300?text=No+Image"
           }
-          alt={product.product_name}
+          alt={product.name}
           fill={true}
           className="object-cover"
           sizes="288px"
         />
-        <div className="absolute px-2 py-1 text-xs font-medium text-black rounded-full top-3 left-3 bg-accent">
+        {/* <div className="absolute px-2 py-1 text-xs font-medium text-black rounded-full top-3 left-3 bg-accent">
           {dealData.discount}% OFF
-        </div>
+        </div> */}
         <div className="absolute px-2 py-1 text-xs text-white bg-black bg-opacity-50 rounded-full top-3 right-3">
-          {dealData.distance}
+          {dealData.distance_km}
         </div>
       </div>
 
@@ -64,7 +69,7 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
         <div className="flex-1">
           <div className="flex items-start justify-between mb-2">
             <h3 className="flex-1 text-base font-medium text-text-primary line-clamp-2 min-h-[3rem]">
-              {product.product_name}
+              {product.name}
             </h3>
             <button 
               className="p-1 ml-2 transition-colors duration-200 rounded-full hover:bg-surface-secondary shrink-0"
@@ -76,14 +81,14 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
 
           <div className="flex items-center mb-2 space-x-2">
             <span className="text-lg font-semibold text-text-primary">
-              ₦{product.product_price.toLocaleString()}
-            </span>
-            <span className="text-sm line-through text-text-secondary">
-              ₦{dealData.originalPrice.toLocaleString()}
-            </span>
+  {product.price !== undefined ? `₦${product.price}` : ''}
+</span>
+<span className="text-sm line-through text-text-secondary">
+  {dealData.price !== undefined ? `₦${dealData.price.toLocaleString()}` : ''}
+</span>
           </div>
 
-          <div className="flex items-center justify-between mb-4 text-sm text-text-secondary">
+          {/* <div className="flex items-center justify-between mb-4 text-sm text-text-secondary">
             <span className="px-2 py-1 text-xs rounded-full bg-success-50 text-success">
               {dealData.condition}
             </span>
@@ -91,13 +96,13 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
               <Icon name="Star" size={12} className="fill-current text-warning" />
               <span>{dealData.rating.toFixed(1)}</span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* 3. Bottom Row - Always aligned at the bottom of the card */}
         <div className="flex items-center justify-between pt-3 border-t border-border mt-auto shrink-0">
           <span className="text-xs text-text-secondary line-clamp-1 max-w-[120px]">
-            {product.vendor?.business_name ?? "siiqo Vendor"}
+            {dealData.vendor_name || "Unknown Vendor"}
           </span>
           <Button
             onClick={(e) => {

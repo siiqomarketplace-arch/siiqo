@@ -6,7 +6,7 @@ import { Product as VendorProduct, AddProductRequest, EditProductRequest } from 
 
 export const productService = {
   // 1. Marketplace Fetching
-  getProducts: async (): Promise<APIResponse> => {
+  getProducts: async (): Promise<any> => {
     const response = await api.get("/products/my-products");
     return response.data;
   },

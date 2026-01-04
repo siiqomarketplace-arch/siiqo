@@ -1,73 +1,78 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
 import Button from "@/components/Button";
-import { X, Phone, MessageSquare } from "lucide-react"; // Standard icons for the modal
+import { X, Phone, MessageSquare } from "lucide-react";
 
 interface Seller {
   name: string;
-  avatar: string;
+  avatar?: string;
   rating: number;
   reviewCount: number;
   responseTime: string;
   memberSince: string;
   verifiedSeller: boolean;
-  phoneNumber?: string; // Added for the call/whatsapp logic
+  phoneNumber?: string; // This will map to whatsapp_chat from API
 }
-
-const DUMMY_SELLER: Seller = {
-  name: "John Doe",
-  avatar: "",
-  rating: 4.9,
-  reviewCount: 128,
-  responseTime: "Usually responds within 1 hour",
-  memberSince: "January 2022",
-  verifiedSeller: true,
-  phoneNumber: "+2348012345678", // Example format
-};
 
 interface SellerCardProps {
   seller: Seller;
-  onContact?: () => void;
-  onNavigateToVendorProfile: () => void;
   isMobile?: boolean;
+  onNavigateToVendorProfile?: () => void;
 }
 
 const SellerCard = ({
-  seller: propSeller,
-  onNavigateToVendorProfile,
+  seller,
   isMobile = false,
+  onNavigateToVendorProfile = () => {}
 }: SellerCardProps) => {
   const [showContactModal, setShowContactModal] = useState(false);
+  const router = useRouter();
 
-  const seller = DUMMY_SELLER;
+  // Handle Initial for Avatar Fallback
   const sellerInitial = seller.name ? seller.name.charAt(0).toUpperCase() : "?";
   const hasAvatar = seller.avatar && seller.avatar.trim() !== "" && !seller.avatar.includes("placeholder");
 
   const handleWhatsApp = () => {
+    if (!seller.phoneNumber) {
+      alert("WhatsApp contact not available for this seller.");
+      return;
+    }
     const message = encodeURIComponent(`Hello ${seller.name}, I'm interested in your product on siiqo.`);
-    window.open(`https://wa.me/${seller.phoneNumber?.replace(/\D/g, '')}?text=${message}`, '_blank');
+    // Remove non-digits for the URL
+    const cleanNumber = seller.phoneNumber.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanNumber}?text=${message}`, '_blank');
     setShowContactModal(false);
   };
 
   const handleCall = () => {
+    if (!seller.phoneNumber) {
+      alert("Phone number not available.");
+      return;
+    }
     window.location.href = `tel:${seller.phoneNumber}`;
     setShowContactModal(false);
   };
 
+  const navigateToSeller = () => {
+    // You can pass the vendor name as a query param if needed
+    router.push(`/seller-details?name=${encodeURIComponent(seller.name)}`);
+  };
+
   return (
-    <div className="relative p-4 border rounded-lg bg-surface border-border md:p-4">
+    <div className="relative p-4 border rounded-lg bg-surface border-border md:p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold font-heading text-text-primary">
           Seller Information
         </h3>
         {seller.verifiedSeller && (
-          <div className="flex items-center px-2 py-1 space-x-1 rounded-full bg-secondary-50 text-secondary">
-            <Icon name="CheckCircle" size={14} className="text-primary" />
-            <span className="text-xs font-medium text-primary">Verified</span>
+          <div className="flex items-center px-2 py-1 space-x-1 rounded-full bg-orange-50 text-[#E0921C]">
+            <Icon name="CheckCircle" size={14} />
+            <span className="text-xs font-medium">Verified</span>
           </div>
         )}
       </div>
@@ -75,10 +80,10 @@ const SellerCard = ({
       {/* Seller Info */}
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0">
-          <div className="relative w-16 h-16 overflow-hidden rounded-full bg-surface-secondary flex items-center justify-center">
+          <div className="relative w-16 h-16 overflow-hidden rounded-full bg-gray-100 flex items-center justify-center border-2 border-white shadow-sm">
             {hasAvatar ? (
               <Image
-                src={seller.avatar}
+                src={seller.avatar!}
                 alt={seller.name}
                 fill
                 className="object-cover"
@@ -93,62 +98,62 @@ const SellerCard = ({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold truncate text-text-primary mb-1">
+          <h4 className="font-bold truncate text-text-primary text-base mb-1">
             {seller.name}
           </h4>
           <div className="flex items-center mb-2 space-x-2">
             <div className="flex items-center space-x-1">
               <Icon name="Star" size={14} className="text-orange-500 fill-current" />
-              <span className="text-sm font-medium text-text-primary">{seller.rating}</span>
+              <span className="text-sm font-medium text-text-primary">{seller.rating || "5.0"}</span>
             </div>
-            <span className="text-sm text-text-secondary">({seller.reviewCount} reviews)</span>
+            <span className="text-xs text-text-secondary">({seller.reviewCount || 0} reviews)</span>
           </div>
-          <div className="flex items-center mb-1 space-x-2">
-            <Icon name="Calendar" size={14} className="text-text-secondary" />
-            <span className="text-sm text-text-secondary text-xs">Member since {seller.memberSince}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Icon name="Clock" size={14} className="text-text-secondary" />
-            <span className="text-sm text-text-secondary text-xs">{seller.responseTime}</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center space-x-2">
+              <Icon name="Clock" size={12} className="text-gray-400" />
+              <span className="text-xs text-text-secondary">{seller.responseTime}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Trigger Contact Modal */}
+      {/* Main Action */}
       <Button
         type="button"
         variant="navy"
         onClick={() => setShowContactModal(true)}
-        className="flex items-center justify-center w-full py-3 mt-4 space-x-2 text-sm"
+        className="flex items-center justify-center w-full py-3 mt-5 space-x-2 text-sm font-bold rounded-xl shadow-lg shadow-blue-900/10"
       >
         <Icon name="MessageCircle" size={18} />
         <span>Contact Seller</span>
       </Button>
 
-      <div className="flex items-center justify-center pt-4 mt-4 space-x-6 border-t border-border-light">
-        <button onClick={onNavigateToVendorProfile} className="flex items-center gap-1 hover:underline text-text-secondary">
+      {/* Secondary Action */}
+      <div className="flex items-center justify-center pt-4 mt-4 border-t border-gray-50">
+        <button 
+          onClick={navigateToSeller} 
+          className="flex items-center gap-2 text-[#E0921C] font-semibold hover:opacity-80 transition-opacity"
+        >
           <Icon name="User" size={16} />
-          <span className="text-sm">View Profile</span>
+          <span className="text-sm">View Seller Profile</span>
         </button>
       </div>
 
-      {/* --- CONTACT MODAL OVERLAY --- */}
+      {/* --- CONTACT MODAL --- */}
       {showContactModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm overflow-hidden bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between p-4 border-b">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm overflow-hidden bg-white rounded-3xl shadow-2xl scale-in-center">
+            <div className="flex items-center justify-between p-5 border-b border-gray-50">
               <h3 className="text-lg font-bold text-slate-900">Contact {seller.name}</h3>
-              <button onClick={() => setShowContactModal(false)} className="p-1 rounded-full hover:bg-slate-100">
+              <button onClick={() => setShowContactModal(false)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
             
             <div className="p-6 space-y-4">
-              <p className="text-sm text-center text-slate-600 mb-2">How would you like to reach out?</p>
-              
               <button 
                 onClick={handleWhatsApp}
-                className="flex items-center justify-center w-full gap-3 p-4 text-white transition-transform active:scale-95 bg-[#25D366] rounded-xl font-semibold shadow-md hover:bg-[#20ba5a]"
+                className="flex items-center justify-center w-full gap-3 p-4 text-white transition-transform active:scale-95 bg-[#25D366] rounded-2xl font-bold shadow-md hover:bg-[#20ba5a]"
               >
                 <MessageSquare size={20} />
                 Message on WhatsApp
@@ -156,7 +161,7 @@ const SellerCard = ({
 
               <button 
                 onClick={handleCall}
-                className="flex items-center justify-center w-full gap-3 p-4 text-white transition-transform active:scale-95 bg-[#001F3F] rounded-xl font-semibold shadow-md hover:opacity-90"
+                className="flex items-center justify-center w-full gap-3 p-4 text-white transition-transform active:scale-95 bg-[#212830] rounded-2xl font-bold shadow-md hover:opacity-90"
               >
                 <Phone size={20} />
                 Call Seller
@@ -165,9 +170,9 @@ const SellerCard = ({
             
             <button 
               onClick={() => setShowContactModal(false)}
-              className="w-full py-4 text-sm font-medium border-t text-slate-500 hover:bg-slate-50"
+              className="w-full py-5 text-sm font-bold text-gray-400 hover:text-red-500 transition-colors border-t border-gray-50"
             >
-              Cancel
+              Close
             </button>
           </div>
         </div>

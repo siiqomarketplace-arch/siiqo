@@ -20,39 +20,6 @@ interface RecentItem {
   description?: string;
 }
 
-// --- Dummy Data ---
-const DUMMY_RECENT_ITEMS: RecentItem[] = [
-  {
-    id: 1,
-    title: "iPhone 13 Pro Max - 256GB Gold",
-    price: 750000,
-    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&q=80&w=400",
-    distance: "1.2 km",
-    seller: "Tech Haven",
-    viewedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    isAvailable: true,
-  },
-  {
-    id: 2,
-    title: "Sony WH-1000XM4 Wireless Headphones",
-    price: 220000,
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400",
-    distance: "2.5 km",
-    seller: "Gadget Hub",
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isAvailable: true,
-  },
-  {
-    id: 4,
-    title: "Nike Air Jordan 1 Retro",
-    price: 85000,
-    image: "https://images.unsplash.com/photo-1584908197066-394ffac0a7b7?auto=format&fit=crop&q=80&w=400",
-    distance: "5.2 km",
-    seller: "Sneaker Head",
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    isAvailable: false, // Marked as Sold
-  }
-];
 
 const RecentlyViewed: React.FC = () => {
   const router = useRouter();
@@ -62,27 +29,14 @@ const RecentlyViewed: React.FC = () => {
   const getRecentlyViewedItems = (): RecentItem[] => {
     try {
       if (typeof window === "undefined") return [];
-      
       const stored = localStorage.getItem("recentlyViewed");
-      
-      /* --- Real Logic: Return empty if nothing stored ---
-      if (stored) return JSON.parse(stored);
-      return [];
-      */
-
-      // --- Dummy Logic: If empty, seed with dummy data ---
-      if (stored) {
-        return JSON.parse(stored);
-      } else {
-        localStorage.setItem("recentlyViewed", JSON.stringify(DUMMY_RECENT_ITEMS));
-        return DUMMY_RECENT_ITEMS;
-      }
+      // Only return real items stored by the user's actual behavior
+      return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error("Error loading recently viewed items:", error);
       return [];
     }
   };
-
   const formatViewedAt = (isoString: string): string => {
     const now = new Date();
     const viewedDate = new Date(isoString);
