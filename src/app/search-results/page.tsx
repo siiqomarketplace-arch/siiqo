@@ -12,13 +12,10 @@ import Icon from "@/components/ui/AppIcon";
 import ProductCard from "./components/ProductCard";
 import QuickFilters from "./components/QuickFilters";
 import SearchSuggestions from "./components/SearchSuggestions";
+import SearchResultsMap from "./components/SearchResultsMap";
 import { Filter } from "@/types/search-results";
 import { useLocation } from "@/context/LocationContext";
-
-interface MapCenter {
-  lat: number;
-  lng: number;
-}
+import api_endpoints from "@/hooks/api_endpoints";
 
 const SearchResults = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,10 +31,13 @@ const SearchResults = () => {
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<
+    string | number | null
+  >(null);
   const { coords } = useLocation();
-  
+
   // Default to Lagos, NG or User Coords
-  const [mapCenter, setMapCenter] = useState<MapCenter>({
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 6.5244,
     lng: 3.3792,
   });
@@ -58,7 +58,7 @@ const SearchResults = () => {
         item.original_price || (item.price ? Math.round(item.price * 1.2) : 0),
       image: item.image || item.logo || "/placeholder.png",
       seller: item.vendor_name || item.business_name || "Verified Seller",
-      rating: "4.8", 
+      rating: "4.8",
       reviewCount: Math.floor(Math.random() * 50) + 5,
       distance: item.distance_km
         ? parseFloat(item.distance_km).toFixed(1)
@@ -72,15 +72,15 @@ const SearchResults = () => {
       // Ensure we extract lat/lng from API for the map
       coordinates: {
         lat: parseFloat(item.latitude || item.lat) || 6.5244,
-        lng: parseFloat(item.longitude || item.lng) || 3.3792
-      }
+        lng: parseFloat(item.longitude || item.lng) || 3.3792,
+      },
     };
   }, []);
 
   const fetchProducts = async (query: string): Promise<void> => {
     try {
       setIsLoading(true);
-      const baseUrl = "https://server.siiqo.com/api/marketplace/search";
+      const baseUrl = api_endpoints.MARKETPLACE_SEARCH;
 
       const nearUrl = new URL(baseUrl);
       if (query) nearUrl.searchParams.set("q", query);
@@ -103,8 +103,10 @@ const SearchResults = () => {
       if (nearJson.status === "success" || allJson.status === "success") {
         const nearP = nearJson?.data?.nearby_products || [];
         const nearS = nearJson?.data?.nearby_stores || [];
-        const allP = allJson?.data?.products || allJson?.data?.nearby_products || [];
-        const allS = allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
+        const allP =
+          allJson?.data?.products || allJson?.data?.nearby_products || [];
+        const allS =
+          allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
 
         const dedup = (arr: any[]) => {
           const seen = new Set();
@@ -126,11 +128,12 @@ const SearchResults = () => {
         setStores(storesData);
 
         // Update map center to the first result found
-        const firstItem = searchMode === 'product' ? productsData[0] : storesData[0];
+        const firstItem =
+          searchMode === "product" ? productsData[0] : storesData[0];
         if (firstItem?.coordinates) {
-            setMapCenter(firstItem.coordinates);
+          setMapCenter(firstItem.coordinates);
         } else if (coords?.lat && coords?.lng) {
-            setMapCenter({ lat: coords.lat, lng: coords.lng });
+          setMapCenter({ lat: coords.lat, lng: coords.lng });
         }
       }
     } catch (err) {
@@ -186,26 +189,45 @@ const SearchResults = () => {
   // Helper to focus map on a specific product card click
   const focusOnMap = (item: any) => {
     if (item.coordinates) {
-        setMapCenter(item.coordinates);
+      setMapCenter(item.coordinates);
+      setSelectedMarkerId(item.id);
     }
   };
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#1B3F61] font-sans">
-      {/* 1. Map Layer - Dynamically updates src with mapCenter */}
+      {/* 1. Map Layer - Shows all search results */}
       <div
         className={`absolute inset-0 z-0 transition-opacity duration-1000 ${
           hasSearched ? "opacity-100" : "opacity-0"
         }`}
       >
-        <iframe
-          width="100%"
-          height="100%"
-          title="Search Map"
-          key={`${mapCenter.lat}-${mapCenter.lng}`} // Key forces iframe refresh when center changes
-          src={`https://maps.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}&z=15&output=embed`}
-          className="w-full h-full filter brightness-90 contrast-110 grayscale-[0.1]"
-          style={{ border: 0 }}
+        <SearchResultsMap
+          markers={
+            searchMode === "product"
+              ? products.map((p) => ({
+                  id: p.id,
+                  lat: p.coordinates.lat,
+                  lng: p.coordinates.lng,
+                  name: p.name,
+                  price: p.price,
+                  isProduct: true,
+                }))
+              : stores.map((s) => ({
+                  id: s.id,
+                  lat: s.coordinates.lat,
+                  lng: s.coordinates.lng,
+                  name: s.name,
+                  price: s.price,
+                  isProduct: false,
+                }))
+          }
+          center={mapCenter}
+          onMarkerClick={(marker) => {
+            setSelectedMarkerId(marker.id);
+            setMapCenter({ lat: marker.lat, lng: marker.lng });
+          }}
+          selectedMarkerId={selectedMarkerId}
         />
       </div>
 
@@ -256,19 +278,48 @@ const SearchResults = () => {
             {hasSearched && (
               <div className="animate-in fade-in slide-in-from-top-2 duration-500">
                 <div className="flex items-center justify-center mb-5 gap-6">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${searchMode === "storefront" ? "text-[#1B3F61]" : "text-slate-400"}`}>Stores</span>
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-widest ${
+                      searchMode === "storefront"
+                        ? "text-[#1B3F61]"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    Stores
+                  </span>
                   <button
                     onClick={() => {
-                      setSearchMode((prev) => prev === "product" ? "storefront" : "product");
+                      setSearchMode((prev) =>
+                        prev === "product" ? "storefront" : "product"
+                      );
                       setCurrentPage(1);
                     }}
                     className="relative w-14 h-7 bg-slate-200/50 rounded-full p-1 border border-white/50"
                   >
-                    <div className={`w-5 h-5 bg-[#1B3F61] rounded-full shadow-lg transition-transform duration-300 ${searchMode === "product" ? "translate-x-7" : "translate-x-0"}`} />
+                    <div
+                      className={`w-5 h-5 bg-[#1B3F61] rounded-full shadow-lg transition-transform duration-300 ${
+                        searchMode === "product"
+                          ? "translate-x-7"
+                          : "translate-x-0"
+                      }`}
+                    />
                   </button>
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${searchMode === "product" ? "text-[#1B3F61]" : "text-slate-400"}`}>Products</span>
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-widest ${
+                      searchMode === "product"
+                        ? "text-[#1B3F61]"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    Products
+                  </span>
                 </div>
-                <QuickFilters onApplyFilter={(f) => { setActiveFilters([{ ...f, id: `f-${Date.now()}` }]); setCurrentPage(1); }} />
+                <QuickFilters
+                  onApplyFilter={(f) => {
+                    setActiveFilters([{ ...f, id: `f-${Date.now()}` }]);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             )}
           </div>
@@ -279,14 +330,31 @@ const SearchResults = () => {
               <div className="space-y-1">
                 {isLoading ? (
                   <div className="flex flex-col items-center py-20 text-slate-500 space-y-4">
-                    <Icon name="Loader2" className="animate-spin text-[#1B3F61]" size={32} />
-                    <p className="text-xs font-bold uppercase tracking-tighter">Locating Items...</p>
+                    <Icon
+                      name="Loader2"
+                      className="animate-spin text-[#1B3F61]"
+                      size={32}
+                    />
+                    <p className="text-xs font-bold uppercase tracking-tighter">
+                      Locating Items...
+                    </p>
                   </div>
                 ) : paginatedItems.length === 0 ? (
                   <div className="text-center py-20 bg-white/30 rounded-3xl border border-dashed border-white/50">
-                    <Icon name="PackageSearch" size={40} className="mx-auto mb-3 text-slate-400" />
-                    <p className="text-sm font-medium text-slate-500">Nothing found nearby.</p>
-                    <button onClick={() => fetchProducts("")} className="text-xs font-bold text-[#1B3F61] mt-2 underline">View all items</button>
+                    <Icon
+                      name="PackageSearch"
+                      size={40}
+                      className="mx-auto mb-3 text-slate-400"
+                    />
+                    <p className="text-sm font-medium text-slate-500">
+                      Nothing found nearby.
+                    </p>
+                    <button
+                      onClick={() => fetchProducts("")}
+                      className="text-xs font-bold text-[#1B3F61] mt-2 underline"
+                    >
+                      View all items
+                    </button>
                   </div>
                 ) : (
                   paginatedItems.map((item) => (
@@ -295,7 +363,11 @@ const SearchResults = () => {
                       product={item}
                       onClick={() => {
                         focusOnMap(item);
-                        router.push(item.isProduct ? `/products/${item.id}` : `/storefront-details/${item.slug}`);
+                        router.push(
+                          item.isProduct
+                            ? `/products/${item.id}`
+                            : `/storefront-details/${item.slug}`
+                        );
                       }}
                     />
                   ))
@@ -311,7 +383,11 @@ const SearchResults = () => {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest border border-white/50 ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "bg-white shadow-xl hover:bg-slate-50"}`}
+                  className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest border border-white/50 ${
+                    currentPage === 1
+                      ? "opacity-30 cursor-not-allowed"
+                      : "bg-white shadow-xl hover:bg-slate-50"
+                  }`}
                 >
                   <Icon name="ChevronLeft" size={14} /> Prev
                 </button>
@@ -319,9 +395,15 @@ const SearchResults = () => {
                   {currentPage} / {totalPages}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                   disabled={currentPage === totalPages}
-                  className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest border border-white/50 ${currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "bg-white shadow-xl hover:bg-slate-50"}`}
+                  className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest border border-white/50 ${
+                    currentPage === totalPages
+                      ? "opacity-30 cursor-not-allowed"
+                      : "bg-white shadow-xl hover:bg-slate-50"
+                  }`}
                 >
                   Next <Icon name="ChevronRight" size={14} />
                 </button>
@@ -346,7 +428,13 @@ const SearchResults = () => {
 
 export default function SearchResultsPage() {
   return (
-    <Suspense fallback={<div className="h-screen flex flex-col items-center justify-center bg-[#1B3F61] text-white space-y-4">...</div>}>
+    <Suspense
+      fallback={
+        <div className="h-screen flex flex-col items-center justify-center bg-[#1B3F61] text-white space-y-4">
+          ...
+        </div>
+      }
+    >
       <SearchResults />
     </Suspense>
   );

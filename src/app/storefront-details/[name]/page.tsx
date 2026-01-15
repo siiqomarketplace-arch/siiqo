@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ContactVendorModal from "@/app/vendor-public-view/[name]/ContactVendorModal";
+import ShareModal from "@/components/ShareModal";
 import { productService } from "@/services/productService";
+import api_endpoints from "@/hooks/api_endpoints";
 
 interface StoreInfo {
   address: string;
@@ -53,6 +55,7 @@ const StorefrontDetailsPage = () => {
   const [viewMode, setViewMode] = useState<"products" | "catalogs">("catalogs");
   const [selectedCatalog, setSelectedCatalog] = useState<any | null>(null);
   const [catalogPage, setCatalogPage] = useState(1);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const catalogsPerPage = 6;
 
   const storeName = typeof params.name === "string" ? params.name : "";
@@ -85,7 +88,7 @@ const StorefrontDetailsPage = () => {
         }
 
         const response = await fetch(
-          `https://server.siiqo.com/api/marketplace/store/${storeName}`,
+          api_endpoints.MARKETPLACE_STORE(storeName),
           { headers }
         );
 
@@ -195,13 +198,7 @@ const StorefrontDetailsPage = () => {
   const primaryColor = store.branding?.primary_color || "#000000";
 
   const handleShareStore = async () => {
-    try {
-      const url = window.location.href;
-      await navigator.clipboard.writeText(url);
-      toast.success(`URL copied to clipboard!`);
-    } catch (err) {
-      toast.error("Failed to copy URL");
-    }
+    setIsShareModalOpen(true);
   };
 
   return (
@@ -235,6 +232,15 @@ const StorefrontDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          productId={storeName}
+          productName={store?.name}
+          productOwner={store?.name}
+          isStore={true}
+        />
 
         {/* Banner and Logo Section */}
         <div className="relative">
@@ -502,6 +508,9 @@ const StorefrontDetailsPage = () => {
                               <div
                                 key={product.id}
                                 className="group cursor-pointer"
+                                onClick={() =>
+                                  router.push(`/products/${product.id}`)
+                                }
                               >
                                 <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 border border-slate-100 shadow-sm transition-all group-hover:shadow-md">
                                   <Image
@@ -695,6 +704,9 @@ const StorefrontDetailsPage = () => {
                             <div
                               key={`${product.catalogName}-${product.id}`}
                               className="group cursor-pointer"
+                              onClick={() =>
+                                router.push(`/products/${product.id}`)
+                              }
                             >
                               <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 border border-slate-100 shadow-sm transition-all group-hover:shadow-md">
                                 <Image

@@ -367,6 +367,7 @@ const Header: React.FC = () => {
           <div className="flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:px-6">
             <Link href="/" className="flex items-center space-x-2 group">
               <img src="/images/siiqo.png" alt="Logo" className="w-full h-14" />
+              <span className="hidden text-[1.5em] font-bold text-gray-800 group-hover:text-gray-900 md:inline-block">Siiqo</span>
             </Link>
             <div className="flex items-center gap-4">
               {isLoading ? (

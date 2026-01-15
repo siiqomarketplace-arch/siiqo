@@ -7,6 +7,7 @@ import Image from "@/components/ui/AppImage";
 import { toast } from "sonner"; // Assuming you use sonner for notifications
 import { switchMode } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import api_endpoints from "@/hooks/api_endpoints";
 
 interface WishlistItem {
   id: number;
@@ -40,11 +41,11 @@ const SavedItems = () => {
           return;
         }
 
-        const response = await fetch("https://server.siiqo.com/api/buyers/favourites", {
+        const response = await fetch(api_endpoints.GET_FAVOURITES, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -83,7 +84,7 @@ const SavedItems = () => {
   const paginatedItems = items.slice(startIndex, startIndex + itemsPerPage);
 
   const handleRemoveItem = (itemId: number) => {
-    setItems(items.filter(item => item.id !== itemId));
+    setItems(items.filter((item) => item.id !== itemId));
     toast.success("Item removed from wishlist");
   };
 
@@ -96,8 +97,12 @@ const SavedItems = () => {
             <Icon name="Heart" size={20} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-text-primary">Saved Items</h2>
-            <p className="text-sm text-text-secondary">{items.length} items saved</p>
+            <h2 className="text-lg font-semibold text-text-primary">
+              Saved Items
+            </h2>
+            <p className="text-sm text-text-secondary">
+              {items.length} items saved
+            </p>
           </div>
         </div>
       </div>
@@ -106,14 +111,18 @@ const SavedItems = () => {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-4 text-text-secondary text-sm">Loading your items...</p>
+          <p className="mt-4 text-text-secondary text-sm">
+            Loading your items...
+          </p>
         </div>
       ) : error ? (
         <div className="text-center py-12 bg-red-50 rounded-xl border border-red-100">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="AlertCircle" size={24} className="text-red-600" />
           </div>
-          <h3 className="text-lg font-medium text-text-primary mb-2">Access Restricted</h3>
+          <h3 className="text-lg font-medium text-text-primary mb-2">
+            Access Restricted
+          </h3>
           <p className="text-text-secondary mb-6">{error}</p>
           <button
             onClick={() => router.push("/auth/login")}
@@ -133,10 +142,10 @@ const SavedItems = () => {
               >
                 {/* Image Container */}
                 <div className="relative h-40 bg-surface-secondary overflow-hidden">
-                  <Image 
-                    src={item.image} 
-                    fill 
-                    alt={item.name} 
+                  <Image
+                    src={item.image}
+                    fill
+                    alt={item.name}
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   {/* Remove Button */}
@@ -154,11 +163,21 @@ const SavedItems = () => {
 
                 {/* Content */}
                 <div className="p-4">
-                  <p className="text-xs text-text-tertiary mb-1">{item.vendor_name}</p>
-                  <h3 className="font-medium text-text-primary line-clamp-2 mb-2">{item.name}</h3>
+                  <p className="text-xs text-text-tertiary mb-1">
+                    {item.vendor_name}
+                  </p>
+                  <h3 className="font-medium text-text-primary line-clamp-2 mb-2">
+                    {item.name}
+                  </h3>
                   <div className="flex items-center justify-between">
-                    <p className="text-lg font-bold text-primary">₦{item.price.toLocaleString()}</p>
-                    <Icon name="ChevronRight" size={16} className="text-text-secondary" />
+                    <p className="text-lg font-bold text-primary">
+                      ₦{item.price.toLocaleString()}
+                    </p>
+                    <Icon
+                      name="ChevronRight"
+                      size={16}
+                      className="text-text-secondary"
+                    />
                   </div>
                 </div>
               </div>
@@ -169,29 +188,33 @@ const SavedItems = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-center space-x-2 mt-8 pt-4 border-t border-border">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Icon name="ChevronLeft" size={18} />
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                    currentPage === page
-                      ? "bg-primary text-white"
-                      : "border border-border hover:bg-surface-secondary"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                      currentPage === page
+                        ? "bg-primary text-white"
+                        : "border border-border hover:bg-surface-secondary"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
 
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -202,7 +225,9 @@ const SavedItems = () => {
 
           {/* Page Info */}
           <p className="text-center text-sm text-text-secondary">
-            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, items.length)} of {items.length} items
+            Showing {startIndex + 1} to{" "}
+            {Math.min(startIndex + itemsPerPage, items.length)} of{" "}
+            {items.length} items
           </p>
         </>
       ) : (
@@ -214,7 +239,9 @@ const SavedItems = () => {
           <h3 className="text-lg font-medium text-text-primary mb-2">
             No saved items yet
           </h3>
-          <p className="text-text-secondary mb-6">Start adding items to your wishlist</p>
+          <p className="text-text-secondary mb-6">
+            Start adding items to your wishlist
+          </p>
           <button
             onClick={() => router.push("/")}
             className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors"

@@ -23,6 +23,7 @@ import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard";
 import { Product } from "@/types/products";
 import { useLocation } from "@/context/LocationContext";
 import BrowserMockup from "@/components/BrowserMockup";
+import api_endpoints from "@/hooks/api_endpoints";
 
 const CATEGORIES = ["All Items", "Smartphones", "Electronics", "Fashion"];
 const ITEMS_PER_PAGE = 4;
@@ -61,8 +62,7 @@ const Homepage: React.FC = () => {
   // Fetching logic remains same
   const fetchProducts = async () => {
     try {
-      const allUrl = new URL("https://server.siiqo.com/api/marketplace/search");
-      const res = await fetch(allUrl.toString());
+      const res = await fetch(api_endpoints.MARKETPLACE_SEARCH);
       const json = await res.json();
       const merged = json?.data?.products || json?.data?.nearby_products || [];
       setProducts(merged);
@@ -160,7 +160,7 @@ const Homepage: React.FC = () => {
               transition={{ delay: 0.2 }}
               className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-4xl font-bold text-transparent lg:text-6xl mt-6 sm:mx-auto sm:w-full lg:mt-8 lg:leading-tight"
             >
-              Siiqo Marketplace
+              The Smartest Way to Buy and Sell in your City
             </motion.div>
 
             <motion.p
@@ -169,133 +169,131 @@ const Homepage: React.FC = () => {
               transition={{ delay: 0.3 }}
               className="mt-6 font-medium text-blue-100/80 sm:mx-auto sm:w-2/3 md:w-1/2 lg:mx-0 lg:mt-8 lg:w-2/3 text-lg"
             >
-              Where Trust Meets Convenience. Experience the next generation of
-              local trading with verified users, instant payouts, and seamless
-              transactions.
+              We give your business the tools to build their brand online, reach
+              nearby customers with location-based precision, and scale
+              globally. Start as a buyer or build your digital storefront, grow
+              your brand worldwide, and own your local market.
             </motion.p>
 
             {/* INTEGRATED SEARCH FORM */}
             {/* SEARCH FORM */}
-<motion.form
-  onSubmit={handleSearch}
-  className="mt-14 w-full max-w-5xl z-10"
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.4 }}
->
-  <div className="relative rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
-
-    {/* Soft glow */}
-    <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/10 via-transparent to-blue-500/10 blur-xl" />
-
-    <div className="relative grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_auto] gap-2 items-center">
-
-      {/* WHAT */}
-      <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
-        <Search size={20} className="text-orange-400" />
-        <div className="flex flex-col  w-full">
-          <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-            What
-          </label>
-          <input
-            type="text"
-            placeholder={typedPlaceholder}
-            className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* WHERE */}
-      <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
-        <MapPin size={20} className="text-orange-400" />
-        <div className="flex flex-col  w-full">
-          <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-            Where
-          </label>
-          <input
-            type="text"
-            placeholder="City or Zip"
-            className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* CATEGORY */}
-      <div
-        ref={dropdownRef}
-        className="relative flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <ShoppingBag size={20} className="text-orange-400" />
-        <div className="flex flex-col w-full">
-          <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-            Category
-          </label>
-          <div className="flex items-center justify-between text-white text-sm">
-            <span>{category}</span>
-            <ChevronDown
-              size={16}
-              className={`text-orange-400 transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="absolute left-0 right-0 top-full mt-3 rounded-2xl bg-slate-900 border border-orange-500/30 shadow-2xl overflow-hidden z-50"
+            <motion.form
+              onSubmit={handleSearch}
+              className="mt-14 w-full max-w-5xl z-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
             >
-              {CATEGORIES.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => {
-                    setCategory(item);
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center justify-between px-6 py-3 text-sm text-blue-100 hover:bg-orange-500/20 hover:text-orange-300 transition"
-                >
-                  {item}
-                  {category === item && (
-                    <Check size={16} className="text-orange-400" />
-                  )}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              <div className="relative rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
+                {/* Soft glow */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/10 via-transparent to-blue-500/10 blur-xl" />
 
-      {/* SEARCH CTA */}
-      <motion.button
-        type="submit"
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.96 }}
-        className="h-full w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 md:px-8 md:py-4 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-orange-500/50 transition"
-      >
-        {isSearching ? (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Searching
-          </div>
-        ) : (
-          "Search"
-        )}
-      </motion.button>
-    </div>
-  </div>
-</motion.form>
+                <div className="relative grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_auto] gap-2 items-center">
+                  {/* WHAT */}
+                  <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
+                    <Search size={20} className="text-orange-400" />
+                    <div className="flex flex-col  w-full">
+                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                        What
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={typedPlaceholder}
+                        className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
+                  {/* WHERE */}
+                  <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
+                    <MapPin size={20} className="text-orange-400" />
+                    <div className="flex flex-col  w-full">
+                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                        Where
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="City or Zip"
+                        className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* CATEGORY */}
+                  <div
+                    ref={dropdownRef}
+                    className="relative flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                    onClick={() => setIsOpen(!isOpen)}
+                  >
+                    <ShoppingBag size={20} className="text-orange-400" />
+                    <div className="flex flex-col w-full">
+                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                        Category
+                      </label>
+                      <div className="flex items-center justify-between text-white text-sm">
+                        <span>{category}</span>
+                        <ChevronDown
+                          size={16}
+                          className={`text-orange-400 transition-transform ${
+                            isOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute left-0 right-0 top-full mt-3 rounded-2xl bg-slate-900 border border-orange-500/30 shadow-2xl overflow-hidden z-50"
+                        >
+                          {CATEGORIES.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => {
+                                setCategory(item);
+                                setIsOpen(false);
+                              }}
+                              className="w-full flex items-center justify-between px-6 py-3 text-sm text-blue-100 hover:bg-orange-500/20 hover:text-orange-300 transition"
+                            >
+                              {item}
+                              {category === item && (
+                                <Check size={16} className="text-orange-400" />
+                              )}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* SEARCH CTA */}
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.96 }}
+                    className="h-full w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 md:px-8 md:py-4 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-orange-500/50 transition"
+                  >
+                    {isSearching ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Searching
+                      </div>
+                    ) : (
+                      "Search"
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.form>
           </div>
           {/* THE BROWSER FRAME FROM hero.txt */}
           <motion.div

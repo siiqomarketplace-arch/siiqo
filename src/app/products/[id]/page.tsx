@@ -10,6 +10,7 @@ import LocationMap from "../components/LocationMap";
 import { useCartActions, useCartItems } from "@/context/CartContext";
 import { toast } from "sonner";
 import { switchMode } from "@/services/api";
+import api_endpoints from "@/hooks/api_endpoints";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -43,10 +44,9 @@ export default function ProductDetailPage() {
 
     const fetchProduct = async () => {
       try {
-        const res = await fetch(
-          `https://server.siiqo.com/api/marketplace/products/${productId}`,
-          { cache: "no-store" }
-        );
+        const res = await fetch(api_endpoints.MARKETPLACE_PRODUCTS(productId), {
+          cache: "no-store",
+        });
 
         if (!res.ok) throw new Error("Failed to fetch product");
 
