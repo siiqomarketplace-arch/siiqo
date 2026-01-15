@@ -1,10 +1,7 @@
 import axios from "axios";
 
-// This points to your Next.js rewrite destination in development 
-// and the direct server in production
-const API_BASE_URL = process.env.NODE_ENV === "development" 
-  ? "/api" 
-  : "https://server.siiqo.com/api";
+// This always uses the Next.js proxy at /api to avoid CORS issues
+const API_BASE_URL = "/api";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -15,15 +12,16 @@ const apiClient = axios.create({
 
 // Authentication Interceptor
 apiClient.interceptors.request.use(
-  config => {
+  (config) => {
     // Check for token in sessionStorage
-    const token = typeof window !== "undefined" ? sessionStorage.getItem("RSToken") : null;
+    const token =
+      typeof window !== "undefined" ? sessionStorage.getItem("RSToken") : null;
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;
   },
-  error => {
+  (error) => {
     return Promise.reject(error);
   }
 );
@@ -33,7 +31,7 @@ apiClient.interceptors.request.use(
  */
 export const switchMode = (mode: "vendor" | "buyer") => {
   return apiClient.post("/auth/switch-mode", { target_view: mode });
-}
+};
 export const getUserProfile = () => {
   return apiClient.get("/user/profile");
 };
@@ -51,18 +49,21 @@ export const getCart = () => {
 };
 export const addToCart = (data: any) => {
   return apiClient.post("/cart/add", data);
-}
+};
 export const clearCart = () => {
   return apiClient.delete("/cart/clear");
 };
 
 export const checkout = (data: any) => {
   return apiClient.post("/buyer-orders/checkout", data);
-}
+};
 export const upDateCartItem = (itemId: number | string, data: any) => {
   return apiClient.patch(`/cart/update/${itemId}`, data);
-}
-export const updatePaymentProof = (order_id: number | string, formData: FormData) => {
+};
+export const updatePaymentProof = (
+  order_id: number | string,
+  formData: FormData
+) => {
   return apiClient.post(`/buyer-orders/upload-proof/${order_id}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
@@ -75,13 +76,13 @@ export const updatePaymentProof = (order_id: number | string, formData: FormData
  */
 export const addProduct = (data: any) => {
   const headers: any = {};
-  
+
   // Check if we are sending files/images
   if (data instanceof FormData) {
     headers["Content-Type"] = "multipart/form-data";
   }
 
-  // Note: if your baseURL is already "/api", 
+  // Note: if your baseURL is already "/api",
   // you should just use "/products/add"
   return apiClient.post("/products/add", data, { headers });
 };
@@ -90,21 +91,26 @@ export const getVendorOrders = () => {
 };
 export const confirmPayment = (order_id: number | string) => {
   return apiClient.patch(`/vendor-orders/orders/${order_id}/confirm-payment/`);
-}
-export const updateShippingStatus = (order_id: number | string, status: string) => {
-  return apiClient.patch(`/vendor-orders/orders/${order_id}/status/`, { status });
-}
+};
+export const updateShippingStatus = (
+  order_id: number | string,
+  status: string
+) => {
+  return apiClient.patch(`/vendor-orders/orders/${order_id}/status/`, {
+    status,
+  });
+};
 export const deleteProduct = (product_id: number | string) => {
   return apiClient.delete(`/products/delete/${product_id}`);
-}
+};
 
 export const createCatalog = (data: any) => {
   return apiClient.post("/products/catalogs", data);
 };
 
-export const createCategories = (data: any) => {  
+export const createCategories = (data: any) => {
   return apiClient.post("/products/category", data);
-}
+};
 /**
  * EDIT PRODUCT
  * Updated to use the new /products/update/:id path
@@ -112,7 +118,7 @@ export const createCategories = (data: any) => {
  */
 export const editProduct = (product_id: number | string, data: any) => {
   const headers: any = {};
-  
+
   // Since you saw "images-file" in form-data, we must handle FormData
   if (data instanceof FormData) {
     headers["Content-Type"] = "multipart/form-data";
@@ -125,18 +131,21 @@ export const getMyProducts = () => {
   return apiClient.get("/products/my-products");
 };
 export const getCatalogs = () => {
-  return apiClient.get("products/catalogs")
-}
+  return apiClient.get("products/catalogs");
+};
 export const getCategories = () => {
-  return apiClient.get("products/categories")
-}
+  return apiClient.get("products/categories");
+};
 
 export const getSettings = () => {
-  return apiClient.get("/vendor/settings") 
-}
-export const revenueAnalytics = (params?: { start_date: string, end_date: string }) => {
-    return apiClient.get("/vendor-orders/analytics/revenue", { params });
-}
+  return apiClient.get("/vendor/settings");
+};
+export const revenueAnalytics = (params?: {
+  start_date: string;
+  end_date: string;
+}) => {
+  return apiClient.get("/vendor-orders/analytics/revenue", { params });
+};
 /**
  * VENDOR ONBOARDING (Replaces switch-to-vendor)
  * Use this for the "Become a Vendor" process
@@ -162,7 +171,6 @@ export const updateVendorSettings = (data: any) => {
   return apiClient.patch("/vendor/update-settings", data, { headers });
 };
 
-
 /**
  * MARKETPLACE & CART ENDPOINTS
  */
@@ -173,8 +181,6 @@ export const fetchProducts = () => {
 export const fetchStorefronts = () => {
   return apiClient.get("/marketplace/storefronts");
 };
-
-
 
 export const fetchCartItems = () => {
   return apiClient.get("/cart");
@@ -188,23 +194,23 @@ export const getStorefrontDetails = (storeSlug: string) => {
 };
 export const fetchProductDetails = (product_id: number | string) => {
   return apiClient.get(`/marketplace/products/${product_id}`);
-}
-export const fetchActiveStorefronts = () => { 
+};
+export const fetchActiveStorefronts = () => {
   return apiClient.get("/buyers/storefronts");
-}
+};
 export const togglegFavorite = (product_id: number | string) => {
   return apiClient.post(`/buyers/favorites/${product_id}`);
-}
+};
 export const fetchFavoriteItems = () => {
   return apiClient.get("/buyers/favorites");
-}
+};
 export const getPublicCatalogs = () => {
   return apiClient.get("/marketplace/catalogs");
-}
+};
 /**
  * AUTHENTICATION ENDPOINTS
  */
-export const login = (data: any, ) => {
+export const login = (data: any) => {
   return apiClient.post("/auth/login", data);
 };
 

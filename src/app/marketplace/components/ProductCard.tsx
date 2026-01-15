@@ -17,7 +17,7 @@ interface ProductCardProps {
   product: Product & any;
   onAddToCart: (product: Product) => void;
   onQuickView: (product: Product) => void;
-  onAddToWishlist: (productId: number , isWishlisted: boolean) => void;
+  onAddToWishlist: (productId: number, isWishlisted: boolean) => void;
   cartQuantities: { [key: number]: number };
   isAddingToCart: { [key: number]: boolean };
   id?: number | string;
@@ -56,7 +56,13 @@ const ProductCard = ({
 
   const getStoreSlug = () => {
     const candidate =
-      product.slug || product.storeSlug || product.store_slug || product.vendor?.slug || product.storeName || product.vendor?.business_name || product.seller;
+      product.slug ||
+      product.storeSlug ||
+      product.store_slug ||
+      product.vendor?.slug ||
+      product.storeName ||
+      product.vendor?.business_name ||
+      product.seller;
     if (!candidate) return null;
     return String(candidate)
       .toLowerCase()
@@ -110,7 +116,7 @@ const ProductCard = ({
       : typeof product.price === "number"
       ? `₦${product.price.toLocaleString()}`
       : null;
-const router = useRouter();
+  const router = useRouter();
   return (
     <div
       className="z-0  overflow-hidden transition-shadow duration-200 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg"
@@ -118,12 +124,12 @@ const router = useRouter();
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => {
         if (isStorefront) {
-          if (storeSlug) router.push(`/storefront-details/${encodeURIComponent(storeSlug)}`);
+          if (storeSlug)
+            router.push(`/storefront-details/${encodeURIComponent(storeSlug)}`);
         } else {
           router.push(`/products/${productId}`);
         }
       }}
-
     >
       {/* ---------------- IMAGE AREA ---------------- */}
       <div className="relative overflow-hidden bg-gray-100 aspect-square">
@@ -170,7 +176,10 @@ const router = useRouter();
             onClick={(e) => {
               e.stopPropagation();
               if (isStorefront) {
-                if (storeSlug) router.push(`/storefront-details/${encodeURIComponent(storeSlug)}`);
+                if (storeSlug)
+                  router.push(
+                    `/storefront-details/${encodeURIComponent(storeSlug)}`
+                  );
               } else {
                 onQuickView(product);
               }
@@ -253,7 +262,11 @@ const router = useRouter();
 
             {/* Distance + Availability */}
             <span className="text-[11px] text-gray-500">
-              {distance ? `• ${distance} mi • ` : "• "}
+              {distance &&
+              distance !== "Infinity km" &&
+              distance !== "Infinity mi"
+                ? `• ${distance} • `
+                : "• "}
               {isStorefront
                 ? product.availability ?? "Open"
                 : product.condition ?? "N/A"}
@@ -281,22 +294,20 @@ const router = useRouter();
           <div className="ml-3 flex-shrink-0">
             {/* ADD TO CART BUTTON (Product) */}
             {!isStorefront ? (
-                <Button
+              <Button
                 type="button"
                 variant="navy"
                 onClick={() => onAddToCart(product)}
                 disabled={isAdding}
                 className="flex items-center justify-center px-2 py-1 text-xs space-x-1 disabled:opacity-50"
-                >
+              >
                 <ShoppingCart className="w-3 h-3" />
                 <span>
                   {isAdding
-                  ? "Adding..."
-                  : `Add${
-                    cartQuantity > 0 ? ` (${cartQuantity})` : ""
-                    }`}
+                    ? "Adding..."
+                    : `View${cartQuantity > 0 ? ` (${cartQuantity})` : ""}`}
                 </span>
-                </Button>
+              </Button>
             ) : (
               /* VISIT (Storefront) */
               <Button
@@ -305,7 +316,9 @@ const router = useRouter();
                 onClick={(e) => {
                   e.stopPropagation();
                   if (storeSlug) {
-                    router.push(`/storefront-details/${encodeURIComponent(storeSlug)}`);
+                    router.push(
+                      `/storefront-details/${encodeURIComponent(storeSlug)}`
+                    );
                   } else {
                     onQuickView(product);
                   }

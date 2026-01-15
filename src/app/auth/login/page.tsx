@@ -179,8 +179,8 @@ const LoginForm = () => {
 
           <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-xl ring-1 ring-gray-200/50 rounded-3xl overflow-hidden">
             <CardHeader className="space-y-1 pb-6 pt-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
-                <LockKeyhole className="h-7 w-7 text-white" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ">
+                <img src='/images/siiqo.png' alt="Siiqo Logo" />
               </div>
               <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Welcome Back</CardTitle>
               <CardDescription>Enter your credentials to access your account</CardDescription>

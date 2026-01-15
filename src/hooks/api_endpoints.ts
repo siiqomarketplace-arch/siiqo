@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://server.siiqo.com/api";
+const API_BASE_URL = "/api";
 
 const api_endpoints = {
   // ==================== MARKETPLACE ====================

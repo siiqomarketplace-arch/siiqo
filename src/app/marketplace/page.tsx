@@ -14,6 +14,7 @@ import SearchSuggestions from "./components/SearchSuggestions";
 import FilterPanel from "./components/FilterPanel";
 import { useLocation } from "@/context/LocationContext";
 import api_endpoints from "@/hooks/api_endpoints";
+import { sortByProximity } from "@/utils/proximitySort";
 
 const MarketplaceBrowse = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,6 +57,9 @@ const MarketplaceBrowse = () => {
    * Maps API keys to ProductCard expectations
    */
   const transformApiProduct = useCallback((item: any) => {
+    const distanceKm = parseFloat(item.distance_km);
+    const hasValidDistance = !isNaN(distanceKm) && isFinite(distanceKm);
+
     return {
       ...item,
       id: item.id,
@@ -66,15 +70,16 @@ const MarketplaceBrowse = () => {
       seller: item.vendor_name,
       rating: item.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
       reviewCount: item.reviewCount || Math.floor(Math.random() * 50),
-      distance: item.distance_km
-        ? `${parseFloat(item.distance_km).toFixed(1)} km`
-        : null,
+      distance: hasValidDistance ? `${distanceKm.toFixed(1)} km` : null,
       isProduct: true,
       crypto_price: item.crypto_price,
     };
   }, []);
 
   const transformApiStorefront = useCallback((store: any) => {
+    const distanceKm = parseFloat(store.distance_km);
+    const hasValidDistance = !isNaN(distanceKm) && isFinite(distanceKm);
+
     return {
       ...store,
       id: store.slug, // Storefronts often use slug as unique ID
@@ -84,9 +89,7 @@ const MarketplaceBrowse = () => {
       seller: store.business_name,
       rating: 4.5,
       reviewCount: 12,
-      distance: store.distance_km
-        ? `${parseFloat(store.distance_km).toFixed(1)} km`
-        : null,
+      distance: hasValidDistance ? `${distanceKm.toFixed(1)} km` : null,
       isProduct: false,
       isStorefront: true,
       store_slug: store.slug,
@@ -105,7 +108,10 @@ const MarketplaceBrowse = () => {
       const baseUrl = api_endpoints.MARKETPLACE_SEARCH;
       const query = searchParams.get("q") || "";
 
-      const url = new URL(baseUrl);
+      const url = new URL(
+        baseUrl,
+        typeof window !== "undefined" ? window.location.origin : ""
+      );
       if (coords?.lat && coords?.lng) {
         url.searchParams.set("lat", String(coords.lat));
         url.searchParams.set("lng", String(coords.lng));
@@ -121,7 +127,10 @@ const MarketplaceBrowse = () => {
 
         // FALLBACK: If products are empty, fetch all products
         if (p.length === 0) {
-          const productUrl = new URL(baseUrl);
+          const productUrl = new URL(
+            baseUrl,
+            typeof window !== "undefined" ? window.location.origin : ""
+          );
           if (query) productUrl.searchParams.set("q", query);
           const productRes = await fetch(productUrl.toString());
           const productJson = await productRes.json();
@@ -133,12 +142,21 @@ const MarketplaceBrowse = () => {
 
         // FALLBACK: If stores are empty, fetch all stores
         if (s.length === 0) {
-          const storeUrl = new URL(baseUrl);
+          const storeUrl = new URL(
+            baseUrl,
+            typeof window !== "undefined" ? window.location.origin : ""
+          );
           if (query) storeUrl.searchParams.set("q", query);
           const storeRes = await fetch(storeUrl.toString());
           const storeJson = await storeRes.json();
           s =
             storeJson.data?.storefronts || storeJson.data?.nearby_stores || [];
+        }
+
+        // Apply proximity sorting to both products and storefronts
+        if (coords?.lat && coords?.lng) {
+          p = sortByProximity(p, { lat: coords.lat, lng: coords.lng });
+          s = sortByProximity(s, { lat: coords.lat, lng: coords.lng });
         }
 
         setProducts(p.map(transformApiProduct));

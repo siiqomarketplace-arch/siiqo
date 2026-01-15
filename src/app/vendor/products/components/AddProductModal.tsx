@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { productService } from "@/services/productService";
 import { useLocationDetection } from "@/hooks/useLocationDetection";
 import ShareModal from "@/components/ShareModal";
+import MapboxAutocomplete from "@/components/MapboxAutocomplete";
 /* ===========================
    Types
    =========================== */
@@ -482,16 +483,16 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         response = await productService.addProduct(formDataPayload);
       }
       console.log("CREATE PRODUCT RESPONSE:", response);
-console.log("RESPONSE.DATA:", response?.data);
+      console.log("RESPONSE.DATA:", response?.data);
 
-// 🔍 DEBUG: inspect API response shape
-console.log("Full response:", response);
-console.log("Response.data:", response?.data);
-console.log("Possible product id locations:", {
-  id: response?.data?.id,
-  productId: response?.data?.product?.id,
-  altId: response?.data?.product_id,
-});
+      // 🔍 DEBUG: inspect API response shape
+      console.log("Full response:", response);
+      console.log("Response.data:", response?.data);
+      console.log("Possible product id locations:", {
+        id: response?.data?.id,
+        productId: response?.data?.product?.id,
+        altId: response?.data?.product_id,
+      });
 
       toast.success(
         editingProduct
@@ -509,30 +510,29 @@ console.log("Possible product id locations:", {
       // For new products, show share modal; for edits, just close
       if (!editingProduct) {
         // Extract product ID from response
-const productId =
-  response?.data?.id ??
-  response?.data?.product?.id ??
-  response?.data?.data?.id ??
-  response?.id ??
-  null;
+        const productId =
+          response?.data?.id ??
+          response?.data?.product?.id ??
+          response?.data?.data?.id ??
+          response?.id ??
+          null;
 
-console.log("FINAL PRODUCT ID:", productId);
+        console.log("FINAL PRODUCT ID:", productId);
 
-if (productId != null) {
-  setCreatedProductId(productId);
-  setShowShareModal(true);
-}
+        if (productId != null) {
+          setCreatedProductId(productId);
+          setShowShareModal(true);
+        }
         if (productId) {
           setCreatedProductId(productId);
           setShowShareModal(true);
         } else {
           // Fallback: reload page if no product ID
           setTimeout(() => {
-  onClose();
-  // Reload to refresh product list
-  window.location.reload();
-}, 1500);
-
+            onClose();
+            // Reload to refresh product list
+            window.location.reload();
+          }, 1500);
         }
       } else {
         // For edits, just close without refresh
@@ -1032,40 +1032,30 @@ if (productId != null) {
                   <div className="space-y-4">
                     <h4 className="text-base font-semibold">Location</h4>
 
-                    {/* Auto-detect location button */}
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
-                        <Input
-                          label="Location (optional)"
-                          name="location"
-                          value={formData.location || ""}
-                          onChange={handleInputChange}
-                          placeholder="City, State, or Address"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleAutoDetectLocation}
-                        disabled={isLocationLoading}
-                        className="mb-0.5"
-                      >
-                        {isLocationLoading ? (
-                          <>
-                            <Icon
-                              name="Loader2"
-                              size={16}
-                              className="animate-spin mr-2"
-                            />
-                            Detecting...
-                          </>
-                        ) : (
-                          <>
-                            <Icon name="MapPin" size={16} className="mr-2" />
-                            Auto-Detect
-                          </>
-                        )}
-                      </Button>
+                    {/* Mapbox Autocomplete location */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        Location (optional)
+                      </label>
+                      <MapboxAutocomplete
+                        value={formData.location || ""}
+                        onChange={(value, coordinates, details) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            location: value,
+                            latitude: coordinates?.lat
+                              ? String(coordinates.lat)
+                              : "",
+                            longitude: coordinates?.lng
+                              ? String(coordinates.lng)
+                              : "",
+                          }));
+                        }}
+                        onDetectLocation={handleAutoDetectLocation}
+                        isDetecting={isLocationLoading}
+                        placeholder="Type to search (e.g., Nelocap estate, Lokogoma, Abuja)"
+                        showDetectButton={true}
+                      />
                     </div>
 
                     {(formData.latitude || formData.longitude) && (

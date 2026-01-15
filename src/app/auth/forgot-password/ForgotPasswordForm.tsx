@@ -110,7 +110,7 @@ export default function ForgotPasswordForm() {
         <Card className="border bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-2 text-center">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-              <Sparkles className="w-6 h-6 text-white" />
+              <img src='/images/siiqo.png' alt="Siiqo Logo" />
             </div>
             <CardTitle className="text-2xl font-bold">
               Forgot Password?

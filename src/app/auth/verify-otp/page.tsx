@@ -29,7 +29,7 @@ const VerifyOtpPage = () => {
   const [countdown, setCountdown] = useState(0);
   const [otpTimer, setOtpTimer] = useState(600); // 10 minutes
   const [isOtpExpired, setIsOtpExpired] = useState(false);
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -79,7 +79,9 @@ const VerifyOtpPage = () => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const handleResendOtp = async () => {
@@ -89,7 +91,7 @@ const VerifyOtpPage = () => {
     try {
       // --- LIVE API CALL ---
       const response = await axios.post(
-        "https://server.siiqo.com/api/auth/resend-otp",
+        "/api/auth/resend-otp",
         { email },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -122,7 +124,7 @@ const VerifyOtpPage = () => {
     try {
       // --- LIVE API CALL ---
       const response = await axios.post(
-        "https://server.siiqo.com/api/auth/verify-email",
+        "/api/auth/verify-email",
         { email, otp },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -147,7 +149,9 @@ const VerifyOtpPage = () => {
     } catch (error: any) {
       toast({
         title: "Verification Failed",
-        description: error.response?.data?.message || "The code you entered is incorrect or expired.",
+        description:
+          error.response?.data?.message ||
+          "The code you entered is incorrect or expired.",
         variant: "destructive",
       });
     } finally {
@@ -159,7 +163,10 @@ const VerifyOtpPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8">
-          <Link href="/auth/signup" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          <Link
+            href="/auth/signup"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
             <ArrowLeft className="h-4 w-4" /> Back to Signup
           </Link>
         </div>
@@ -169,28 +176,49 @@ const VerifyOtpPage = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
               <UserCheck className="h-6 w-6 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
-            <CardDescription>Enter the 6-digit code sent to your inbox</CardDescription>
+            <CardTitle className="text-2xl font-bold">
+              Verify Your Email
+            </CardTitle>
+            <CardDescription>
+              Enter the 6-digit code sent to your inbox
+            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             {email && (
               <div className="text-center p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                <p className="text-sm text-gray-600">Verification code sent to:</p>
+                <p className="text-sm text-gray-600">
+                  Verification code sent to:
+                </p>
                 <p className="font-semibold text-gray-900 break-all">{email}</p>
               </div>
             )}
 
             <div className="flex items-center justify-center gap-2 p-3 bg-white rounded-lg border shadow-sm">
-              <Clock className={`h-4 w-4 ${isOtpExpired ? "text-red-500" : "text-blue-500"}`} />
-              <span className={`font-mono font-semibold ${isOtpExpired ? "text-red-500" : "text-blue-500"}`}>
+              <Clock
+                className={`h-4 w-4 ${
+                  isOtpExpired ? "text-red-500" : "text-blue-500"
+                }`}
+              />
+              <span
+                className={`font-mono font-semibold ${
+                  isOtpExpired ? "text-red-500" : "text-blue-500"
+                }`}
+              >
                 {isOtpExpired ? "Expired" : formatTime(otpTimer)}
               </span>
-              <span className="text-sm text-gray-500">{isOtpExpired ? "" : "remaining"}</span>
+              <span className="text-sm text-gray-500">
+                {isOtpExpired ? "" : "remaining"}
+              </span>
             </div>
 
             <div className="flex justify-center py-2">
-              <InputOTP maxLength={6} value={otp} onChange={setOtp} disabled={isOtpExpired || isLoading}>
+              <InputOTP
+                maxLength={6}
+                value={otp}
+                onChange={setOtp}
+                disabled={isOtpExpired || isLoading}
+              >
                 <InputOTPGroup>
                   <InputOTPSlot index={0} className="h-12 w-10 md:w-12" />
                   <InputOTPSlot index={1} className="h-12 w-10 md:w-12" />
@@ -214,7 +242,9 @@ const VerifyOtpPage = () => {
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
                 </span>
-              ) : "Complete Registration"}
+              ) : (
+                "Complete Registration"
+              )}
             </Button>
 
             <div className="text-center text-sm text-gray-600 pt-2">
@@ -224,7 +254,11 @@ const VerifyOtpPage = () => {
                 disabled={isResending || countdown > 0}
                 className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isResending ? "Sending..." : countdown > 0 ? `Resend in ${countdown}s` : "Resend OTP"}
+                {isResending
+                  ? "Sending..."
+                  : countdown > 0
+                  ? `Resend in ${countdown}s`
+                  : "Resend OTP"}
               </button>
             </div>
           </CardContent>
@@ -236,7 +270,13 @@ const VerifyOtpPage = () => {
 
 const VerifyOTP = () => {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center text-gray-500">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center text-gray-500">
+          Loading...
+        </div>
+      }
+    >
       <VerifyOtpPage />
     </Suspense>
   );

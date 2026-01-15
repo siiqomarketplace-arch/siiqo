@@ -2,6 +2,10 @@
 
 import { motion, useScroll, useTransform, easeOut } from "framer-motion";
 import { useRef } from "react";
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import Link from "next/link";
+
 import {
   UserPlus,
   Store,
@@ -90,6 +94,7 @@ const browserFrameVariants = {
 
 export default function BrowserMockup() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"vendor" | "buyer">("vendor");
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -104,7 +109,7 @@ export default function BrowserMockup() {
   return (
     <div
       ref={containerRef}
-      className="w-full min-h-screen -mt-32 md:mt-24 flex items-center justify-center px-2 sm:px-4"
+      className="w-full py-12 md:py-20 flex items-center justify-center px-2 sm:px-4"
     >
       {/* Browser frame */}
       <motion.div
@@ -132,16 +137,16 @@ export default function BrowserMockup() {
         </div>
 
         {/* Content area */}
-        <div className="relative min-h-[400px] sm:h-[460px] bg-gradient-to-br from-[#f0f1ff] via-white to-[#e6fbff] flex items-center justify-center px-4 sm:px-6 py-6 sm:py-8 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#f0f1ff] via-white to-[#e6fbff] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 overflow-visible">
           {/* Decorative glow */}
           <motion.div
             style={{ y: bgY }}
-            className="absolute -top-24 -right-24 w-48 sm:w-72 h-48 sm:h-72 bg-purple-400/20 rounded-full blur-3xl"
+            className="absolute -top-24 -right-24 w-48 sm:w-72 h-48 sm:h-72 bg-purple-400/20 rounded-full blur-3xl pointer-events-none"
           />
 
           <motion.div
             style={{ y: bgY }}
-            className="absolute -bottom-24 -left-24 w-48 sm:w-72 h-48 sm:h-72 bg-blue-400/20 rounded-full blur-3xl"
+            className="absolute -bottom-24 -left-24 w-48 sm:w-72 h-48 sm:h-72 bg-blue-400/20 rounded-full blur-3xl pointer-events-none"
           />
 
           <motion.div
@@ -154,82 +159,136 @@ export default function BrowserMockup() {
             <motion.div
               style={{ y: titleY }}
               variants={itemVariants}
-              className="text-center mb-6 sm:mb-12"
+              className="text-center mb-6 sm:mb-8"
             >
-              <h3 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                How Siiqo Works
+              <h3 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
+                Siiqo For Neighbourhood Commerce
               </h3>
-              <p className="text-neutral-600 text-xs sm:text-sm mt-1 sm:mt-2">
-                A simple flow designed for growth
+              <p className="text-neutral-600 text-sm sm:text-base mt-2 sm:mt-3">
+                Let's reimagine local commerce
               </p>
             </motion.div>
-
-            {/* Timeline */}
-            <motion.div
-              style={{ y: cardsY }}
-              className="relative flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-10 md:gap-4"
-            >
-              {/* Timeline line */}
-              <div
-                className="absolute md:top-1/2 md:left-0 md:right-0 md:h-[2px] md:bg-gradient-to-r md:from-blue-900 md:via-blue-800 md:to-blue-900
-                      left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 md:translate-y-[-50%] translate-x-[-50%]"
-              />
-
-              {operations.map((operation, index) => (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  className="relative z-10 flex flex-col items-center text-center w-full sm:w-auto"
+            {/* Tabs */}
+            <div className="flex justify-center mb-8">
+              <div className="flex bg-white/70 backdrop-blur-xl rounded-full p-1 shadow-lg border border-white/40">
+                <button
+                  onClick={() => setActiveTab("vendor")}
+                  className={`px-5 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all ${
+                    activeTab === "vendor"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
+                      : "text-slate-600"
+                  }`}
                 >
-                  {/* Connection dot */}
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: index * 0.3,
-                    }}
-                    className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white border-4 border-blue-500 shadow-lg mb-3 sm:mb-4"
-                  />
+                  For Businesses
+                </button>
 
-                  {/* Card */}
-                  <motion.div
-                    whileHover={{ y: -6 }}
-                    className="backdrop-blur-xl bg-white/70 border border-white/40 rounded-lg sm:rounded-xl px-3 sm:px-4 py-4 sm:py-5 shadow-xl w-[110px] sm:w-[140px]"
-                  >
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 mx-auto rounded-lg bg-gradient-to-br ${operation.color} flex items-center justify-center text-white mb-2 sm:mb-3`}
-                    >
-                      <motion.div style={{ scale: 0.85 }}>
-                        {operation.icon}
-                      </motion.div>
-                    </div>
+                <button
+                  onClick={() => setActiveTab("buyer")}
+                  className={`px-5 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all ${
+                    activeTab === "buyer"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
+                      : "text-slate-600"
+                  }`}
+                >
+                  For Buyers
+                </button>
+              </div>
+            </div>
+            <AnimatePresence mode="wait">
+              {activeTab === "vendor" && (
+                <motion.div
+                  key="vendor"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-3xl mx-auto text-start px-2 sm:px-6"
+                >
+                  <h4 className="text-xl sm:text-2xl md:text-3xl text-center font-bold text-slate-900 mb-4 leading-snug">
+                    Turn Your Business Into a Recognisable Online Brand
+                  </h4>
 
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
-                      {operation.title}
-                    </h4>
+                  <p className="text-neutral-600 text-center text-xs sm:text-sm md:text-base mb-6 leading-relaxed">
+                    Move beyond basic product listings. Create a professional
+                    online storefront that reflects your brand identity, builds
+                    trust, and attracts customers searching within and beyond
+                    your location.
+                  </p>
 
-                    <p className="text-[10px] sm:text-xs text-neutral-600 mt-0.5 sm:mt-1 leading-tight">
-                      {operation.description}
-                    </p>
-                  </motion.div>
+                  <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm md:text-base text-slate-700">
+                    <li>• Create a branded online storefront</li>
+                    <li>
+                      • Customise layout, visuals, and product presentation
+                    </li>
+                    <li>
+                      • Get discovered through location-based and brand search
+                    </li>
+                    <li>• Sell products and manage orders with ease</li>
+                    <li>
+                      • Grow visibility without building a separate website
+                    </li>
+                  </ul>
+
+                  <p className="mt-6 text-xs sm:text-sm md:text-base font-medium text-slate-800 leading-relaxed">
+                    This platform helps businesses look professional, get
+                    discovered, and scale their brand presence — all in one
+                    place.
+                  </p>
                 </motion.div>
-              ))}
-            </motion.div>
+              )}
+
+              {activeTab === "buyer" && (
+                <motion.div
+                  key="buyer"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-3xl mx-auto text-start px-2 sm:px-6"
+                >
+                  <h4 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-4 text-center leading-snug">
+                    Discover Trusted Brands — Near You and Beyond
+                  </h4>
+
+                  <p className="text-neutral-600 text-xs sm:text-sm md:text-base mb-6 text-center leading-relaxed">
+                    Shop from real, verified brands with professional
+                    storefronts. Search by location, explore stores beyond your
+                    neighborhood, and buy with confidence.
+                  </p>
+
+                  <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm md:text-base text-slate-700">
+                    <li>• Discover real brands, not random sellers</li>
+                    <li>• Shop locally or explore beyond your area</li>
+                    <li>
+                      • View authentic storefronts with clear brand identity
+                    </li>
+                    <li>
+                      • Buy from reliable sellers with transparent listings
+                    </li>
+                  </ul>
+
+                  <p className="mt-6 text-xs sm:text-sm md:text-base font-medium text-slate-800 leading-relaxed">
+                    Every purchase begins with a brand you can trust.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* CTA */}
             <motion.div
               variants={itemVariants}
               className="text-center mt-8 sm:mt-12"
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-semibold shadow-xl"
-              >
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                Start Your Journey
-              </motion.button>
+              <Link href="/auth/signup">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-semibold shadow-xl cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  Start Your Journey
+                </motion.button>
+              </Link>
             </motion.div>
           </motion.div>
         </div>

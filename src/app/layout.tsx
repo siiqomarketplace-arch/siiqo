@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description:
     "Your local Marketplace",
   icons: {
-    icon: "/images/favicon.png",
+    icon: "/images/siiqo.png",
   },
 };
 

@@ -2,21 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Star, 
-  MapPin, 
-  Calendar, 
-  ArrowRight, 
+import {
+  Star,
+  MapPin,
+  Calendar,
+  ArrowRight,
   BadgeCheck,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import Skeleton from "@/components/skeleton";
 import { Storefront } from "@/types/storeFront";
 import { storefrontService } from "@/services/storefrontService";
-import { fetchGlobalSearch, getStorefrontDetails, fetchActiveStorefronts } from "@/services/api";
+import {
+  fetchGlobalSearch,
+  getStorefrontDetails,
+  fetchActiveStorefronts,
+} from "@/services/api";
 import { useLocation } from "@/context/LocationContext";
-
 
 /**
  * STOREFRONT LIST COMPONENT
@@ -26,7 +29,11 @@ import { useLocation } from "@/context/LocationContext";
  * STOREFRONT LIST COMPONENT
  * Handles the Live API Fetching
  */
-export const StorefrontList = ({ onRefresh }: { onRefresh?: () => Promise<void> }) => {
+export const StorefrontList = ({
+  onRefresh,
+}: {
+  onRefresh?: () => Promise<void>;
+}) => {
   const router = useRouter();
   const { coords } = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,12 +44,18 @@ export const StorefrontList = ({ onRefresh }: { onRefresh?: () => Promise<void> 
     setIsLoading(true);
     setError(false);
     try {
-      const nearUrl = new URL("https://server.siiqo.com/api/marketplace/search");
+      const nearUrl = new URL(
+        "/api/marketplace/search",
+        typeof window !== "undefined" ? window.location.origin : ""
+      );
       if (coords?.lat && coords?.lng) {
         nearUrl.searchParams.set("lat", String(coords.lat));
         nearUrl.searchParams.set("lng", String(coords.lng));
       }
-      const allUrl = new URL("https://server.siiqo.com/api/marketplace/search");
+      const allUrl = new URL(
+        "/api/marketplace/search",
+        typeof window !== "undefined" ? window.location.origin : ""
+      );
 
       const [nearRes, allRes] = await Promise.all([
         fetch(nearUrl.toString()),
@@ -53,7 +66,8 @@ export const StorefrontList = ({ onRefresh }: { onRefresh?: () => Promise<void> 
       const allJson = await allRes.json();
 
       const nearStores = nearJson?.data?.nearby_stores || [];
-      const allStores = allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
+      const allStores =
+        allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
 
       const dedupById = (arr: any[]) => {
         const seen = new Set();
@@ -107,10 +121,13 @@ export const StorefrontList = ({ onRefresh }: { onRefresh?: () => Promise<void> 
           // Better empty state for buyers
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
             <div className="bg-white p-4 rounded-full shadow-sm mb-4">
-               <MapPin className="w-8 h-8 text-gray-300" />
+              <MapPin className="w-8 h-8 text-gray-300" />
             </div>
             <h3 className="text-gray-900 font-bold">No Stores Found</h3>
-            <p className="text-gray-500 text-sm max-w-xs">There are currently no active storefronts in your area. Check back later!</p>
+            <p className="text-gray-500 text-sm max-w-xs">
+              There are currently no active storefronts in your area. Check back
+              later!
+            </p>
           </div>
         ) : (
           stores.map((store) => (
@@ -144,7 +161,9 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
     const colorIndex = businessName.length % colors.length;
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
       businessName
-    )}&background=${colors[colorIndex]}&color=fff&size=400&font-size=0.33&bold=true`;
+    )}&background=${
+      colors[colorIndex]
+    }&color=fff&size=400&font-size=0.33&bold=true`;
   };
 
   const handleClick = () => {
@@ -168,10 +187,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
       {/* Image Section */}
       <div className="relative h-48 overflow-hidden bg-gray-50">
         <img
-          src={
-            stores.banner ||
-            getFallbackImage(stores.business_name)
-          }
+          src={stores.banner || getFallbackImage(stores.business_name)}
           alt={stores.business_name}
           className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
           onError={(e) => {
@@ -180,7 +196,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
             );
           }}
         />
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
 
         {/* <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
@@ -235,31 +251,28 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
             <div className="relative">
               <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white bg-gradient-to-br from-[#0E2848] to-[#0E2848]/60 rounded-full shadow-sm">
                 {/* {stores.vendor?.firstname?.charAt(0) || "V"} */}
-                    <img
-          src={
-            stores.logo ||
-            getFallbackImage(stores.business_name)
-          }
-          alt={stores.business_name}
-          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = getFallbackImage(
-              stores.business_name
-            );
-          }}
-        />
+                <img
+                  src={stores.logo || getFallbackImage(stores.business_name)}
+                  alt={stores.business_name}
+                  className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = getFallbackImage(
+                      stores.business_name
+                    );
+                  }}
+                />
               </div>
               {/* <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div> */}
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-medium text-gray-900">
-                {stores.business_name} 
+                {stores.business_name}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 group-hover:text-[#E0921C] transition-colors">
-              View Storefront <ArrowRight className="w-4 h-4" />
+            View Storefront <ArrowRight className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -279,7 +292,7 @@ export const StorefrontSkeleton = ({ count = 6 }: { count?: number }) => {
           className="flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden"
         >
           <div className="h-48 w-full bg-gray-100 relative">
-             <Skeleton type="rect" height="100%" width="100%" />
+            <Skeleton type="rect" height="100%" width="100%" />
           </div>
 
           <div className="p-5 flex flex-col flex-grow">

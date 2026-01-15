@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, AlertCircle, MapPin, X, RefreshCw, ChevronRight, Store, ChevronLeft } from "lucide-react";
+import {
+  Search,
+  AlertCircle,
+  MapPin,
+  X,
+  RefreshCw,
+  ChevronRight,
+  Store,
+  ChevronLeft,
+} from "lucide-react";
 import { Storefront } from "@/types/storeFront";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
@@ -10,6 +19,7 @@ import {
 } from "@/app/home/ui/StoreFrontCard";
 import { useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
+import { useLocationDetection } from "@/hooks/useLocationDetection";
 
 // Animation Variants
 const containerVariants: Variants = {
@@ -34,7 +44,9 @@ const itemVariants: Variants = {
 
 const ITEMS_PER_PAGE = 8;
 
-const LandingPage: React.FC<{ onRefresh?: () => Promise<void> }> = ({ onRefresh }) => {
+const LandingPage: React.FC<{ onRefresh?: () => Promise<void> }> = ({
+  onRefresh,
+}) => {
   const [distance, setDistance] = useState<string>("2 km");
   const [verifiedOnly, setVerifiedOnly] = useState<boolean>(false);
   const [storefronts, setStorefronts] = useState<Storefront[]>([]);
@@ -42,73 +54,103 @@ const LandingPage: React.FC<{ onRefresh?: () => Promise<void> }> = ({ onRefresh 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  
+  const [showLocationPermissionPrompt, setShowLocationPermissionPrompt] =
+    useState(false);
+
   const router = useRouter();
   const { coords } = useLocation();
+  const { refresh: getCurrentLocation, loading: isDetectingLocation } =
+    useLocationDetection();
 
-const loadData = async (query: string = "") => {
-  setIsLoading(true);
-  setError(null);
-  setCurrentPage(1);
-  try {
-    const nearUrl = new URL("https://server.siiqo.com/api/marketplace/search");
-    if (query.trim()) nearUrl.searchParams.set("q", query.trim());
-    if (coords?.lat && coords?.lng) {
-      nearUrl.searchParams.set("lat", String(coords.lat));
-      nearUrl.searchParams.set("lng", String(coords.lng));
+  // Show location permission prompt on mount
+  useEffect(() => {
+    const hasSeenLocationPrompt = localStorage.getItem(
+      "siiqo_location_prompt_shown"
+    );
+    const userCoordinates = localStorage.getItem("user_coordinates");
+
+    // Show prompt if user hasn't granted location and hasn't seen the prompt
+    if (!hasSeenLocationPrompt && !userCoordinates) {
+      // Small delay to allow page to load first
+      const timer = setTimeout(() => {
+        setShowLocationPermissionPrompt(true);
+        localStorage.setItem("siiqo_location_prompt_shown", "true");
+      }, 1500);
+
+      return () => clearTimeout(timer);
     }
+  }, []);
 
-    const allUrl = new URL("https://server.siiqo.com/api/marketplace/search");
-    if (query.trim()) allUrl.searchParams.set("q", query.trim());
-
-    const [nearRes, allRes] = await Promise.all([
-      fetch(nearUrl.toString()),
-      fetch(allUrl.toString())
-    ]);
-    
-    if (!nearRes.ok || !allRes.ok) throw new Error("Failed to fetch data from server");
-
-    const nearJson = await nearRes.json();
-    const allJson = await allRes.json();
-
-    // The API structure you provided shows stores are in data.nearby_stores
-    const nearStores = nearJson?.data?.nearby_stores || [];
-    const allStores = allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
-
-    const dedupBySlugOrName = (arr: any[]) => {
-      const seen = new Set();
-      const out: any[] = [];
-      for (const it of arr) {
-        // FIX: Use slug or business_name as a fallback ID
-        const key = it?.id || it?.slug || it?.business_name;
-        
-        if (!key) continue; 
-        
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push(it);
-        }
+  const loadData = async (query: string = "") => {
+    setIsLoading(true);
+    setError(null);
+    setCurrentPage(1);
+    try {
+      const nearUrl = new URL(
+        "/api/marketplace/search",
+        typeof window !== "undefined" ? window.location.origin : ""
+      );
+      if (query.trim()) nearUrl.searchParams.set("q", query.trim());
+      if (coords?.lat && coords?.lng) {
+        nearUrl.searchParams.set("lat", String(coords.lat));
+        nearUrl.searchParams.set("lng", String(coords.lng));
       }
-      return out;
-    };
 
-    const merged = dedupBySlugOrName([...nearStores, ...allStores]);
-    
-    merged.sort((a, b) => {
-      const da = typeof a.distance_km === 'number' ? a.distance_km : Infinity;
-      const db = typeof b.distance_km === 'number' ? b.distance_km : Infinity;
-      return da - db;
-    });
+      const allUrl = new URL(
+        "/api/marketplace/search",
+        typeof window !== "undefined" ? window.location.origin : ""
+      );
+      if (query.trim()) allUrl.searchParams.set("q", query.trim());
 
-    setStorefronts(merged);
-    
-  } catch (err: any) {
-    setError(err.message);
-    setStorefronts([]); 
-  } finally {
-    setIsLoading(false);
-  }
-};
+      const [nearRes, allRes] = await Promise.all([
+        fetch(nearUrl.toString()),
+        fetch(allUrl.toString()),
+      ]);
+
+      if (!nearRes.ok || !allRes.ok)
+        throw new Error("Failed to fetch data from server");
+
+      const nearJson = await nearRes.json();
+      const allJson = await allRes.json();
+
+      // The API structure you provided shows stores are in data.nearby_stores
+      const nearStores = nearJson?.data?.nearby_stores || [];
+      const allStores =
+        allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
+
+      const dedupBySlugOrName = (arr: any[]) => {
+        const seen = new Set();
+        const out: any[] = [];
+        for (const it of arr) {
+          // FIX: Use slug or business_name as a fallback ID
+          const key = it?.id || it?.slug || it?.business_name;
+
+          if (!key) continue;
+
+          if (!seen.has(key)) {
+            seen.add(key);
+            out.push(it);
+          }
+        }
+        return out;
+      };
+
+      const merged = dedupBySlugOrName([...nearStores, ...allStores]);
+
+      merged.sort((a, b) => {
+        const da = typeof a.distance_km === "number" ? a.distance_km : Infinity;
+        const db = typeof b.distance_km === "number" ? b.distance_km : Infinity;
+        return da - db;
+      });
+
+      setStorefronts(merged);
+    } catch (err: any) {
+      setError(err.message);
+      setStorefronts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadData(searchTerm);
@@ -160,11 +202,109 @@ const loadData = async (query: string = "") => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleEnableLocation = async () => {
+    try {
+      await getCurrentLocation();
+      setShowLocationPermissionPrompt(false);
+    } catch (err) {
+      console.error("Error enabling location:", err);
+    }
+  };
+
+  const handleSkipLocation = () => {
+    setShowLocationPermissionPrompt(false);
+  };
+
   return (
     <section className="min-h-screen bg-gray-50 font-sans">
+      {/* Location Permission Prompt Modal */}
+      <AnimatePresence>
+        {showLocationPermissionPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-100 rounded-full">
+                      <MapPin className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Enable Location
+                    </h3>
+                  </div>
+                  <button
+                    onClick={handleSkipLocation}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <p className="text-gray-600 text-sm mb-6">
+                  Allow us to access your location to show products and stores
+                  sorted by proximity. You can always change this later in
+                  settings.
+                </p>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                  <ul className="space-y-2 text-xs text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                      <span>See closest products first</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                      <span>Faster checkouts with saved location</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                      <span>Better local recommendations</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSkipLocation}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Maybe Later
+                  </button>
+                  <button
+                    onClick={handleEnableLocation}
+                    disabled={isDetectingLocation}
+                    className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isDetectingLocation && (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {isDetectingLocation ? "Detecting..." : "Enable Location"}
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center mt-4">
+                  Your location data is kept private and secure.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header Section */}
       <div className="bg-[#001d3b] pt-16 pb-24 px-4 sm:px-6 lg:px-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -174,14 +314,15 @@ const loadData = async (query: string = "") => {
             Explore Nearby Storefronts
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Discover the best local services and products from verified sellers in your community.
+            Discover the best local services and products from verified sellers
+            in your community.
           </p>
         </motion.div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
         {/* Floating Search & Filter Bar */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -240,16 +381,20 @@ const loadData = async (query: string = "") => {
                       setCurrentPage(1);
                     }}
                   />
-                  <motion.div 
-                    className={`block w-10 h-6 rounded-full transition-colors duration-300 ${verifiedOnly ? 'bg-[#E0921C]' : 'bg-gray-300'}`}
+                  <motion.div
+                    className={`block w-10 h-6 rounded-full transition-colors duration-300 ${
+                      verifiedOnly ? "bg-[#E0921C]" : "bg-gray-300"
+                    }`}
                   />
-                  <motion.div 
+                  <motion.div
                     animate={{ x: verifiedOnly ? 16 : 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow-sm"
                   />
                 </div>
-                <span className="ml-3 text-sm font-medium text-[#212830]">Verified Only</span>
+                <span className="ml-3 text-sm font-medium text-[#212830]">
+                  Verified Only
+                </span>
               </label>
 
               <AnimatePresence>
@@ -262,7 +407,9 @@ const loadData = async (query: string = "") => {
                     className="flex items-center justify-center p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all w-full md:w-auto"
                   >
                     <X className="w-5 h-5" />
-                    <span className="md:hidden ml-2 text-sm font-medium">Clear Filters</span>
+                    <span className="md:hidden ml-2 text-sm font-medium">
+                      Clear Filters
+                    </span>
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -270,12 +417,14 @@ const loadData = async (query: string = "") => {
           </div>
 
           {!isLoading && (
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between"
             >
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {filteredStorefronts.length} {filteredStorefronts.length === 1 ? 'Result' : 'Results'} Found
+                {filteredStorefronts.length}{" "}
+                {filteredStorefronts.length === 1 ? "Result" : "Results"} Found
               </span>
             </motion.div>
           )}
@@ -292,7 +441,7 @@ const loadData = async (query: string = "") => {
 
         {/* Error State */}
         {error && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center justify-center p-8 bg-white border border-red-100 rounded-2xl shadow-sm text-center"
@@ -300,7 +449,9 @@ const loadData = async (query: string = "") => {
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
               <AlertCircle className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-bold text-[#212830] mb-2">Unable to load storefronts</h3>
+            <h3 className="text-lg font-bold text-[#212830] mb-2">
+              Unable to load storefronts
+            </h3>
             <p className="text-gray-500 mb-6">{error}</p>
             <button
               onClick={() => window.location.reload()}
@@ -320,11 +471,14 @@ const loadData = async (query: string = "") => {
               disabled={isLoading}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
             >
-              <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+              <RefreshCw
+                size={12}
+                className={isLoading ? "animate-spin" : ""}
+              />
               <span>Refresh</span>
             </button>
           </div>
-          <button 
+          <button
             onClick={handleViewAll}
             className="flex items-center gap-1 text-sm font-semibold text-[#E0921C] hover:underline"
           >
@@ -337,7 +491,7 @@ const loadData = async (query: string = "") => {
           <>
             {filteredStorefronts.length > 0 ? (
               <>
-                <motion.div 
+                <motion.div
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
@@ -345,7 +499,9 @@ const loadData = async (query: string = "") => {
                 >
                   {paginatedStorefronts.map((store, idx) => (
                     <motion.div
-                      key={store?.id ?? store?.slug ?? store?.business_name ?? idx}
+                      key={
+                        store?.id ?? store?.slug ?? store?.business_name ?? idx
+                      }
                       variants={itemVariants}
                     >
                       <StorefrontCard stores={store} />
@@ -355,7 +511,7 @@ const loadData = async (query: string = "") => {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-center justify-center gap-2 mt-12"
@@ -369,19 +525,21 @@ const loadData = async (query: string = "") => {
                     </button>
 
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            currentPage === page
-                              ? "bg-[#E0921C] text-white"
-                              : "border border-gray-200 text-gray-700 hover:bg-gray-100"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              currentPage === page
+                                ? "bg-[#E0921C] text-white"
+                                : "border border-gray-200 text-gray-700 hover:bg-gray-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
                     </div>
 
                     <button
@@ -396,7 +554,7 @@ const loadData = async (query: string = "") => {
               </>
             ) : (
               /* EMPTY STATE */
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200 text-center px-6"

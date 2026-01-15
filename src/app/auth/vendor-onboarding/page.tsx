@@ -12,12 +12,19 @@ import InputField from "@/components/Input";
 import Button from "@/components/Button";
 import { vendorService } from "@/services/vendorService";
 import { switchMode } from "@/services/api";
-import { Loader2, MapPin, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  RefreshCw,
+  CheckCircle2,
+  ArrowLeft,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocationDetection } from "@/hooks/useLocationDetection";
 import Link from "next/link";
+import MapboxAutocomplete from "@/components/MapboxAutocomplete";
 
 const SuccessScreen = () => (
   <motion.div
@@ -29,7 +36,9 @@ const SuccessScreen = () => (
     className="flex flex-col items-center justify-center w-full max-w-md p-8 text-center bg-white border border-gray-100 rounded-xl"
   >
     <CheckCircle2 className="w-16 h-16 mb-4 text-green-600" />
-    <h2 className="text-2xl font-bold text-gray-800">Registration Successful</h2>
+    <h2 className="text-2xl font-bold text-gray-800">
+      Registration Successful
+    </h2>
     <p className="mt-2 text-sm text-gray-600">
       Your vendor profile has been submitted and is pending admin approval.
     </p>
@@ -54,6 +63,7 @@ const VendorOnboarding = () => {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<VendorOnboardingData>({
     resolver: zodResolver(vendorOnboardingSchema),
@@ -65,7 +75,7 @@ const VendorOnboarding = () => {
       state: "",
       // CHANGED: file inputs should not default to ""
       logo: undefined,
-          banner: undefined,
+      banner: undefined,
       bank_name: "",
       account_number: "",
       wallet_address: "",
@@ -84,7 +94,9 @@ const VendorOnboarding = () => {
       if (location.longitude) setValue("longitude", location.longitude);
 
       if (location.country) {
-        setValue("address", `${location.country}, ${location.state}`, { shouldValidate: true });
+        setValue("address", `${location.country}, ${location.state}`, {
+          shouldValidate: true,
+        });
       }
     }
   }, [locationDetected, location, setValue]);
@@ -111,17 +123,19 @@ const VendorOnboarding = () => {
       const lat =
         Number((data as any).latitude) || (location.latitude as any) || 6.4698;
       const lng =
-        Number((data as any).longitude) || (location.longitude as any) || 3.5852;
+        Number((data as any).longitude) ||
+        (location.longitude as any) ||
+        3.5852;
 
       formData.append("latitude", String(lat));
       formData.append("longitude", String(lng));
 
       formData.append("business_name", data.business_name ?? "");
-formData.append("address", data.address ?? "");
-formData.append("description", data.description ?? "");
-formData.append("bank_name", data.bank_name ?? "");
-formData.append("account_number", data.account_number ?? "");
-formData.append("wallet_address", data.wallet_address ?? "");
+      formData.append("address", data.address ?? "");
+      formData.append("description", data.description ?? "");
+      formData.append("bank_name", data.bank_name ?? "");
+      formData.append("account_number", data.account_number ?? "");
+      formData.append("wallet_address", data.wallet_address ?? "");
 
       // Pull files from RHF (file inputs return a FileList)
       const logoFile: File | undefined = (data as any).logo?.[0];
@@ -138,7 +152,10 @@ formData.append("wallet_address", data.wallet_address ?? "");
       localStorage.removeItem("user");
       sessionStorage.removeItem("RSUser");
 
-      toast({ title: "Success!", description: "Store created and role updated." });
+      toast({
+        title: "Success!",
+        description: "Store created and role updated.",
+      });
       setIsCompleted(true);
     } catch (error: any) {
       console.error("Onboarding error:", error);
@@ -194,30 +211,39 @@ formData.append("wallet_address", data.wallet_address ?? "");
               />
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Business Address*</label>
-                  <button
-                    type="button"
-                    onClick={handleLocationRefresh}
-                    disabled={locationDetecting}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${locationDetecting ? "animate-spin" : ""}`} />
-                    {locationDetected ? "Refresh Location" : "Detect Location"}
-                  </button>
-                </div>
-
-                <InputField
-                  placeholder="Street address, City"
-                  {...register("address")}
-                  error={errors.address?.message}
+                <label className="text-sm font-medium text-gray-700">
+                  Business Address*
+                </label>
+                <MapboxAutocomplete
+                  value={watch("address") || ""}
+                  onChange={(value, coordinates, details) => {
+                    setValue("address", value);
+                    if (coordinates) {
+                      setValue("latitude", String(coordinates.lat));
+                      setValue("longitude", String(coordinates.lng));
+                    }
+                    if (details?.state) setValue("state", details.state);
+                    if (details?.country) setValue("country", details.country);
+                  }}
+                  onDetectLocation={handleLocationRefresh}
+                  isDetecting={locationDetecting}
+                  placeholder="Type to search (e.g., Nelocap estate, Lokogoma, Abuja)"
+                  showDetectButton={true}
                 />
-
-                {locationDetected && (
-                  <p className="text-[10px] text-green-600 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> GPS Locked: {location.latitude}, {location.longitude}
+                {errors.address && (
+                  <p className="text-xs text-red-600">
+                    {errors.address.message}
                   </p>
                 )}
+
+                {locationDetected &&
+                  location.latitude &&
+                  location.longitude && (
+                    <p className="text-[10px] text-green-600 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> GPS Locked:{" "}
+                      {location.latitude}, {location.longitude}
+                    </p>
+                  )}
               </div>
 
               {/* CHANGED: File input for Logo */}

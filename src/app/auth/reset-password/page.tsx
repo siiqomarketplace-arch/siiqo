@@ -1,4 +1,3 @@
-
 "use client";
 
 import { ArrowLeft, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -111,7 +110,7 @@ function ResetPasswordContent() {
 
     try {
       const { data } = await axios.post(
-        "https://server.siiqo.com/api/auth/reset-password",
+        "/api/auth/reset-password",
         {
           email,
           password: newPassword,
@@ -127,7 +126,9 @@ function ResetPasswordContent() {
 
       toast({
         title: "Password reset successful",
-        description: data.message || "Your password has been updated. Redirecting to login...",
+        description:
+          data.message ||
+          "Your password has been updated. Redirecting to login...",
       });
 
       // Clear session storage
@@ -167,7 +168,7 @@ function ResetPasswordContent() {
         <Card className="border bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-2 text-center">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
-              <Lock className="w-6 h-6 text-white" />
+              <img src="/images/siiqo.png" alt="Siiqo Logo" />
             </div>
             <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
             <CardDescription>Enter your new password below.</CardDescription>
@@ -184,7 +185,7 @@ function ResetPasswordContent() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter new password"
                     value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
+                    onChange={(e) => setNewPassword(e.target.value)}
                     required
                     autoComplete="new-password"
                     disabled={isLoading}
@@ -219,7 +220,7 @@ function ResetPasswordContent() {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm new password"
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     autoComplete="new-password"
                     disabled={isLoading}

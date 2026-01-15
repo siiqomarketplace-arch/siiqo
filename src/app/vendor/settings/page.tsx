@@ -36,6 +36,7 @@ import {
   SettingsState,
 } from "@/types/vendor/settings";
 import { vendorService } from "@/services/vendorService";
+import MapboxAutocomplete from "@/components/MapboxAutocomplete";
 
 type SettingSectionKey = keyof SettingsState;
 
@@ -520,37 +521,28 @@ const Settings = () => {
         <label className="block text-sm font-semibold text-gray-900 mb-2">
           Home Address
         </label>
-        <div className="flex flex-col gap-2">
-          <input
-            type="text"
-            value={
-              isAutoLocationLoading || isManualLocationLoading
-                ? "Detecting location..."
-                : settings.location.homeAddress
+        <MapboxAutocomplete
+          value={
+            isAutoLocationLoading || isManualLocationLoading
+              ? "Detecting location..."
+              : settings.location.homeAddress
+          }
+          onChange={(value, coordinates, details) => {
+            handleSettingChange("location", "homeAddress", value);
+            if (coordinates && details) {
+              // Optionally store coordinates for proximity sorting
+              localStorage.setItem(
+                "user_coordinates",
+                JSON.stringify(coordinates)
+              );
             }
-            onChange={(e) =>
-              handleSettingChange("location", "homeAddress", e.target.value)
-            }
-            disabled={
-              settings.location.autoLocation ||
-              isAutoLocationLoading ||
-              isManualLocationLoading
-            }
-            className="w-full px-3 sm:px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-sm focus:outline-none"
-          />
-          {!settings.location.autoLocation && (
-            <button
-              onClick={handleManualLocationUpdate}
-              disabled={isManualLocationLoading}
-              className="w-full px-3 sm:px-4 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center gap-2 min-h-[44px]"
-            >
-              {isManualLocationLoading && (
-                <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-              )}
-              {isManualLocationLoading ? "Locating..." : "Use Current"}
-            </button>
-          )}
-        </div>
+          }}
+          onDetectLocation={handleManualLocationUpdate}
+          isDetecting={isManualLocationLoading}
+          disabled={settings.location.autoLocation || isAutoLocationLoading}
+          placeholder="Type to search location (e.g., Nelocap estate, Lokogoma, Abuja)"
+          showDetectButton={!settings.location.autoLocation}
+        />
         <p className="text-xs text-gray-500 mt-2">
           This address is used to calculate shipping and show local products.
         </p>

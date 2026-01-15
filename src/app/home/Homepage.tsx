@@ -151,55 +151,52 @@ const Homepage: React.FC = () => {
               className="items-center justify-center rounded-full text-sm font-medium whitespace-nowrap shadow-[0_2px_10px_0px_rgba(0,0,0,0.3)] inline-flex bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1.5 mt-8 md:mt-12 xl:mt-16"
             >
               <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
-              Introducing Siiqo Trading
+              Introducing Siiqo Marketplace
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-4xl font-bold text-transparent lg:text-6xl mt-6 sm:mx-auto sm:w-full lg:mt-8 lg:leading-tight"
+              className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-transparent mt-6 sm:mx-auto sm:w-full lg:mt-8 lg:leading-tight leading-snug"
             >
-              The Smartest Way to Buy and Sell in your City
-            </motion.div>
+Build a Brand. Sell Anywhere. Get Found Locally & Beyond.            </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-6 font-medium text-blue-100/80 sm:mx-auto sm:w-2/3 md:w-1/2 lg:mx-0 lg:mt-8 lg:w-2/3 text-lg"
+              className="mt-6 font-medium text-blue-100/80 sm:mx-auto sm:w-full md:w-2/3 lg:mx-0 lg:mt-8 lg:w-2/3 text-sm sm:text-base md:text-lg leading-relaxed"
             >
-              We give your business the tools to build their brand online, reach
-              nearby customers with location-based precision, and scale
-              globally. Start as a buyer or build your digital storefront, grow
-              your brand worldwide, and own your local market.
+           A storefront-first marketplace that helps businesses create professional online brands — and helps buyers discover trusted brands near and beyond their neighborhood.
             </motion.p>
 
-            {/* INTEGRATED SEARCH FORM */}
-            {/* SEARCH FORM */}
             <motion.form
               onSubmit={handleSearch}
-              className="mt-14 w-full max-w-5xl z-10"
+              className="mt-10 sm:mt-12 md:mt-14 w-full max-w-5xl z-10 px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="relative rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
+              <div className="relative rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
                 {/* Soft glow */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/10 via-transparent to-blue-500/10 blur-xl" />
+                <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-orange-500/10 via-transparent to-blue-500/10 blur-xl" />
 
                 <div className="relative grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_auto] gap-2 items-center">
                   {/* WHAT */}
-                  <div className="flex items-center justify-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
-                    <Search size={20} className="text-orange-400" />
-                    <div className="flex flex-col  w-full">
-                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                  <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition">
+                    <Search
+                      size={18}
+                      className="text-orange-400 flex-shrink-0"
+                    />
+                    <div className="flex flex-col w-full">
+                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
                         What
                       </label>
                       <input
                         type="text"
                         placeholder={typedPlaceholder}
-                        className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
+                        className="bg-transparent outline-none text-white text-xs sm:text-sm placeholder-blue-200/50"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -207,16 +204,19 @@ const Homepage: React.FC = () => {
                   </div>
 
                   {/* WHERE */}
-                  <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition">
-                    <MapPin size={20} className="text-orange-400" />
-                    <div className="flex flex-col  w-full">
-                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                  <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition">
+                    <MapPin
+                      size={18}
+                      className="text-orange-400 flex-shrink-0"
+                    />
+                    <div className="flex flex-col w-full">
+                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
                         Where
                       </label>
                       <input
                         type="text"
                         placeholder="City or Zip"
-                        className="bg-transparent outline-none text-white text-sm placeholder-blue-200/50"
+                        className="bg-transparent outline-none text-white text-xs sm:text-sm placeholder-blue-200/50"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                       />
@@ -226,19 +226,22 @@ const Homepage: React.FC = () => {
                   {/* CATEGORY */}
                   <div
                     ref={dropdownRef}
-                    className="relative flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                    className="relative flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition cursor-pointer"
                     onClick={() => setIsOpen(!isOpen)}
                   >
-                    <ShoppingBag size={20} className="text-orange-400" />
+                    <ShoppingBag
+                      size={18}
+                      className="text-orange-400 flex-shrink-0"
+                    />
                     <div className="flex flex-col w-full">
-                      <label className="text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
+                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
                         Category
                       </label>
-                      <div className="flex items-center justify-between text-white text-sm">
+                      <div className="flex items-center justify-between text-white text-xs sm:text-sm">
                         <span>{category}</span>
                         <ChevronDown
                           size={16}
-                          className={`text-orange-400 transition-transform ${
+                          className={`text-orange-400 transition-transform flex-shrink-0 ${
                             isOpen ? "rotate-180" : ""
                           }`}
                         />
@@ -262,7 +265,7 @@ const Homepage: React.FC = () => {
                                 setCategory(item);
                                 setIsOpen(false);
                               }}
-                              className="w-full flex items-center justify-between px-6 py-3 text-sm text-blue-100 hover:bg-orange-500/20 hover:text-orange-300 transition"
+                              className="w-full flex items-center justify-between px-6 py-3 text-xs sm:text-sm text-blue-100 hover:bg-orange-500/20 hover:text-orange-300 transition"
                             >
                               {item}
                               {category === item && (
@@ -280,10 +283,10 @@ const Homepage: React.FC = () => {
                     type="submit"
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.96 }}
-                    className="h-full w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 md:px-8 md:py-4 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-orange-500/50 transition"
+                    className="h-full w-full rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 md:px-8 md:py-4 px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg hover:shadow-orange-500/50 transition"
                   >
                     {isSearching ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 justify-center">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Searching
                       </div>
@@ -314,12 +317,12 @@ const Homepage: React.FC = () => {
             id="results-section"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-7xl mx-auto px-4 py-16 bg-white"
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 bg-white"
           >
-            <h2 className="text-3xl font-bold mb-8">
-              Found {results.length} Items
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
+              Found {results.length} {results.length === 1 ? "Item" : "Items"}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {paginatedResults.map((product) => (
                 <NearbyDealCard
                   key={product.id}
