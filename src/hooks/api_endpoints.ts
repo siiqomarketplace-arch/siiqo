@@ -1,4 +1,4 @@
-const API_BASE_URL = "/api";
+const API_BASE_URL = "/api" ;
 
 const api_endpoints = {
   // ==================== MARKETPLACE ====================
@@ -9,15 +9,15 @@ const api_endpoints = {
     `${API_BASE_URL}/marketplace/products/${productId}`,
 
   // ==================== CART ====================
-  FETCH_CART_ITEMS: "/cart",
-  ADD_TO_CART_ITEMS: "/cart/add",
-  UPDATE_CART_ITEMS: "/cart/update",
-  DELETE_CART_ITEMS: "/cart",
-  CLEAR_CART_ITEMS: "/cart/clear",
+  FETCH_CART_ITEMS: `${API_BASE_URL}/cart`,
+  ADD_TO_CART_ITEMS: `${API_BASE_URL}/cart/add`,
+  UPDATE_CART_ITEMS: `${API_BASE_URL}/cart/update`,
+  DELETE_CART_ITEMS: `${API_BASE_URL}/cart`,
+  CLEAR_CART_ITEMS: `${API_BASE_URL}/cart/clear`,
 
   // ==================== CHECKOUT ====================
-  CHECKOUT: "/buyer-orders/checkout",
-  UPLOAD_PAYMENT_PROOF: "/buyer-orders/upload-proof",
+  CHECKOUT: `${API_BASE_URL}/buyer-orders/checkout`,
+  UPLOAD_PAYMENT_PROOF: `${API_BASE_URL}/buyer-orders/upload-proof`,
 
   // ==================== PRODUCTS ====================
   GET_PRODUCTS: `${API_BASE_URL}/products`,
