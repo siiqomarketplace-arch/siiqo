@@ -2,8 +2,24 @@
 const nextConfig = {
   trailingSlash: false,
   images: {
-    unoptimized: true,
+    unoptimized: false,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "server.siiqo.com",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com", // If you use S3 or similar
+      },
+    ],
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year cache for immutable images
   },
+  compress: true,
   pageExtensions: ["ts", "tsx", "js", "jsx"],
   async rewrites() {
     return [

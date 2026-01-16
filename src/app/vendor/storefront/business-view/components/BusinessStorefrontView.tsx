@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { 
+import {
   MapPin,
-  Clock, 
+  Clock,
   Building,
   ChevronLeft,
   Share2,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Icon from "@/components/ui/AppIcon";
 import Image from "@/components/ui/AppImage";
+import ShareModal from "@/components/ShareModal";
 import TabNavigation from "./TabNavigation";
 import ProductGrid from "./ProductGrid";
 import ContactSection from "./ContactSection";
@@ -29,16 +30,20 @@ interface Props {
 
 type TabId = "products" | "about" | "reviews" | "contact";
 
-const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: initialProducts }) => {
+const BusinessStorefrontView: React.FC<Props> = ({
+  storefrontData,
+  products: initialProducts,
+}) => {
   const [activeTab, setActiveTab] = useState<TabId>("products");
   const [business, setBusiness] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [availableCatalogs, setAvailableCatalogs] = useState<any[]>([]);
   const [fetchingCatalogs, setfetchingCatalogs] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const refetchCatalogs = useCallback(() => {
-    setRefetchTrigger(prev => prev + 1);
+    setRefetchTrigger((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
@@ -46,7 +51,7 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
       setfetchingCatalogs(true);
       try {
         const res = await productService.getCatalogs();
-        
+
         if (res.status === "success" && res.catalogs) {
           const transformedCatalogs = res.catalogs.map((catalog: any) => ({
             id: catalog.id,
@@ -57,8 +62,8 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
               name: product.name,
               product_price: product.price,
               images: [product.image],
-              description: ""
-            }))
+              description: "",
+            })),
           }));
           setAvailableCatalogs(transformedCatalogs);
         }
@@ -68,15 +73,15 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
         setfetchingCatalogs(false);
       }
     };
-    
+
     fetchCatalogs();
-    
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "catalogsUpdated") {
         fetchCatalogs();
       }
     };
-    
+
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [refetchTrigger]);
@@ -85,33 +90,47 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
     const syncData = async (fetchFreshSettings = false) => {
       try {
         let settingsData: any = storefrontData;
-        
+
         // Always fetch fresh settings to get latest updates
         const freshSettings = await vendorService.getVendorProfile();
         if (freshSettings?.data) {
           settingsData = freshSettings.data;
         }
-        
+
         const savedLocal = localStorage.getItem("vendorStorefrontDetails");
         if (savedLocal) {
           const parsed = JSON.parse(savedLocal);
           setBusiness({
             ...settingsData,
             ...parsed,
-            products: parsed.products?.length > 0 ? parsed.products : availableCatalogs,
+            products:
+              parsed.products?.length > 0 ? parsed.products : availableCatalogs,
             selectedDays: parsed.selectedDays || [],
-            business_name: settingsData?.store_settings?.business_name || parsed.business_name,
-            profileImage: settingsData?.store_settings?.logo_url || parsed.profileImage,
-            description: settingsData?.store_settings?.description || parsed.description,
+            business_name:
+              settingsData?.store_settings?.business_name ||
+              parsed.business_name,
+            profileImage:
+              settingsData?.store_settings?.logo_url || parsed.profileImage,
+            description:
+              settingsData?.store_settings?.description || parsed.description,
             address: settingsData?.store_settings?.address || parsed.address,
-            template_options: settingsData?.store_settings?.template_options || parsed.template_options,
-            banner_url: settingsData?.store_settings?.banner_url || parsed.banner_url,
-            is_published: settingsData?.store_settings?.is_published || parsed.is_published,
-            working_hours: settingsData?.store_settings?.working_hours || parsed.working_hours,
+            template_options:
+              settingsData?.store_settings?.template_options ||
+              parsed.template_options,
+            banner_url:
+              settingsData?.store_settings?.banner_url || parsed.banner_url,
+            is_published:
+              settingsData?.store_settings?.is_published || parsed.is_published,
+            working_hours:
+              settingsData?.store_settings?.working_hours ||
+              parsed.working_hours,
             website: settingsData?.store_settings?.website || parsed.website,
             cac_reg: settingsData?.store_settings?.cac_reg || parsed.cac_reg,
-            storefront_link: settingsData?.store_settings?.storefront_link || parsed.storefront_link,
-            social_links: settingsData?.store_settings?.social_links || parsed.social_links
+            storefront_link:
+              settingsData?.store_settings?.storefront_link ||
+              parsed.storefront_link,
+            social_links:
+              settingsData?.store_settings?.social_links || parsed.social_links,
           });
         } else {
           setBusiness({
@@ -129,7 +148,7 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
             website: settingsData?.store_settings?.website,
             cac_reg: settingsData?.store_settings?.cac_reg,
             storefront_link: settingsData?.store_settings?.storefront_link,
-            social_links: settingsData?.store_settings?.social_links
+            social_links: settingsData?.store_settings?.social_links,
           });
         }
       } catch (error) {
@@ -140,36 +159,42 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
     };
 
     syncData();
-    
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "storefrontUpdated") {
         syncData(true);
       }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [storefrontData, availableCatalogs]);
 
   if (loading || !business) return null;
 
-  const themeColor = business.template_options?.primary_color || business.themeColor || "#1E293B";
-  const secondaryColor = business.template_options?.secondary_color || "#ffffff";
-  
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const themeColor =
+    business.template_options?.primary_color ||
+    business.themeColor ||
+    "#1E293B";
+  const secondaryColor =
+    business.template_options?.secondary_color || "#ffffff";
+
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const today = days[new Date().getDay()];
   const todayHours = business.working_hours?.[today];
   const displayOpenTime = todayHours?.start || business.openTime || "09:00";
   const displayCloseTime = todayHours?.end || business.closeTime || "21:00";
 
-  const handleShareStore = async () => {
-    try {
-      const url = `${window.location.host}/storefront-details/${business.storefront_link}`;
-            await navigator.clipboard.writeText(url);
-      toast.success("URL copied to clipboard!");
-    } catch (err) {
-      toast.error("Failed to copy URL");
-    }
+  const handleShareStore = () => {
+    setIsShareModalOpen(true);
   };
 
   const renderTabContent = () => {
@@ -177,7 +202,7 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
       case "products":
         return (
           <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
-            <ProductGrid 
+            <ProductGrid
               collections={availableCatalogs}
               isLoading={fetchingCatalogs}
             />
@@ -191,51 +216,85 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
                 About
               </h3>
               <p className="text-sm leading-relaxed text-gray-700">
-                {business.description || "This business hasn't shared their story yet."}
+                {business.description ||
+                  "This business hasn't shared their story yet."}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="p-6 border rounded-2xl bg-white shadow-sm">
-                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">Theme</p>
+                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                  Theme
+                </p>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded" style={{ backgroundColor: themeColor }} />
+                  <div
+                    className="w-6 h-6 rounded"
+                    style={{ backgroundColor: themeColor }}
+                  />
                   <p className="text-xs font-semibold">{themeColor}</p>
                 </div>
               </div>
               <div className="p-6 border rounded-2xl bg-white shadow-sm">
-                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">Address</p>
-                <p className="text-xs font-semibold truncate">{business.address || "N/A"}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                  Address
+                </p>
+                <p className="text-xs font-semibold truncate">
+                  {business.address || "N/A"}
+                </p>
               </div>
               <div className="p-6 border rounded-2xl bg-white shadow-sm">
-                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">Website</p>
-                <a href={business.website} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:underline truncate">
+                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                  Website
+                </p>
+                <a
+                  href={business.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-blue-600 hover:underline truncate"
+                >
                   {business.website || "N/A"}
                 </a>
               </div>
               <div className="p-6 border rounded-2xl bg-white shadow-sm">
-                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">CAC Reg</p>
-                <p className="text-xs font-semibold">{business.cac_reg || "N/A"}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                  CAC Reg
+                </p>
+                <p className="text-xs font-semibold">
+                  {business.cac_reg || "N/A"}
+                </p>
               </div>
             </div>
 
-            {business.social_links && Object.keys(business.social_links).length > 0 && (
-              <div className="p-6 border rounded-2xl bg-white shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-widest mb-4">
-                  Social Links
-                </h3>
-                <div className="space-y-3">
-                  {Object.entries(business.social_links).map(([platform, url]: [string, any]) => (
-                    <div key={platform} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-xs font-semibold text-gray-700 capitalize">{platform}</span>
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate max-w-xs">
-                        {String(url)}
-                      </a>
-                    </div>
-                  ))}
+            {business.social_links &&
+              Object.keys(business.social_links).length > 0 && (
+                <div className="p-6 border rounded-2xl bg-white shadow-sm">
+                  <h3 className="text-xs font-black uppercase tracking-widest mb-4">
+                    Social Links
+                  </h3>
+                  <div className="space-y-3">
+                    {Object.entries(business.social_links).map(
+                      ([platform, url]: [string, any]) => (
+                        <div
+                          key={platform}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <span className="text-xs font-semibold text-gray-700 capitalize">
+                            {platform}
+                          </span>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline truncate max-w-xs"
+                          >
+                            {String(url)}
+                          </a>
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         );
       case "contact":
@@ -250,11 +309,11 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
       {/* Header with back button */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <button
-            className="flex items-center gap-2 p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
+          <button className="flex items-center gap-2 p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors">
             <ChevronLeft size={20} className="text-gray-700" />
-            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">Back</span>
+            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">
+              Back
+            </span>
           </button>
           <div className="flex items-center gap-3">
             <button
@@ -271,11 +330,11 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
       <div className="relative">
         <div
           className="h-60 md:h-80 w-full bg-center bg-cover"
-          style={{ 
-            backgroundImage: business.banner_url 
-              ? `url(${business.banner_url})` 
+          style={{
+            backgroundImage: business.banner_url
+              ? `url(${business.banner_url})`
               : `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
-            backgroundColor: themeColor
+            backgroundColor: themeColor,
           }}
         >
           <div className="absolute inset-0 bg-black/20" />
@@ -284,7 +343,12 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
         <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
           <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full border-[6px] border-white bg-gray-100 shadow-xl overflow-hidden">
             {business.profileImage ? (
-              <Image src={business.profileImage} alt={business.business_name} fill className="object-cover" />
+              <Image
+                src={business.profileImage}
+                alt={business.business_name}
+                fill
+                className="object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
                 <Building size={40} className="text-gray-400" />
@@ -300,7 +364,9 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
           <h1 className="text-3xl md:text-4xl font-black mb-2 uppercase tracking-tight">
             {business.business_name}
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">{business.description}</p>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            {business.description}
+          </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
             {business.address && (
@@ -330,7 +396,9 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
                     <p className="text-xs text-gray-500 uppercase tracking-widest">
                       Status
                     </p>
-                    <p className="text-sm font-semibold">{business.is_published ? "Published" : "Draft"}</p>
+                    <p className="text-sm font-semibold">
+                      {business.is_published ? "Published" : "Draft"}
+                    </p>
                   </div>
                 </div>
 
@@ -358,7 +426,9 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
                       <p className="text-xs text-gray-500 uppercase tracking-widest">
                         Storefront Link
                       </p>
-                      <p className="text-sm font-semibold">siiqo.com/{business.storefront_link}</p>
+                      <p className="text-sm font-semibold">
+                        siiqo.com/{business.storefront_link}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -374,25 +444,33 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
                 {Object.keys(business.working_hours || {}).length > 0 ? (
                   <>
                     <div className="mb-3 pb-3 border-b">
-                      <p className="text-xs font-semibold text-gray-700 mb-1">Today ({today})</p>
+                      <p className="text-xs font-semibold text-gray-700 mb-1">
+                        Today ({today})
+                      </p>
                       <p className="text-sm font-bold text-blue-600">
                         {displayOpenTime} — {displayCloseTime}
                       </p>
                     </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {Object.entries(business.working_hours).map(([day, hours]: [string, any]) => (
-                        <div key={day} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
-                          <span className="font-semibold text-gray-700">{day}</span>
-                          <span className="text-gray-600">
-                            {hours.start && hours.end 
-                              ? `${hours.start} - ${hours.end}`
-                              : hours.start
+                      {Object.entries(business.working_hours).map(
+                        ([day, hours]: [string, any]) => (
+                          <div
+                            key={day}
+                            className="flex justify-between text-xs p-2 bg-gray-50 rounded"
+                          >
+                            <span className="font-semibold text-gray-700">
+                              {day}
+                            </span>
+                            <span className="text-gray-600">
+                              {hours.start && hours.end
+                                ? `${hours.start} - ${hours.end}`
+                                : hours.start
                                 ? `From ${hours.start}`
-                                : 'Closed'
-                            }
-                          </span>
-                        </div>
-                      ))}
+                                : "Closed"}
+                            </span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </>
                 ) : (
@@ -415,18 +493,18 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
                   <span className="font-bold">{availableCatalogs.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                                   <span className="text-sm text-gray-600 flex items-center gap-2">
-                                     <Star size={16} className="text-yellow-500" />
-                                     Rating
-                                   </span>
-                                   <span className="font-bold flex items-center gap-1">
-                                     5.0{" "}
-                                     <Star
-                                       size={14}
-                                       className="text-yellow-500 fill-yellow-500"
-                                     />
-                                   </span>
-                                 </div>
+                  <span className="text-sm text-gray-600 flex items-center gap-2">
+                    <Star size={16} className="text-yellow-500" />
+                    Rating
+                  </span>
+                  <span className="font-bold flex items-center gap-1">
+                    5.0{" "}
+                    <Star
+                      size={14}
+                      className="text-yellow-500 fill-yellow-500"
+                    />
+                  </span>
+                </div>
               </div>
             </div>
           </aside>
@@ -471,12 +549,20 @@ const BusinessStorefrontView: React.FC<Props> = ({ storefrontData, products: ini
             </div>
 
             {/* Content */}
-            <div className="mt-10">
-              {renderTabContent()}
-            </div>
+            <div className="mt-10">{renderTabContent()}</div>
           </main>
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        productId={business.storefront_link}
+        productName={business.business_name}
+        productOwner={business.business_name}
+        isStore={true}
+      />
     </div>
   );
 };

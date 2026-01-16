@@ -2,8 +2,8 @@ import "./globals.css";
 import ScrollToTop from "@/components/ui/ScrollToTop";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import ConditionalHeader from "@/components/ConditionalHeader";
-import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import MainContentWrapper from "./home/MainContentWrapper";
@@ -11,10 +11,15 @@ import { CartModalProvider } from "@/context/cartModalContext";
 import ToastProvider from "@/context/ToastProvider";
 import { LocationProvider } from "@/context/LocationContext";
 
+// Lazy load non-critical components
+const ConditionalBottomNav = dynamic(
+  () => import("@/components/ConditionalBottomNav"),
+  { ssr: true, loading: () => null }
+);
+
 export const metadata: Metadata = {
   title: "Siiqo",
-  description:
-    "Your local Marketplace",
+  description: "Your local Marketplace",
   icons: {
     icon: "/images/siiqo.png",
   },
@@ -34,7 +39,7 @@ export default function RootLayout({
               <LocationProvider>
                 <ErrorBoundary>
                   <ConditionalHeader />
-                  <ToastProvider/>
+                  <ToastProvider />
                   <MainContentWrapper>{children}</MainContentWrapper>
                   <ConditionalBottomNav />
                   <ScrollToTop />

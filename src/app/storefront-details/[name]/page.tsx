@@ -195,6 +195,23 @@ const StorefrontDetailsPage = () => {
     );
   }
 
+  const handleWhatsAppClick = () => {
+    if (!store?.whatsapp_link) return;
+
+    let phoneNumber = store.whatsapp_link;
+    // Remove any leading zeros or special characters
+    phoneNumber = phoneNumber.replace(/^0+/, "").replace(/\D/g, "");
+
+    // If phone number doesn't start with country code, prepend it
+    const countryCode = "234"; // Nigeria
+    if (!phoneNumber.startsWith(countryCode)) {
+      phoneNumber = `${countryCode}${phoneNumber}`;
+    }
+
+    const whatsappUrl = `https://wa.me/${phoneNumber}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
   const primaryColor = store.branding?.primary_color || "#000000";
 
   const handleShareStore = async () => {
@@ -203,7 +220,7 @@ const StorefrontDetailsPage = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background pb-40">
         {/* Header with back button */}
         <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
@@ -358,15 +375,13 @@ const StorefrontDetailsPage = () => {
                 </div>
                 <div className="space-y-3">
                   {store.whatsapp_link ? (
-                    <a
-                      href={store.whatsapp_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={handleWhatsAppClick}
                       className="flex items-center justify-center gap-2 w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
                     >
                       <MessageCircle size={18} />
                       Message on WhatsApp
-                    </a>
+                    </button>
                   ) : (
                     <p className="text-xs text-gray-400 text-center py-3">
                       WhatsApp contact not available
@@ -779,6 +794,7 @@ const StorefrontDetailsPage = () => {
         phone={null}
         socialLinks={store.socials || {}}
         workingHours={store.hours || {}}
+        countryCode="234"
       />
     </>
   );

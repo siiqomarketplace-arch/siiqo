@@ -352,7 +352,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ isMobile = false, isOpen = fa
 
       {/* Mobile Apply Button */}
       {isMobile && (
-        <div className="mt-auto">
+        <div className="mt-auto mb-24">
           <Button variant="default" fullWidth onClick={onClose}>
             Apply Filters
           </Button>

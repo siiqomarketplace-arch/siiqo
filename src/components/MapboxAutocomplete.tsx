@@ -165,8 +165,8 @@ const MapboxAutocomplete: React.FC<MapboxAutocompleteProps> = ({
 
   return (
     <div ref={wrapperRef} className="relative w-full">
-      <div className="relative flex gap-2">
-        <div className="relative flex-1">
+      <div className="relative flex  flex-col md:flex-row gap-2">
+        <div className="relative  md:flex-1">
           <MapPin
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             size={18}
@@ -181,7 +181,7 @@ const MapboxAutocomplete: React.FC<MapboxAutocompleteProps> = ({
             }
             placeholder={placeholder}
             disabled={disabled || isDetecting}
-            className={`w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-sm focus:outline-none ${className}`}
+            className={`w-full  pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-sm focus:outline-none ${className}`}
           />
           {isLoading && (
             <Loader2

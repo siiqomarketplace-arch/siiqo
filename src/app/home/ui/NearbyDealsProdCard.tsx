@@ -85,7 +85,7 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
       <div className="p-4 flex flex-col flex-1">
         {/* Title Area - flex-1 inside here ensures the footer is pushed down */}
         <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
+          <div className="flex items-start justify-between ">
             <h3 className="flex-1 text-base font-medium text-text-primary line-clamp-2 min-h-[3rem]">
               {product.name}
             </h3>
@@ -98,16 +98,17 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
               <Icon name="Heart" size={16} className="text-text-secondary" />
             </button>
           </div>
+<hr className="mb-2" />
 
           <div className="flex items-center mb-2 space-x-2">
             <span className="text-lg font-semibold text-text-primary">
               {product.price !== undefined ? `₦${product.price}` : ""}
             </span>
-            <span className="text-sm line-through text-text-secondary">
+            {/* <span className="text-sm line-through text-text-secondary">
               {dealData.price !== undefined
                 ? `₦${dealData.price.toLocaleString()}`
                 : ""}
-            </span>
+            </span> */}
           </div>
 
           {/* <div className="flex items-center justify-between mb-4 text-sm text-text-secondary">
@@ -120,7 +121,6 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
             </div>
           </div> */}
         </div>
-
         {/* 3. Bottom Row - Always aligned at the bottom of the card */}
         <div className="flex items-center justify-between pt-3 border-t border-border mt-auto shrink-0">
           <span className="text-xs text-text-secondary line-clamp-1 max-w-[120px]">

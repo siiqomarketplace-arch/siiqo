@@ -480,7 +480,7 @@ const SearchResults = () => {
           {hasSearched && !useEnhancedMapView && (
             <button
               onClick={() => setShowMapFull(!showMapFull)}
-              className="fixed z-[70] bottom-8 right-8 w-16 h-16 bg-[#1B3F61] text-white rounded-full shadow-[0_20px_50px_rgba(27,63,97,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+              className="fixed z-[70] bottom-24 md:bottom-8 right-8 w-16 h-16 bg-[#1B3F61] text-white rounded-full shadow-[0_20px_50px_rgba(27,63,97,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
             >
               <Icon name={showMapFull ? "List" : "Map"} size={28} />
             </button>

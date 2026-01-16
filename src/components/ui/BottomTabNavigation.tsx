@@ -26,7 +26,8 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const { isLoggedIn, user } = useAuth();
   const userData = (user as any)?.data;
-  const isRegisteredVendor = userData?.store_settings?.initialized === true || user?.role === "vendor";
+  const isRegisteredVendor =
+    userData?.store_settings?.initialized === true || user?.role === "vendor";
 
   const createOptions = [
     {
@@ -87,7 +88,8 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ isOpen, onClose }) => {
                   if (!isRegisteredVendor) {
                     toast({
                       title: "Vendor Onboarding Required",
-                      description: "Complete vendor onboarding to set up your storefront.",
+                      description:
+                        "Complete vendor onboarding to set up your storefront.",
                     });
                     router.push("/auth/vendor-onboarding");
                     return;
@@ -104,7 +106,8 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ isOpen, onClose }) => {
                   if (!isRegisteredVendor) {
                     toast({
                       title: "Vendor Account Required",
-                      description: "Fill out vendor onboarding to list products.",
+                      description:
+                        "Fill out vendor onboarding to list products.",
                     });
                     router.push("/auth/vendor-onboarding");
                     return;
@@ -222,7 +225,7 @@ const BottomTabNavigation: React.FC = () => {
       {/* Mobile Bottom Navigation */}
       <nav
         role="navigation"
-        className="fixed bottom-6 inset-x-3 md:hidden z-30 max-w-lg mx-auto px-3 py-3 backdrop-blur-md bg-white/60 dark:bg-gray-900/40 border border-white/20 dark:border-gray-800/30 shadow-lg rounded-2xl overflow-visible"
+        className="fixed bottom-6 inset-x-3 md:hidden z-[60] max-w-lg mx-auto px-3 py-3 backdrop-blur-md bg-white/60 dark:bg-gray-900/40 border border-white/20 dark:border-gray-800/30 shadow-lg rounded-2xl overflow-visible"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center justify-between gap-2 safe-area-inset-bottom">
@@ -309,12 +312,20 @@ const BottomTabNavigation: React.FC = () => {
                   size={18}
                   strokeWidth={isActive ? 2.5 : 2}
                   className={`transition-colors duration-200 ${
-                    isCreateButton ? "text-white" : isActive ? "text-primary" : "text-current"
+                    isCreateButton
+                      ? "text-white"
+                      : isActive
+                      ? "text-primary"
+                      : "text-current"
                   }`}
                 />
                 <span
                   className={`text-sm font-caption transition-all duration-200 ${
-                    isCreateButton ? "text-white font-medium" : isActive ? "font-medium text-primary" : "text-current"
+                    isCreateButton
+                      ? "text-white font-medium"
+                      : isActive
+                      ? "font-medium text-primary"
+                      : "text-current"
                   }`}
                 >
                   {item.label}

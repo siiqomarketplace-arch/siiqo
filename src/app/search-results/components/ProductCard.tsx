@@ -66,7 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
                 </div>
 
                 <div className="mt-1 flex items-center space-x-2">
-                    <div className="flex items-center bg-yellow-100/50 px-1.5 py-0.5 rounded-md border border-yellow-100/50">
+                    {/* <div className="flex items-center bg-yellow-100/50 px-1.5 py-0.5 rounded-md border border-yellow-100/50">
                         <Icon name="Star" size={10} className="text-[#DE941D] fill-current" />
                         <span className="text-[10px] font-bold text-slate-700 ml-1">
                             {product.rating}
@@ -74,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
                         <span className="text-[10px] text-slate-400 ml-1">
                             ({product.reviewCount})
                         </span>
-                    </div>
+                    </div> */}
                     <span className="text-[10px] text-slate-500 truncate">
                         • {product.distance} mi • {isStorefront ? product.availability : product.condition}
                     </span>

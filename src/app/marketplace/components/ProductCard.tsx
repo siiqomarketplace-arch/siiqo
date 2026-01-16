@@ -250,7 +250,7 @@ const ProductCard = ({
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {/* Rating Pill */}
-            <div className="flex items-center bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
+            {/* <div className="flex items-center bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
               <StarIcon className="w-3 h-3 text-yellow-500 fill-current" />
               <span className="text-[12px] font-semibold text-gray-700 ml-1">
                 {rating}
@@ -258,7 +258,7 @@ const ProductCard = ({
               <span className="text-[11px] text-gray-400 ml-1">
                 ({reviewCount})
               </span>
-            </div>
+            </div> */}
 
             {/* Distance + Availability */}
             <span className="text-[11px] text-gray-500">
