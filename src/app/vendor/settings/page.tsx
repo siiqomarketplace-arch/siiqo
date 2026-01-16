@@ -37,7 +37,7 @@ import {
 } from "@/types/vendor/settings";
 import { vendorService } from "@/services/vendorService";
 import MapboxAutocomplete from "@/components/MapboxAutocomplete";
-
+import { switchMode } from "@/services/api";
 type SettingSectionKey = keyof SettingsState;
 
 const Settings = () => {
@@ -162,6 +162,9 @@ const Settings = () => {
 
     fetchFinancialData();
   }, []);
+  useEffect(() => {
+    switchMode("vendor");
+  }, []);
 
   // Fetch account/personal info data
   useEffect(() => {
@@ -238,12 +241,9 @@ const Settings = () => {
     try {
       const formData = new FormData();
 
-      // Add personal info data
+      // Add only basic personal info
       if (editedAccountData.personal_info?.name) {
         formData.append("name", editedAccountData.personal_info.name);
-      }
-      if (editedAccountData.personal_info?.email) {
-        formData.append("email", editedAccountData.personal_info.email);
       }
       if (editedAccountData.personal_info?.phone) {
         formData.append("phone", editedAccountData.personal_info.phone);
@@ -256,15 +256,6 @@ const Settings = () => {
           editedAccountData.store_settings.business_name
         );
       }
-      if (editedAccountData.store_settings?.address) {
-        formData.append("address", editedAccountData.store_settings.address);
-      }
-      if (editedAccountData.store_settings?.storefront_link) {
-        formData.append(
-          "storefront_link",
-          editedAccountData.store_settings.storefront_link
-        );
-      }
       if (editedAccountData.store_settings?.description) {
         formData.append(
           "description",
@@ -274,32 +265,14 @@ const Settings = () => {
       if (editedAccountData.store_settings?.website) {
         formData.append("website", editedAccountData.store_settings.website);
       }
-      if (editedAccountData.store_settings?.cac_reg) {
-        formData.append("cac_reg", editedAccountData.store_settings.cac_reg);
-      }
 
-      // Add financials data
-      if (editedAccountData.financials?.bank_name) {
-        formData.append("bank_name", editedAccountData.financials.bank_name);
-      }
-      if (editedAccountData.financials?.account_number) {
-        formData.append(
-          "account_number",
-          editedAccountData.financials.account_number
-        );
-      }
-      if (editedAccountData.financials?.wallet_address) {
-        formData.append(
-          "wallet_address",
-          editedAccountData.financials.wallet_address
-        );
-      }
-      if (editedAccountData.financials?.business_address) {
-        formData.append(
-          "business_address",
-          editedAccountData.financials.business_address
-        );
-      }
+      console.log("Sending FormData:", {
+        name: editedAccountData.personal_info?.name,
+        phone: editedAccountData.personal_info?.phone,
+        business_name: editedAccountData.store_settings?.business_name,
+        description: editedAccountData.store_settings?.description,
+        website: editedAccountData.store_settings?.website,
+      });
 
       // Call API
       const response = await vendorService.updateVendorSettings(formData);
@@ -424,58 +397,41 @@ const Settings = () => {
     try {
       const formData = new FormData();
 
-      // Add financial data
-      if (editedFinancialData.bank_name)
-        formData.append("financials[bank_name]", editedFinancialData.bank_name);
-      if (editedFinancialData.account_number)
-        formData.append(
-          "financials[account_number]",
-          editedFinancialData.account_number
-        );
-      if (editedFinancialData.wallet_address)
-        formData.append(
-          "financials[wallet_address]",
-          editedFinancialData.wallet_address
-        );
-      if (editedFinancialData.business_address)
-        formData.append(
-          "financials[business_address]",
-          editedFinancialData.business_address
-        );
-
       // Add personal info data
       if (editedAccountData.personal_info?.name)
-        formData.append(
-          "personal_info[name]",
-          editedAccountData.personal_info.name
-        );
-      if (editedAccountData.personal_info?.email)
-        formData.append(
-          "personal_info[email]",
-          editedAccountData.personal_info.email
-        );
+        formData.append("name", editedAccountData.personal_info.name);
+      // Note: Email is not editable and should not be sent
       if (editedAccountData.personal_info?.phone)
-        formData.append(
-          "personal_info[phone]",
-          editedAccountData.personal_info.phone
-        );
+        formData.append("phone", editedAccountData.personal_info.phone);
 
       // Add store settings data
       if (editedAccountData.store_settings?.business_name)
         formData.append(
-          "store_settings[business_name]",
+          "business_name",
           editedAccountData.store_settings.business_name
         );
-      if (editedAccountData.store_settings?.address)
+      if (editedAccountData.store_settings?.description)
         formData.append(
-          "store_settings[address]",
-          editedAccountData.store_settings.address
+          "description",
+          editedAccountData.store_settings.description
         );
-      if (editedAccountData.store_settings?.storefront_link)
+      if (editedAccountData.store_settings?.website)
+        formData.append("website", editedAccountData.store_settings.website);
+
+      // Add financial data
+      if (editedFinancialData.bank_name)
+        formData.append("bank_name", editedFinancialData.bank_name);
+      if (editedFinancialData.account_number)
+        formData.append("account_number", editedFinancialData.account_number);
+      if (editedFinancialData.wallet_address)
+        formData.append("wallet_address", editedFinancialData.wallet_address);
+      if (editedFinancialData.business_address)
         formData.append(
-          "store_settings[storefront_link]",
-          editedAccountData.store_settings.storefront_link
+          "business_address",
+          editedFinancialData.business_address
         );
+
+      console.log("Sending FormData to backend");
 
       // Call API
       const response = await vendorService.updateVendorSettings(formData);
@@ -902,23 +858,12 @@ const Settings = () => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Email Address
                 </p>
-                {isEditMode ? (
-                  <input
-                    type="email"
-                    value={editedAccountData?.personal_info?.email || ""}
-                    onChange={(e) =>
-                      handleAccountEditChange(
-                        "personal_info.email",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-sm font-semibold text-gray-900">
-                    {accountData.personal_info?.email || "Not Set"}
-                  </p>
-                )}
+                <p className="text-sm font-semibold text-gray-900">
+                  {accountData.personal_info?.email || "Not Set"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Email cannot be changed
+                </p>
               </div>
 
               {/* Phone Number */}

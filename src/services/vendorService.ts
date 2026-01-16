@@ -28,13 +28,18 @@ export const vendorService = {
 
   confirmPayment: async (orderId: string | number) => {
     // Matches your api.ts: /vendor-orders/orders/${order_id}/confirm-payment/
-    const response = await api.patch(`/vendor-orders/orders/${orderId}/confirm-payment/`);
+    const response = await api.patch(
+      `/vendor-orders/orders/${orderId}/confirm-payment/`
+    );
     return response.data;
   },
 
   updateShippingStatus: async (orderId: string | number, status: string) => {
     // Matches your api.ts: /vendor-orders/orders/${order_id}/status/
-    const response = await api.patch(`/vendor-orders/orders/${orderId}/status/`, { status });
+    const response = await api.patch(
+      `/vendor-orders/orders/${orderId}/status/`,
+      { status }
+    );
     return response.data;
   },
 
@@ -42,14 +47,18 @@ export const vendorService = {
    * VENDOR ONBOARDING & SETTINGS
    */
   // Inside vendorService object
-vendorOnboarding: (payload: FormData) => api.post("/vendor/onboard", payload, {
-  headers: { "Content-Type": "multipart/form-data" },
-}),
+  vendorOnboarding: (payload: FormData) =>
+    api.post("/vendor/onboard", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   updateVendorSettings: async (data: FormData | any) => {
     // Matches your api.ts: /vendor/update-settings
-    const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
-    const response = await api.patch("/vendor/update-settings", data, { headers });
+    const headers =
+      data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+    const response = await api.patch("/vendor/update-settings", data, {
+      headers,
+    });
     return response.data;
   },
 
@@ -66,8 +75,6 @@ vendorOnboarding: (payload: FormData) => api.post("/vendor/onboard", payload, {
     const response = await api.get("/products/my-products");
     return response.data;
   },
-
-  
 };
 
 interface MyProductsResponse {
