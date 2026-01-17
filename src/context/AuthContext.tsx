@@ -34,16 +34,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Error fetching user profile:", err);
       setError(
-        err.response?.data?.message || err.message || "Failed to fetch user profile"
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch user profile"
       );
     }
   }, []);
 
+  // Initialize auth state on mount - check for tokens and restore session
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedUser = sessionStorage.getItem("RSUser");
       const storedToken = sessionStorage.getItem("RSToken");
 
+      // Try to restore from sessionStorage first (current session)
       if (storedUser && storedToken) {
         try {
           const parsedUser = JSON.parse(storedUser) as UserData;
@@ -51,14 +55,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoggedIn(true);
           fetchUserProfile();
         } catch (e) {
-          console.error("Error parsing RSUser:", e);
+          console.error("Error parsing RSUser from sessionStorage:", e);
           sessionStorage.removeItem("RSUser");
           sessionStorage.removeItem("RSToken");
         } finally {
           setIsLoading(false);
         }
       } else {
-        setIsLoading(false);
+        // Try to restore from localStorage (Remember Me)
+        const rememberToken = localStorage.getItem("RSToken");
+        const rememberExpiry = localStorage.getItem("RSTokenExpiry");
+        const rememberUser = localStorage.getItem("RSUser");
+
+        if (rememberToken && rememberExpiry && rememberUser) {
+          const expiryTime = parseInt(rememberExpiry, 10);
+
+          // Check if token is still valid
+          if (expiryTime > Date.now()) {
+            try {
+              const parsedUser = JSON.parse(rememberUser) as UserData;
+              // Restore to sessionStorage for current session
+              sessionStorage.setItem("RSToken", rememberToken);
+              sessionStorage.setItem("RSUser", rememberUser);
+              const userRole = localStorage.getItem("RSUsertarget_view");
+              if (userRole) {
+                sessionStorage.setItem("RSUsertarget_view", userRole);
+              }
+
+              setUser(parsedUser);
+              setIsLoggedIn(true);
+              // Refresh profile to ensure data is fresh
+              fetchUserProfile();
+            } catch (e) {
+              console.error("Error restoring from Remember Me:", e);
+              // Clear invalid Remember Me data
+              localStorage.removeItem("RSToken");
+              localStorage.removeItem("RSTokenExpiry");
+              localStorage.removeItem("RSUser");
+              localStorage.removeItem("RSUsertarget_view");
+            } finally {
+              setIsLoading(false);
+            }
+          } else {
+            // Remember Me token expired, clear it
+            localStorage.removeItem("RSToken");
+            localStorage.removeItem("RSTokenExpiry");
+            localStorage.removeItem("RSUser");
+            localStorage.removeItem("RSUsertarget_view");
+            setIsLoading(false);
+          }
+        } else {
+          setIsLoading(false);
+        }
       }
     }
   }, [fetchUserProfile]);
@@ -76,7 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             sessionStorage.setItem("RSToken", data.access_token);
             sessionStorage.setItem("RSEmail", email);
             if (data.user?.target_view) {
-              sessionStorage.setItem("RSUsertarget_view", data.user.target_view);
+              sessionStorage.setItem(
+                "RSUsertarget_view",
+                data.user.target_view
+              );
             }
           }
 
@@ -93,7 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("No access token received");
         }
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || "Login failed";
+        const errorMessage =
+          err.response?.data?.message || err.message || "Login failed";
         setError(errorMessage);
         setIsLoggedIn(false);
         setUser(null);
@@ -111,6 +163,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [fetchUserProfile]
   );
+
+  // Session keep-alive: periodically refresh user profile to maintain session
+  useEffect(() => {
+    if (!isLoggedIn || isLoading) return;
+
+    // Refresh profile every 15 minutes to keep session alive
+    const keepAliveInterval = setInterval(() => {
+      if (typeof window !== "undefined") {
+        const token = sessionStorage.getItem("RSToken");
+        if (token) {
+          fetchUserProfile();
+        }
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+
+    return () => clearInterval(keepAliveInterval);
+  }, [isLoggedIn, isLoading, fetchUserProfile]);
 
   const logout = useCallback(() => {
     if (typeof window !== "undefined") {

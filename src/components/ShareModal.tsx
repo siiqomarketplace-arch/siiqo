@@ -19,7 +19,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
   onClose,
   productId,
   productName = "My Product",
-  productOwner = "Siiqo",
+  productOwner = "Siiqo Store",
   isStore = false,
 }) => {
   const [copied, setCopied] = useState(false);

@@ -126,19 +126,29 @@ const StorefrontDetailsPage = () => {
         if (res.status === "success" && res.data && Array.isArray(res.data)) {
           // Extract catalogs from the vendor data
           // res.data is an array of vendors, find the current store's vendor
+          const normalizedStoreName = storeName?.toLowerCase().trim();
+
           const vendorData = res.data.find((vendor: any) => {
-            // Match by vendor_slug or business_name against store name
-            return (
-              vendor.vendor_slug === storeName ||
-              vendor.business_name?.toLowerCase() === store?.name?.toLowerCase()
-            );
+            // Match by vendor_slug (primary), then by business_name (case-insensitive)
+            const slugMatch =
+              vendor.vendor_slug?.toLowerCase().trim() === normalizedStoreName;
+            const businessNameMatch =
+              vendor.business_name?.toLowerCase().trim() ===
+              normalizedStoreName;
+            const storeNameMatch =
+              store?.name &&
+              vendor.business_name?.toLowerCase().trim() ===
+                store.name.toLowerCase().trim();
+
+            return slugMatch || businessNameMatch || storeNameMatch;
           });
 
           if (vendorData && vendorData.catalogs) {
             setCatalogs(vendorData.catalogs);
           } else {
-            // Fallback: use first vendor's catalogs if no exact match
-            setCatalogs(res.data[0]?.catalogs || []);
+            // If no match found, log warning and show empty catalogs
+            console.warn(`No vendor found matching storeName: ${storeName}`);
+            setCatalogs([]);
           }
         }
       } catch (err) {
