@@ -56,7 +56,7 @@ export default function ProductFinder() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="bg-background">
         {isRefreshing && (
-          <div className="fixed z-40 px-4 py-2 transform -translate-x-1/2 bg-white rounded-full top-20 left-1/2 shadow-elevation-2">
+          <div className="fixed z-50 px-4 py-2 transform -translate-x-1/2 bg-white rounded-full top-20 left-1/2 shadow-elevation-2">
             <div className="flex items-center space-x-2">
               <div className="animate-spin">
                 <Icon name="RefreshCw" size={16} className="text-primary" />

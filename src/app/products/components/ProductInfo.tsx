@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, AlertCircle } from "lucide-react";
 import Icon from "@/components/ui/AppIcon";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import ShareModal from "@/components/ShareModal";
-import { useLocation } from "@/context/LocationContext";
 import api from "@/services/api";
-import { calculateDistance } from "@/utils/proximitySort";
 
 interface Product {
   title: string;
@@ -24,8 +22,6 @@ interface Product {
   lastUpdated: Date;
   description: string;
   specifications: { [key: string]: string };
-  latitude?: number | string;
-  longitude?: number | string;
 }
 
 interface ProductInfoProps {
@@ -36,7 +32,6 @@ interface ProductInfoProps {
   showFullDescription: boolean;
   onToggleDescription: () => void;
   isMobile?: boolean;
-  productOwner?: string;
 }
 
 const ProductInfo = ({
@@ -47,36 +42,15 @@ const ProductInfo = ({
   showFullDescription,
   onToggleDescription,
   isMobile = false,
-  productOwner = "Siiqo Store",
 }: ProductInfoProps) => {
   const { toast } = useToast();
   const router = useRouter();
   const { user, isLoggedIn } = useAuth();
-  const { coords } = useLocation();
   const [showBuyerModal, setShowBuyerModal] = useState(false);
   const [isLoadingWishlist, setIsLoadingWishlist] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
   const canManageFavorites = isLoggedIn;
-
-  // Calculate distance using lat/lng
-  const calculatedDistance = useMemo(() => {
-    if (
-      !coords?.lat ||
-      !coords?.lng ||
-      !product.latitude ||
-      !product.longitude
-    ) {
-      return null;
-    }
-
-    const distanceKm = calculateDistance(
-      { lat: coords.lat, lng: coords.lng },
-      { lat: Number(product.latitude), lng: Number(product.longitude) }
-    );
-
-    return distanceKm;
-  }, [coords, product.latitude, product.longitude]);
 
   const formatTimeAgo = (date: Date): string => {
     const now = new Date();
@@ -220,13 +194,7 @@ const ProductInfo = ({
               </div>
               <div className="flex items-center space-x-1">
                 <Icon name="MapPin" size={16} className="text-primary" />
-                <span>
-                  {calculatedDistance
-                    ? `${calculatedDistance.toFixed(1)} km away`
-                    : product.distance
-                    ? `${product.distance} km away`
-                    : "Distance unavailable"}
-                </span>
+                <span>{product.distance} miles away</span>
               </div>
             </div>
           </div>
@@ -331,7 +299,6 @@ const ProductInfo = ({
         onClose={() => setShowShareModal(false)}
         productId={productId}
         productName={product.title}
-        productOwner={productOwner}
       />
     </>
   );

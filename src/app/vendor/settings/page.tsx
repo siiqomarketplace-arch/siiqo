@@ -40,12 +40,8 @@ import MapboxAutocomplete from "@/components/MapboxAutocomplete";
 import { switchMode } from "@/services/api";
 type SettingSectionKey = keyof SettingsState;
 
-interface SettingsProps {
-  isReadOnly?: boolean; // When true, account section won't be editable
-}
-
-const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
-  // Initialize settings with accountData location if available, fallback to localStorage
+const Settings = () => {
+  // Initialize settings with localStorage data if available
   const [settings, setSettings] = useState<SettingsState>(() => {
     if (typeof window !== "undefined") {
       const savedLocation = localStorage.getItem("siiqo_location_settings");
@@ -79,7 +75,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
     }
     return {
       location: {
-        homeAddress: "",
+        homeAddress: "123 Main St, San Francisco, CA 94102",
         searchRadius: 10,
         autoLocation: false,
         showExactLocation: false,
@@ -182,17 +178,6 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
             store_settings: response.data.store_settings,
           };
           setAccountData(data);
-
-          // Update location settings from store_settings if available
-          if (response.data.store_settings?.address) {
-            setSettings((prev) => ({
-              ...prev,
-              location: {
-                ...prev.location,
-                homeAddress: response.data.store_settings.address,
-              },
-            }));
-          }
         }
       } catch (err) {
         console.error("Error fetching account data:", err);
@@ -368,41 +353,6 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       setManualLocationLoading(false);
     }
   };
-
-  // Save location to vendor store settings on the backend
-  const saveLocationToBackend = async (address: string) => {
-    try {
-      await vendorService.updateVendorSettings({ address });
-      // Update local accountData to reflect the change
-      if (accountData?.store_settings) {
-        setAccountData((prev: any) => ({
-          ...prev,
-          store_settings: {
-            ...prev.store_settings,
-            address: address,
-          },
-        }));
-      }
-    } catch (error) {
-      console.error("Error saving location to backend:", error);
-    }
-  };
-
-  // Debounce location changes to save to backend
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (settings.location.homeAddress && accountData?.store_settings) {
-        // Only save if the location has actually changed from what's on the backend
-        if (
-          settings.location.homeAddress !== accountData.store_settings?.address
-        ) {
-          saveLocationToBackend(settings.location.homeAddress);
-        }
-      }
-    }, 1500); // Save after 1.5 seconds of inactivity
-
-    return () => clearTimeout(timer);
-  }, [settings.location.homeAddress]);
 
   // Edit mode handlers
   const handleEditToggle = () => {
@@ -838,53 +788,39 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
         </div>
       ) : accountData ? (
         <>
-          {/* Read-Only Indicator */}
-          {isReadOnly && (
-            <div className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
-              <Shield size={16} className="text-blue-600 flex-shrink-0" />
-              <p className="text-sm text-blue-700">
-                <span className="font-semibold">View Only:</span> Account
-                settings cannot be edited from this page. Visit vendor settings
-                to make changes.
-              </p>
-            </div>
-          )}
-
           {/* Edit Button */}
-          {!isReadOnly && (
-            <div className="flex justify-end gap-2 mb-4">
-              {isEditMode ? (
-                <>
-                  <button
-                    onClick={() => setIsEditMode(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveAccountChanges}
-                    disabled={isSaving}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                  >
-                    {isSaving ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Save size={16} />
-                    )}
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </button>
-                </>
-              ) : (
+          <div className="flex justify-end gap-2 mb-4">
+            {isEditMode ? (
+              <>
                 <button
-                  onClick={handleAccountEditToggle}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                  onClick={() => setIsEditMode(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <Edit2 size={16} />
-                  Edit Information
+                  Cancel
                 </button>
-              )}
-            </div>
-          )}
+                <button
+                  onClick={handleSaveAccountChanges}
+                  disabled={isSaving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleAccountEditToggle}
+                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+              >
+                <Edit2 size={16} />
+                Edit Information
+              </button>
+            )}
+          </div>
 
           {/* Personal Information Section */}
           <div className="space-y-2 sm:space-y-3 md:space-y-4">
@@ -898,7 +834,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Full Name
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.personal_info?.name || ""}
@@ -935,7 +871,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Phone Number
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="tel"
                     value={editedAccountData?.personal_info?.phone || ""}
@@ -978,7 +914,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Business Name
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={
@@ -1004,7 +940,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Business Address
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.store_settings?.address || ""}
@@ -1028,7 +964,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Storefront Link
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={
@@ -1054,7 +990,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Website
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="url"
                     value={editedAccountData?.store_settings?.website || ""}
@@ -1078,7 +1014,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   CAC Registration
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.store_settings?.cac_reg || ""}
@@ -1102,7 +1038,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Description
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <textarea
                     value={editedAccountData?.store_settings?.description || ""}
                     onChange={(e) =>
@@ -1135,7 +1071,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Bank Name
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.financials?.bank_name || ""}
@@ -1159,7 +1095,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Account Number
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.financials?.account_number || ""}
@@ -1183,7 +1119,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Wallet Address
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={editedAccountData?.financials?.wallet_address || ""}
@@ -1207,7 +1143,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   Business Address
                 </p>
-                {isEditMode && !isReadOnly ? (
+                {isEditMode ? (
                   <input
                     type="text"
                     value={

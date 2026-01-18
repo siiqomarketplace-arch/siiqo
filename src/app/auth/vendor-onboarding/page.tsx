@@ -113,27 +113,6 @@ const VendorOnboarding = () => {
 
   const onSubmit = async (data: VendorOnboardingData) => {
     try {
-      // Validate that we have all required fields before submission
-      const missingFields = [];
-
-      if (!data.business_name?.trim()) missingFields.push("Store Name");
-      if (!data.description?.trim()) missingFields.push("Store Description");
-      if (!data.address?.trim()) missingFields.push("Business Address");
-      if (!data.bank_name?.trim()) missingFields.push("Bank Name");
-      if (!data.account_number?.trim()) missingFields.push("Account Number");
-      if (!data.wallet_address?.trim()) missingFields.push("Wallet Address");
-      if (!(data as any).logo?.[0]) missingFields.push("Logo");
-      if (!(data as any).banner?.[0]) missingFields.push("Banner");
-
-      if (missingFields.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Missing Fields",
-          description: `Please fill in: ${missingFields.join(", ")}`,
-        });
-        return;
-      }
-
       // CHANGED: prepare multipart FormData so logo/banner files are uploaded
       const formData = new FormData();
 
@@ -180,35 +159,10 @@ const VendorOnboarding = () => {
       setIsCompleted(true);
     } catch (error: any) {
       console.error("Onboarding error:", error);
-
-      // Extract specific error messages from API response
-      let errorMessage = "Onboarding failed";
-
-      if (error.response?.data?.errors) {
-        // Handle validation errors object format
-        const errors = error.response.data.errors;
-        if (typeof errors === "object") {
-          const fieldErrors = Object.entries(errors)
-            .map(([field, messages]: [string, any]) => {
-              const fieldName = field
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l: string) => l.toUpperCase());
-              const message = Array.isArray(messages) ? messages[0] : messages;
-              return `${fieldName}: ${message}`;
-            })
-            .join("; ");
-          errorMessage = fieldErrors || errorMessage;
-        }
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: error.response?.data?.message || "Onboarding failed",
       });
     }
   };

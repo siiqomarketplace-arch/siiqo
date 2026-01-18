@@ -5,13 +5,12 @@ import Icon from "@/components/ui/AppIcon";
 import ProductInfo from "../components/ProductInfo";
 import SellerCard from "../components/SellerCard";
 import ImageGallery from "../components/ImageGallery";
-import ActionAction from "../components/ActionBar";
+import ActionBar from "../components/ActionBar";
 import LocationMap from "../components/LocationMap";
 import { useCartActions, useCartItems } from "@/context/CartContext";
 import { toast } from "sonner";
 import { switchMode } from "@/services/api";
 import api_endpoints from "@/hooks/api_endpoints";
-import { marketplaceService } from "@/services/marketplaceService";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,7 +24,6 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [storefronts, setStorefronts] = useState<any[]>([]);
 
   // Calculate cart quantity for this product
   const cartQuantity =
@@ -35,22 +33,6 @@ export default function ProductDetailPage() {
   // Switch to buyer mode
   useEffect(() => {
     switchMode("buyer");
-  }, []);
-
-  // Fetch storefronts once on mount
-  useEffect(() => {
-    const fetchStorefronts = async () => {
-      try {
-        const response = await marketplaceService.getActiveStorefronts();
-        if (response?.status === "success" && response?.storefronts) {
-          setStorefronts(response.storefronts);
-        }
-      } catch (err) {
-        console.error("Error fetching storefronts:", err);
-      }
-    };
-
-    fetchStorefronts();
   }, []);
 
   useEffect(() => {
@@ -128,8 +110,6 @@ export default function ProductDetailPage() {
     condition: "New",
     lastUpdated: new Date(),
     description: productData.description || "",
-    latitude: productData.latitude,
-    longitude: productData.longitude,
     specifications: {
       Quantity: String(productData.quantity ?? 0),
       Vendor: productData.vendor_name || "Unknown",
@@ -145,11 +125,6 @@ export default function ProductDetailPage() {
     memberSince: "2023",
     verifiedSeller: true,
     phoneNumber: productData.whatsapp_chat || "",
-    slug: storefronts.find(
-      (sf) =>
-        sf.business_name?.toLowerCase().trim() ===
-        productData.vendor_name?.toLowerCase().trim()
-    )?.slug,
   };
 
   const handleAddToCart = async () => {
@@ -217,7 +192,6 @@ export default function ProductDetailPage() {
               onWishlistToggle={() => setIsWishlisted(!isWishlisted)}
               showFullDescription
               onToggleDescription={() => {}}
-              productOwner={productData.vendor_name || "Siiqo Store"}
             />
 
             <SellerCard

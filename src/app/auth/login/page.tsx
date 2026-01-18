@@ -79,7 +79,6 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
@@ -97,49 +96,6 @@ const LoginForm = () => {
   };
 
   const closeNotification = () => setNotification((prev) => ({ ...prev, show: false }));
-
-  // Check for remembered token on mount
-  useEffect(() => {
-    const checkRememberedToken = () => {
-      const rememberToken = localStorage.getItem("RSToken");
-      const rememberExpiry = localStorage.getItem("RSTokenExpiry");
-      
-      // If token exists and hasn't expired, auto-login
-      if (rememberToken && rememberExpiry) {
-        const expiryTime = parseInt(rememberExpiry, 10);
-        if (expiryTime > Date.now()) {
-          // Token is still valid, restore it to sessionStorage and redirect
-          sessionStorage.setItem("RSToken", rememberToken);
-          const userRole = localStorage.getItem("RSUsertarget_view");
-          if (userRole) {
-            sessionStorage.setItem("RSUsertarget_view", userRole);
-          }
-          
-          // Auto-redirect to dashboard
-          setTimeout(() => {
-            switch (userRole?.toLowerCase()) {
-              case "admin":
-                router.push("/Administration");
-                break;
-              case "vendor":
-                router.push("/vendor/dashboard");
-                break;
-              default:
-                router.push("/user-profile");
-                break;
-            }
-          }, 300);
-        } else {
-          // Token expired, clear it
-          localStorage.removeItem("RSToken");
-          localStorage.removeItem("RSTokenExpiry");
-          localStorage.removeItem("RSUsertarget_view");
-        }
-      }
-    };
-
-    checkRememberedToken();
-  }, [router]);
 
   // Helper for "Suspenseful" navigation between auth pages
   const handleSuspenseNavigation = (path: string, label: string) => {
@@ -170,27 +126,6 @@ const LoginForm = () => {
       await login(email, password);
       
       const userRole = sessionStorage.getItem("RSUsertarget_view") || "customer";
-      const userData = sessionStorage.getItem("RSUser");
-      
-      // Handle "Remember Me" - store token, user data, and role in localStorage for 30 days if checked
-      if (rememberMe) {
-        const token = sessionStorage.getItem("RSToken") || localStorage.getItem("RSToken");
-        if (token) {
-          localStorage.setItem("RSToken", token);
-          localStorage.setItem("RSUsertarget_view", userRole);
-          if (userData) {
-            localStorage.setItem("RSUser", userData);
-          }
-          localStorage.setItem("RSTokenExpiry", String(Date.now() + 30 * 24 * 60 * 60 * 1000)); // 30 days
-        }
-      } else {
-        // If not checking remember me, clear any previous remembered tokens
-        localStorage.removeItem("RSToken");
-        localStorage.removeItem("RSTokenExpiry");
-        localStorage.removeItem("RSUser");
-        localStorage.removeItem("RSUsertarget_view");
-      }
-      
       showNotification("success", "Welcome Back!", "Login successful. Redirecting...");
 
       const callbackUrl = searchParams.get("redirect") || sessionStorage.getItem("redirectUrl");
@@ -285,8 +220,6 @@ const LoginForm = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                         placeholder="******"
-
                       required
                       disabled={isLoading}
                       className="h-12 rounded-xl pr-12"
@@ -300,21 +233,6 @@ const LoginForm = () => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                </div>
-
-                {/* Remember Me Checkbox */}
-                <div className="flex items-center gap-2 py-2">
-                  <input
-                    type="checkbox"
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded cursor-pointer accent-purple-600"
-                    disabled={isLoading}
-                  />
-                  <label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
-                    Remember me for 30 days
-                  </label>
                 </div>
 
                 <Button
