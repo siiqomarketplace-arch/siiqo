@@ -148,38 +148,24 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
     fetchProfile();
   }, []);
 
-  // Fetch financial/payment data
+  // Fetch dashboard settings (financial, account, and store data)
   useEffect(() => {
-    const fetchFinancialData = async () => {
+    const fetchDashboardData = async () => {
       setLoadingFinancials(true);
-      try {
-        const response = await vendorService.getDashboardStats();
-        if (response.data && response.data.financials) {
-          setFinancialData(response.data.financials);
-        }
-      } catch (err) {
-        console.error("Error fetching financial data:", err);
-      } finally {
-        setLoadingFinancials(false);
-      }
-    };
-
-    fetchFinancialData();
-  }, []);
-  useEffect(() => {
-    switchMode("vendor");
-  }, []);
-
-  // Fetch account/personal info data
-  useEffect(() => {
-    const fetchAccountData = async () => {
       setLoadingAccount(true);
       try {
         const response = await vendorService.getDashboardStats();
         if (response.data) {
+          // Set financial data
+          if (response.data.financials) {
+            setFinancialData(response.data.financials);
+          }
+
+          // Set account data with financials included
           const data = {
             personal_info: response.data.personal_info,
             store_settings: response.data.store_settings,
+            financials: response.data.financials,
           };
           setAccountData(data);
 
@@ -195,13 +181,18 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
           }
         }
       } catch (err) {
-        console.error("Error fetching account data:", err);
+        console.error("Error fetching dashboard data:", err);
       } finally {
+        setLoadingFinancials(false);
         setLoadingAccount(false);
       }
     };
 
-    fetchAccountData();
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    switchMode("vendor");
   }, []);
 
   const handleSettingChange = (
@@ -257,8 +248,8 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       const formData = new FormData();
 
       // Add only basic personal info
-      if (editedAccountData.personal_info?.name) {
-        formData.append("name", editedAccountData.personal_info.name);
+      if (editedAccountData.personal_info?.fullname) {
+        formData.append("fullname", editedAccountData.personal_info.fullname);
       }
       if (editedAccountData.personal_info?.phone) {
         formData.append("phone", editedAccountData.personal_info.phone);
@@ -281,12 +272,39 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
         formData.append("website", editedAccountData.store_settings.website);
       }
 
+      // Add financial data
+      if (editedAccountData.financials?.bank_name) {
+        formData.append("bank_name", editedAccountData.financials.bank_name);
+      }
+      if (editedAccountData.financials?.account_number) {
+        formData.append(
+          "account_number",
+          editedAccountData.financials.account_number
+        );
+      }
+      if (editedAccountData.financials?.wallet_address) {
+        formData.append(
+          "wallet_address",
+          editedAccountData.financials.wallet_address
+        );
+      }
+      if (editedAccountData.financials?.business_address) {
+        formData.append(
+          "business_address",
+          editedAccountData.financials.business_address
+        );
+      }
+
       console.log("Sending FormData:", {
-        name: editedAccountData.personal_info?.name,
+        fullname: editedAccountData.personal_info?.fullname,
         phone: editedAccountData.personal_info?.phone,
         business_name: editedAccountData.store_settings?.business_name,
         description: editedAccountData.store_settings?.description,
         website: editedAccountData.store_settings?.website,
+        bank_name: editedAccountData.financials?.bank_name,
+        account_number: editedAccountData.financials?.account_number,
+        wallet_address: editedAccountData.financials?.wallet_address,
+        business_address: editedAccountData.financials?.business_address,
       });
 
       // Call API
@@ -295,6 +313,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       if (response.status === "success" || response.data) {
         // Update local state with new data
         setAccountData(editedAccountData);
+        setFinancialData(editedAccountData.financials);
         setIsEditMode(false);
         toast.success("Settings updated successfully!");
       } else {
@@ -438,7 +457,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
   };
 
   const handleSaveChanges = async () => {
-    if (!editedAccountData || !editedFinancialData) {
+    if (!editedAccountData) {
       toast.error("Missing data");
       return;
     }
@@ -448,8 +467,8 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       const formData = new FormData();
 
       // Add personal info data
-      if (editedAccountData.personal_info?.name)
-        formData.append("name", editedAccountData.personal_info.name);
+      if (editedAccountData.personal_info?.fullname)
+        formData.append("fullname", editedAccountData.personal_info.fullname);
       // Note: Email is not editable and should not be sent
       if (editedAccountData.personal_info?.phone)
         formData.append("phone", editedAccountData.personal_info.phone);
@@ -468,17 +487,23 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       if (editedAccountData.store_settings?.website)
         formData.append("website", editedAccountData.store_settings.website);
 
-      // Add financial data
-      if (editedFinancialData.bank_name)
-        formData.append("bank_name", editedFinancialData.bank_name);
-      if (editedFinancialData.account_number)
-        formData.append("account_number", editedFinancialData.account_number);
-      if (editedFinancialData.wallet_address)
-        formData.append("wallet_address", editedFinancialData.wallet_address);
-      if (editedFinancialData.business_address)
+      // Add financial data from editedAccountData
+      if (editedAccountData.financials?.bank_name)
+        formData.append("bank_name", editedAccountData.financials.bank_name);
+      if (editedAccountData.financials?.account_number)
+        formData.append(
+          "account_number",
+          editedAccountData.financials.account_number
+        );
+      if (editedAccountData.financials?.wallet_address)
+        formData.append(
+          "wallet_address",
+          editedAccountData.financials.wallet_address
+        );
+      if (editedAccountData.financials?.business_address)
         formData.append(
           "business_address",
-          editedFinancialData.business_address
+          editedAccountData.financials.business_address
         );
 
       console.log("Sending FormData to backend");
@@ -489,7 +514,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
       if (response.status === "success" || response.data) {
         // Update local state with new data
         setAccountData(editedAccountData);
-        setFinancialData(editedFinancialData);
+        setFinancialData(editedAccountData.financials);
         setIsEditMode(false);
         toast.success("Settings updated successfully!");
       } else {
@@ -901,10 +926,10 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
                 {isEditMode && !isReadOnly ? (
                   <input
                     type="text"
-                    value={editedAccountData?.personal_info?.name || ""}
+                    value={editedAccountData?.personal_info?.fullname || ""}
                     onChange={(e) =>
                       handleAccountEditChange(
-                        "personal_info.name",
+                        "personal_info.fullname",
                         e.target.value
                       )
                     }
