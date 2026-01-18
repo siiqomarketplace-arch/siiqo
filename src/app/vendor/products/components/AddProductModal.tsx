@@ -287,10 +287,29 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   /* ---------- Input handlers ---------- */
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle price input with comma formatting for display
+  const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Remove all non-digit and non-decimal characters
+    const cleanValue = value.replace(/[^\d.]/g, "");
+    // Store only the clean number in formData
+    setFormData((prev) => ({ ...prev, [name]: cleanValue }));
+  };
+
+  // Format price for display with comma separators
+  const formatPriceDisplay = (value: string): string => {
+    if (!value) return "";
+    const numValue = parseFloat(value) || 0;
+    return numValue.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
   };
 
   const handleSelectChange = (field: keyof ProductFormData, value: any) => {
@@ -299,7 +318,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
   const handleDimensionChange = (
     dimension: keyof ProductDimensions,
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -314,7 +333,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
     setUploadErrors([]);
     const incoming = Array.from(files).slice(
       0,
-      MAX_IMAGES - formData.images.length
+      MAX_IMAGES - formData.images.length,
     );
 
     incoming.forEach((file) => {
@@ -425,7 +444,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
       if (formData.comparePrice) {
         formDataPayload.append(
           "compare_at_price",
-          String(Number(formData.comparePrice))
+          String(Number(formData.comparePrice)),
         );
       }
       if (formData.cost) {
@@ -437,7 +456,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
       formDataPayload.append("quantity", String(Number(formData.stock) || 0));
       formDataPayload.append(
         "low_stock_threshold",
-        String(Number(formData.lowStockThreshold) || 0)
+        String(Number(formData.lowStockThreshold) || 0),
       );
       formDataPayload.append("weight", String(Number(formData.weight) || 0));
       formDataPayload.append("dimensions", JSON.stringify(formData.dimensions));
@@ -476,7 +495,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         // For editing, use patch endpoint
         response = await productService.editProduct(
           editingProduct.id,
-          formDataPayload as any
+          formDataPayload as any,
         );
       } else {
         // For new products, use addProduct with FormData
@@ -503,7 +522,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
             ? "Your product changes have been saved."
             : "Your product is now live in the marketplace!",
           duration: 4000,
-        }
+        },
       );
       onSave(response.data || response);
 
@@ -855,30 +874,27 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                       <Input
                         label="Price (₦ / currency)"
                         name="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={handleInputChange}
+                        type="text"
+                        value={formatPriceDisplay(formData.price)}
+                        onChange={handlePriceChange}
                         placeholder="0.00"
-                        step="0.01"
                         required
                       />
                       <Input
                         label="Compare at Price"
                         name="comparePrice"
-                        type="number"
-                        value={formData.comparePrice}
-                        onChange={handleInputChange}
+                        type="text"
+                        value={formatPriceDisplay(formData.comparePrice)}
+                        onChange={handlePriceChange}
                         placeholder="0.00"
-                        step="0.01"
                       />
                       <Input
                         label="Cost per Item"
                         name="cost"
-                        type="number"
-                        value={formData.cost}
-                        onChange={handleInputChange}
+                        type="text"
+                        value={formatPriceDisplay(formData.cost)}
+                        onChange={handlePriceChange}
                         placeholder="0.00"
-                        step="0.01"
                       />
                     </div>
                   </div>
@@ -1155,7 +1171,9 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                             Category: {formData.category}
                           </p>
                           <p className="mt-1 text-lg font-bold">
-                            {formData.price ? `₦${formData.price}` : "$0.00"}
+                            {formData.price
+                              ? `₦${formatPriceDisplay(formData.price)}`
+                              : "₦0"}
                           </p>
                         </div>
 
@@ -1195,23 +1213,33 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
             </AnimatePresence>
           </div>
           {/* footer */}
-          {currentStep === "preview" ? (
+          <div className="flex gap-3 px-4 py-4 border-t border-border">
             <button
-              type="button" // Change to button to control the click
-              onClick={() => processSubmission(true)}
-              className="px-4 py-2 w-full m-4 rounded-md bg-success text-white hover:opacity-95"
-              disabled={loading || hasUploadingImages}
+              type="button"
+              onClick={goBack}
+              disabled={currentStep === "photos"}
+              className="flex-1 px-4 py-2 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? "Saving..." : "Save & Publish"}
+              Previous
             </button>
-          ) : (
-            <button
-              type="submit" // This triggers form onSubmit -> goNext()
-              className="px-4 py-2 m-4 rounded-md bg-primary text-white hover:opacity-95"
-            >
-              Continue
-            </button>
-          )}
+            {currentStep === "preview" ? (
+              <button
+                type="button"
+                onClick={() => processSubmission(true)}
+                className="flex-1 px-4 py-2 rounded-md bg-success text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                disabled={loading || hasUploadingImages}
+              >
+                {loading ? "Saving..." : "Save & Publish"}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 rounded-md bg-primary text-white hover:opacity-95 transition"
+              >
+                Next
+              </button>
+            )}
+          </div>
         </form>
       </motion.div>
 

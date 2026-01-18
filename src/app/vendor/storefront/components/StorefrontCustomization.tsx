@@ -324,7 +324,7 @@ useEffect(() => {
                   type="text"
                   value={settings.storefront_link}
                   onChange={(e) => updateSetting('storefront_link', e.target.value)}
-                  className="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
+                  className="flex-1 p-4 w-72 md:w-full bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
                 />
               </div>
             </div>
