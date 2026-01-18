@@ -189,9 +189,10 @@ const MapboxAutocomplete: React.FC<MapboxAutocompleteProps> = ({
               size={18}
             />
           )}
-          {!isLoading && value && (
+          {!isLoading && (
             <button
               onClick={handleClear}
+              style={{ visibility: value ? "visible" : "hidden" }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X size={18} />
@@ -199,11 +200,12 @@ const MapboxAutocomplete: React.FC<MapboxAutocompleteProps> = ({
           )}
         </div>
 
-        {showDetectButton && onDetectLocation && (
+        {onDetectLocation && (
           <button
             type="button"
             onClick={onDetectLocation}
             disabled={isDetecting}
+            style={{ display: showDetectButton ? "flex" : "none" }}
             className="px-4 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 disabled:opacity-50 text-sm flex items-center gap-2 whitespace-nowrap"
           >
             {isDetecting ? (

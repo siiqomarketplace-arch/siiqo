@@ -119,9 +119,6 @@ const VendorOnboarding = () => {
       if (!data.business_name?.trim()) missingFields.push("Store Name");
       if (!data.description?.trim()) missingFields.push("Store Description");
       if (!data.address?.trim()) missingFields.push("Business Address");
-      if (!data.bank_name?.trim()) missingFields.push("Bank Name");
-      if (!data.account_number?.trim()) missingFields.push("Account Number");
-      if (!data.wallet_address?.trim()) missingFields.push("Wallet Address");
       if (!(data as any).logo?.[0]) missingFields.push("Logo");
       if (!(data as any).banner?.[0]) missingFields.push("Banner");
 
@@ -216,7 +213,7 @@ const VendorOnboarding = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 lg:p-20 bg-gradient-to-br from-blue-50 via-white to-green-50">
       <AnimatePresence>
-        <div className="mb-8 text-center">
+        <div key="header" className="mb-8 text-center">
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
@@ -311,21 +308,21 @@ const VendorOnboarding = () => {
               />
 
               <InputField
-                label="Bank Name*"
+                label="Bank Name (Optional)"
                 placeholder="Access Bank"
                 {...register("bank_name")}
                 error={errors.bank_name?.message}
               />
 
               <InputField
-                label="Account Number*"
+                label="Account Number (Optional)"
                 placeholder="1234567890"
                 {...register("account_number")}
                 error={errors.account_number?.message}
               />
 
               <InputField
-                label="Wallet Address*"
+                label="Wallet Address (Optional)"
                 placeholder="0x..."
                 {...register("wallet_address")}
                 error={errors.wallet_address?.message}
