@@ -14,6 +14,7 @@ import QuickFilters from "./components/QuickFilters";
 import SearchSuggestions from "./components/SearchSuggestions";
 import SearchResultsMap from "./components/SearchResultsMap";
 import MapView from "@/components/MapView";
+import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import { Filter } from "@/types/search-results";
 import { useLocation } from "@/context/LocationContext";
 import api_endpoints from "@/hooks/api_endpoints";
@@ -56,6 +57,41 @@ const SearchResults = () => {
     const distanceKm = parseFloat(item.distance_km);
     const hasValidDistance = !isNaN(distanceKm) && isFinite(distanceKm);
 
+    // Generate approximate location from coordinates if available
+    const getLocationFromCoordinates = (lat: any, lng: any) => {
+      if (!lat || !lng) return "Lagos, NG";
+      // This is a simple approximation - in production you'd use reverse geocoding
+      const parsedLat = parseFloat(lat);
+      const parsedLng = parseFloat(lng);
+
+      // Nigeria approximate regions (very simplified)
+      if (parsedLat > 6 && parsedLat < 7 && parsedLng > 3 && parsedLng < 4) {
+        return "Lagos, NG";
+      } else if (
+        parsedLat > 7 &&
+        parsedLat < 8 &&
+        parsedLng > 5 &&
+        parsedLng < 6
+      ) {
+        return "Ibadan, NG";
+      } else if (
+        parsedLat > 8 &&
+        parsedLat < 9 &&
+        parsedLng > 7 &&
+        parsedLng < 8
+      ) {
+        return "Benin City, NG";
+      } else if (
+        parsedLat > 9 &&
+        parsedLat < 10 &&
+        parsedLng > 7 &&
+        parsedLng < 8
+      ) {
+        return "Edo, NG";
+      }
+      return `${parsedLat.toFixed(2)}°, ${parsedLng.toFixed(2)}°`;
+    };
+
     return {
       id: item.id,
       name: item.name || item.business_name || "Unnamed",
@@ -71,15 +107,52 @@ const SearchResults = () => {
       isVerified: true,
       availability: "Open Now",
       isProduct: isProduct,
-      location: item.location || "Lagos, NG",
+      location:
+        item.location ||
+        getLocationFromCoordinates(item.latitude, item.longitude),
       slug: item.slug,
-      // Ensure we extract lat/lng from API for the map
+      // Use provided coordinates or fallback to Lagos
       coordinates: {
         lat: parseFloat(item.latitude || item.lat) || 6.5244,
         lng: parseFloat(item.longitude || item.lng) || 3.3792,
       },
+      // Store raw lat/lng for later fetching
+      latitude: item.latitude,
+      longitude: item.longitude,
     };
   }, []);
+
+  // Fetch detailed product info to get accurate coordinates
+  const fetchProductDetails = useCallback(
+    async (productIds: number[]): Promise<Map<number, any>> => {
+      const detailsMap = new Map();
+
+      try {
+        const responses = await Promise.all(
+          productIds.map((id) =>
+            fetch(api_endpoints.MARKETPLACE_PRODUCTS(String(id)))
+              .then((res) => res.json())
+              .catch(() => null)
+          )
+        );
+
+        responses.forEach((response, index) => {
+          if (response?.product) {
+            const product = response.product;
+            detailsMap.set(productIds[index], {
+              latitude: product.latitude,
+              longitude: product.longitude,
+            });
+          }
+        });
+      } catch (err) {
+        console.error("Error fetching product details:", err);
+      }
+
+      return detailsMap;
+    },
+    []
+  );
 
   const fetchProducts = async (query: string): Promise<void> => {
     try {
@@ -131,16 +204,45 @@ const SearchResults = () => {
         const finalP = nearP.length > 0 ? dedup(nearP) : dedup(allP);
         const finalS = nearS.length > 0 ? dedup(nearS) : dedup(allS);
 
+        // Fetch detailed product info to get accurate coordinates
+        const productIds = finalP.map((p) => p.id).filter(Boolean);
+        const storeIds = finalS.map((s) => s.id).filter(Boolean);
+
+        const [productDetails, storeDetails] = await Promise.all([
+          fetchProductDetails(productIds),
+          fetchProductDetails(storeIds),
+        ]);
+
         let productsData: any[] = [];
         let storesData: any[] = [];
 
+        // Enrich products with detailed coordinates
+        const enrichedProducts = finalP.map((p: any) => {
+          const details = productDetails.get(p.id);
+          return {
+            ...p,
+            latitude: details?.latitude || p.latitude,
+            longitude: details?.longitude || p.longitude,
+          };
+        });
+
+        // Enrich stores with detailed coordinates
+        const enrichedStores = finalS.map((s: any) => {
+          const details = storeDetails.get(s.id);
+          return {
+            ...s,
+            latitude: details?.latitude || s.latitude,
+            longitude: details?.longitude || s.longitude,
+          };
+        });
+
         // Apply proximity sorting
         if (coords?.lat && coords?.lng) {
-          const productsSorted = sortByProximity(finalP, {
+          const productsSorted = sortByProximity(enrichedProducts, {
             lat: coords.lat,
             lng: coords.lng,
           });
-          const storesSorted = sortByProximity(finalS, {
+          const storesSorted = sortByProximity(enrichedStores, {
             lat: coords.lat,
             lng: coords.lng,
           });
@@ -150,17 +252,25 @@ const SearchResults = () => {
           );
           storesData = storesSorted.map((s: any) => transformApiItem(s, false));
         } else {
-          productsData = finalP.map((p: any) => transformApiItem(p, true));
-          storesData = finalS.map((s: any) => transformApiItem(s, false));
+          productsData = enrichedProducts.map((p: any) =>
+            transformApiItem(p, true)
+          );
+          storesData = enrichedStores.map((s: any) =>
+            transformApiItem(s, false)
+          );
         }
 
         setProducts(productsData);
         setStores(storesData);
 
-        // Update map center to the first result found
+        // Update map center to the first result found (with accurate coordinates)
         const firstItem =
           searchMode === "product" ? productsData[0] : storesData[0];
-        if (firstItem?.coordinates) {
+        if (
+          firstItem?.coordinates &&
+          (firstItem.coordinates.lat !== 6.5244 ||
+            firstItem.coordinates.lng !== 3.3792)
+        ) {
           setMapCenter(firstItem.coordinates);
         } else if (coords?.lat && coords?.lng) {
           setMapCenter({ lat: coords.lat, lng: coords.lng });
@@ -487,6 +597,8 @@ const SearchResults = () => {
           )}
         </>
       )}
+
+      <FloatingWhatsAppButton />
     </div>
   );
 };

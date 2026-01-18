@@ -65,52 +65,17 @@ const SellerCard = ({
     setShowContactModal(false);
   };
 
-  const navigateToSeller = async () => {
-    try {
-      // Read token explicitly and include Authorization header
-      const token =
-        typeof window !== "undefined"
-          ? sessionStorage.getItem("RSToken") || localStorage.getItem("RSToken")
-          : null;
-
-      if (!token) {
-        // If not authenticated, try the provided seller.slug
-        if (seller.slug) {
-          router.push(`/vendor-public-view/${seller.slug}`);
-          return;
-        }
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to retrieve your storefront.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const res = await apiClient.get("/vendor/settings", {
-        headers: { Authorization: `Bearer ${token}` },
+  const navigateToSeller = () => {
+    if (!seller.slug) {
+      toast({
+        title: "Unable to Navigate",
+        description: "Store information not available.",
+        variant: "destructive",
       });
-
-      const slugFromSettings = res?.data?.data?.store_settings?.storefront_link;
-      const finalSlug = slugFromSettings || seller.slug;
-
-      if (!finalSlug) {
-        toast({
-          title: "Authentication Required",
-          description: "Storefront not found.",
-          variant: "destructive",
-        });
-      }
-
-      router.push(`/vendor-public-view/${finalSlug}`);
-    } catch (err) {
-      // Fallback to provided seller.slug if API call fails
-      if (seller.slug) {
-        router.push(`/vendor-public-view/${seller.slug}`);
-        return;
-      }
-      alert("Unable to retrieve store information. Please try again.");
+      return;
     }
+
+    router.push(`/storefront-details/${seller.slug}`);
   };
 
   return (

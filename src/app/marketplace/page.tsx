@@ -12,6 +12,7 @@ import Icon from "@/components/ui/AppIcon";
 import ProductCard from "./components/ProductCard";
 import SearchSuggestions from "./components/SearchSuggestions";
 import FilterPanel from "./components/FilterPanel";
+import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import { useLocation } from "@/context/LocationContext";
 import api_endpoints from "@/hooks/api_endpoints";
 import { sortByProximity } from "@/utils/proximitySort";
@@ -98,7 +99,7 @@ const MarketplaceBrowse = () => {
 
   /**
    * ✅ UPDATED FETCH DATA
-   * Logic: Fetch nearby first, if empty fetch all for each category independently
+   * Logic: Fetch nearby products first, then all products, merge & deduplicate, sort by proximity
    */
   const fetchData = async () => {
     setIsLoading(true);
@@ -125,33 +126,47 @@ const MarketplaceBrowse = () => {
         let p = json.data?.nearby_products || [];
         let s = json.data?.nearby_stores || [];
 
-        // FALLBACK: If products are empty, fetch all products
-        if (p.length === 0) {
-          const productUrl = new URL(
-            baseUrl,
-            typeof window !== "undefined" ? window.location.origin : ""
-          );
-          if (query) productUrl.searchParams.set("q", query);
-          const productRes = await fetch(productUrl.toString());
-          const productJson = await productRes.json();
-          p =
-            productJson.data?.products ||
-            productJson.data?.nearby_products ||
-            [];
-        }
+        // ALWAYS: Fetch all products to supplement nearby ones
+        const allProductsUrl = new URL(
+          baseUrl,
+          typeof window !== "undefined" ? window.location.origin : ""
+        );
+        if (query) allProductsUrl.searchParams.set("q", query);
+        const allProductsRes = await fetch(allProductsUrl.toString());
+        const allProductsJson = await allProductsRes.json();
+        const allProducts =
+          allProductsJson.data?.products ||
+          allProductsJson.data?.nearby_products ||
+          [];
 
-        // FALLBACK: If stores are empty, fetch all stores
-        if (s.length === 0) {
-          const storeUrl = new URL(
-            baseUrl,
-            typeof window !== "undefined" ? window.location.origin : ""
-          );
-          if (query) storeUrl.searchParams.set("q", query);
-          const storeRes = await fetch(storeUrl.toString());
-          const storeJson = await storeRes.json();
-          s =
-            storeJson.data?.storefronts || storeJson.data?.nearby_stores || [];
-        }
+        // Merge products: nearby first, then add remaining all products (avoid duplicates)
+        const productIds = new Set(p.map((product: any) => product.id));
+        p = [
+          ...p,
+          ...allProducts.filter((product: any) => !productIds.has(product.id)),
+        ];
+
+        // ALWAYS: Fetch all stores to supplement nearby ones
+        const allStoresUrl = new URL(
+          baseUrl,
+          typeof window !== "undefined" ? window.location.origin : ""
+        );
+        if (query) allStoresUrl.searchParams.set("q", query);
+        const allStoresRes = await fetch(allStoresUrl.toString());
+        const allStoresJson = await allStoresRes.json();
+        const allStores =
+          allStoresJson.data?.storefronts ||
+          allStoresJson.data?.nearby_stores ||
+          [];
+
+        // Merge stores: nearby first, then add remaining all stores (avoid duplicates)
+        const storeIds = new Set(s.map((store: any) => store.slug || store.id));
+        s = [
+          ...s,
+          ...allStores.filter(
+            (store: any) => !storeIds.has(store.slug || store.id)
+          ),
+        ];
 
         // Apply proximity sorting to both products and storefronts
         if (coords?.lat && coords?.lng) {
@@ -490,6 +505,8 @@ const MarketplaceBrowse = () => {
         onFiltersChange={(filters: any) => setActiveFilters(filters)}
         onClose={() => setIsFilterOpen(false)}
       />
+
+      <FloatingWhatsAppButton />
     </div>
   );
 };

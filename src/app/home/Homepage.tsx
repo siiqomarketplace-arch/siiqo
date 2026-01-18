@@ -16,6 +16,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./LandingPage";
@@ -23,6 +24,8 @@ import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard";
 import { Product } from "@/types/products";
 import { useLocation } from "@/context/LocationContext";
 import BrowserMockup from "@/components/BrowserMockup";
+import TutorialGuide from "@/components/TutorialGuide";
+import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import api_endpoints from "@/hooks/api_endpoints";
 
 const CATEGORIES = ["All Items", "Smartphones", "Electronics", "Fashion"];
@@ -41,6 +44,7 @@ const Homepage: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [typedPlaceholder, setTypedPlaceholder] = useState<string>("");
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const { coords } = useLocation();
 
   const placeholderText = "What are you looking for?";
@@ -160,7 +164,8 @@ const Homepage: React.FC = () => {
               transition={{ delay: 0.2 }}
               className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-transparent mt-6 sm:mx-auto sm:w-full lg:mt-8 lg:leading-tight leading-snug"
             >
-Build a Brand. Sell Anywhere. Get Found Locally & Beyond.            </motion.div>
+              Build a Brand. Sell Anywhere. Get Found Locally & Beyond.{" "}
+            </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -168,7 +173,9 @@ Build a Brand. Sell Anywhere. Get Found Locally & Beyond.            </motion.di
               transition={{ delay: 0.3 }}
               className="mt-6 font-medium text-blue-100/80 sm:mx-auto sm:w-full md:w-2/3 lg:mx-0 lg:mt-8 lg:w-2/3 text-sm sm:text-base md:text-lg leading-relaxed"
             >
-           A storefront-first marketplace that helps businesses create professional online brands — and helps buyers discover trusted brands near and beyond their neighborhood.
+              A storefront-first marketplace that helps businesses create
+              professional online brands — and helps buyers discover trusted
+              brands near and beyond their neighborhood.
             </motion.p>
 
             <motion.form
@@ -223,60 +230,49 @@ Build a Brand. Sell Anywhere. Get Found Locally & Beyond.            </motion.di
                     </div>
                   </div>
 
-                  {/* CATEGORY */}
-                  <div
-                    ref={dropdownRef}
-                    className="relative flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition cursor-pointer"
-                    onClick={() => setIsOpen(!isOpen)}
+                  {/* GUIDE BUTTON */}
+                  <motion.button
+                    type="button"
+                    onClick={() => setIsTutorialOpen(true)}
+                    whileHover={{
+                      scale: 1.08,
+                      boxShadow: "0 0 30px rgba(168, 85, 247, 0.8)",
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{
+                      boxShadow: [
+                        "0 0 20px rgba(168, 85, 247, 0.4)",
+                        "0 0 40px rgba(168, 85, 247, 0.8)",
+                        "0 0 20px rgba(168, 85, 247, 0.4)",
+                      ],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="relative flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 transition cursor-pointer group shadow-lg"
                   >
-                    <ShoppingBag
-                      size={18}
-                      className="text-orange-400 flex-shrink-0"
+                    {/* Animated shine effect */}
+                    <motion.div
+                      className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/30 via-white/10 to-transparent opacity-0"
+                      animate={{
+                        opacity: [0, 1, 0],
+                        x: ["-100%", "100%"],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity }}
                     />
-                    <div className="flex flex-col w-full">
-                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-                        Category
-                      </label>
-                      <div className="flex items-center justify-between text-white text-xs sm:text-sm">
-                        <span>{category}</span>
-                        <ChevronDown
-                          size={16}
-                          className={`text-orange-400 transition-transform flex-shrink-0 ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
-                        />
-                      </div>
-                    </div>
 
-                    <AnimatePresence>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute left-0 right-0 top-full mt-3 rounded-2xl bg-slate-900 border border-orange-500/30 shadow-2xl overflow-hidden z-50"
-                        >
-                          {CATEGORIES.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => {
-                                setCategory(item);
-                                setIsOpen(false);
-                              }}
-                              className="w-full flex items-center justify-between px-6 py-3 text-xs sm:text-sm text-blue-100 hover:bg-orange-500/20 hover:text-orange-300 transition"
-                            >
-                              {item}
-                              {category === item && (
-                                <Check size={16} className="text-orange-400" />
-                              )}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                    <BookOpen
+                      size={20}
+                      className="text-white flex-shrink-0 group-hover:text-yellow-200 transition relative z-10 animate-bounce"
+                      style={{ animationDelay: "0s" }}
+                    />
+                    <div className="flex flex-col w-full relative z-10">
+                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-bold text-white/90 tracking-wider">
+                        🎓 Getting Started
+                      </label>
+                      <span className="text-white text-xs sm:text-sm text-left font-semibold">
+                        View Guide
+                      </span>
+                    </div>
+                  </motion.button>
 
                   {/* SEARCH CTA */}
                   <motion.button
@@ -337,6 +333,13 @@ Build a Brand. Sell Anywhere. Get Found Locally & Beyond.            </motion.di
       </AnimatePresence>
 
       <LandingPage />
+
+      <TutorialGuide
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+      />
+
+      <FloatingWhatsAppButton />
     </div>
   );
 };
