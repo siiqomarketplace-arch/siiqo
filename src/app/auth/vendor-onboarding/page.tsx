@@ -105,7 +105,7 @@ const VendorOnboarding = () => {
   useEffect(() => {
     if (isCompleted) {
       const timer = setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/user-profile");
       }, 3000);
       return () => clearTimeout(timer);
     }

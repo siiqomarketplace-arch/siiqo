@@ -64,11 +64,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           {!isStorefront && product.price !== undefined && (
             <div className="flex flex-col items-end">
               <span className="font-bold text-slate-900 text-sm">
-                ${product.price?.toLocaleString()}
+                ₦{product.price?.toLocaleString()}
               </span>
               {product.originalPrice > product.price && (
                 <span className="text-[10px] text-slate-500 line-through">
-                  ${product.originalPrice?.toLocaleString()}
+                  ₦{product.originalPrice?.toLocaleString()}
                 </span>
               )}
             </div>
