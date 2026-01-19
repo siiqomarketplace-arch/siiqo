@@ -19,11 +19,19 @@ interface Product {
   quantity: number;
 }
 
+interface CatalogProduct {
+  id: number;
+  image: string;
+  name: string;
+  price: number;
+}
+
 interface Catalog {
   id: number;
   name: string;
   description?: string;
   product_count?: number;
+  products?: CatalogProduct[];
 }
 
 const MyListings = () => {
@@ -48,7 +56,7 @@ const MyListings = () => {
         if (prodRes.data.status === "success") {
           // Flatten the nested structure from your API response
           const allProducts = prodRes.data.data.flatMap(
-            (item: any) => item.products
+            (item: any) => item.products,
           );
           setProducts(allProducts);
         }
@@ -70,8 +78,6 @@ const MyListings = () => {
   const handleCatalogClick = async (catalog: Catalog) => {
     try {
       setLoading(true);
-      // Assuming your backend supports filtering by catalog_id or you find them in the current products state
-      // If there's a specific API for catalog products: api.get(`/products/catalog/${catalog.id}`)
       setSelectedCatalog(catalog);
       setViewMode("products"); // Switch to product view to show that catalog's items
     } catch (err) {
@@ -81,9 +87,9 @@ const MyListings = () => {
     }
   };
 
-  // Filter products if a catalog is selected
+  // Get products to display based on selected catalog or all products
   const displayedProducts = selectedCatalog
-    ? products.filter((p) => (p as any).catalog_id === selectedCatalog.id)
+    ? (selectedCatalog as any).products || []
     : products;
 
   if (loading)
@@ -142,8 +148,8 @@ const MyListings = () => {
           {selectedCatalog
             ? `Catalog: ${selectedCatalog.name}`
             : viewMode === "products"
-            ? "All Products"
-            : "My Catalogs"}
+              ? "All Products"
+              : "My Catalogs"}
         </h2>
         <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded-full text-text-secondary">
           {viewMode === "products" ? displayedProducts.length : catalogs.length}{" "}
@@ -154,7 +160,7 @@ const MyListings = () => {
       {/* Content Grid */}
       {viewMode === "products" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedProducts.map((product) => (
+          {displayedProducts.map((product: Product | CatalogProduct) => (
             <div
               key={product.id}
               onClick={() => router.push(`/products/${product.id}`)}
@@ -162,45 +168,58 @@ const MyListings = () => {
             >
               <div className="relative aspect-square w-full">
                 <Image
-                  src={product.images[0] || "/placeholder-product.png"}
+                  src={
+                    ("images" in product ? product.images[0] : product.image) ||
+                    "/placeholder-product.png"
+                  }
                   fill
                   alt={product.name}
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-sm border shadow-sm">
-                    {product.status}
-                  </span>
-                </div>
+                {"status" in product && (
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-sm border shadow-sm">
+                      {product.status}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="p-4 flex-1 flex flex-col">
-                <p className="text-[10px] font-bold text-primary uppercase mb-1">
-                  {product.category}
-                </p>
+                {"category" in product && (
+                  <p className="text-[10px] font-bold text-primary uppercase mb-1">
+                    {product.category}
+                  </p>
+                )}
                 <h3 className="font-bold text-text-primary text-base line-clamp-1 mb-2">
                   {product.name}
                 </h3>
 
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-lg font-black text-text-primary">
-                    ₦{product.final_price.toLocaleString()}
+                    ₦
+                    {("final_price" in product
+                      ? product.final_price
+                      : product.price
+                    ).toLocaleString()}
                   </span>
-                  {product.original_price > product.final_price && (
-                    <span className="text-xs text-text-tertiary line-through">
-                      ₦{product.original_price.toLocaleString()}
-                    </span>
-                  )}
+                  {"original_price" in product &&
+                    product.original_price > product.final_price && (
+                      <span className="text-xs text-text-tertiary line-through">
+                        ₦{product.original_price.toLocaleString()}
+                      </span>
+                    )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-dashed flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-text-secondary">
-                    <span className="flex items-center gap-1 text-xs">
-                      <Icon name="Package" size={12} /> {product.quantity}
-                    </span>
-                    {/* <span className="flex items-center gap-1 text-xs"><Icon name="Star" size={12}/> 0</span> */}
+                {"quantity" in product && (
+                  <div className="mt-auto pt-4 border-t border-dashed flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-text-secondary">
+                      <span className="flex items-center gap-1 text-xs">
+                        <Icon name="Package" size={12} /> {product.quantity}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           ))}
@@ -225,7 +244,7 @@ const MyListings = () => {
                       {catalog.name}
                     </h3>
                     <p className="text-white/70 text-xs font-medium uppercase tracking-widest">
-                      {catalog.product_count || 0} Products
+                      {catalog.products?.length || 0} Products
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-primary group-hover:scale-110 transition-all">

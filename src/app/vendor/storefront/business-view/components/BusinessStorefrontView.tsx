@@ -427,7 +427,7 @@ const BusinessStorefrontView: React.FC<Props> = ({
                         Storefront Link
                       </p>
                       <p className="text-sm font-semibold">
-                        siiqo.com/{business.storefront_link}
+                        siiqo.com/storefront-details/{business.storefront_link}
                       </p>
                     </div>
                   </div>

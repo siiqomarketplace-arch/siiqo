@@ -15,7 +15,7 @@ import Button from "@/components/ui/new/Button";
 import Input from "@/components/ui/new/Input";
 import Select from "@/components/ui/new/NewSelect";
 import { vendorService } from "@/services/vendorService";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { productService } from "@/services/productService";
 import { useLocationDetection } from "@/hooks/useLocationDetection";
 import ShareModal from "@/components/ShareModal";
@@ -137,6 +137,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   editingProduct = null,
   // loading = false,
 }) => {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<WizardStep>("photos");
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [dragActive, setDragActive] = useState<boolean>(false);
@@ -169,10 +170,18 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
           latitude: autoDetectedLocation.latitude || "",
           longitude: autoDetectedLocation.longitude || "",
         }));
-        toast.success("Location detected successfully!");
+        toast({
+          title: "Success",
+          description: "Location detected successfully!",
+          variant: "default",
+        });
       }
     } catch (error) {
-      toast.error("Failed to detect location. Please enter manually.");
+      toast({
+        title: "Error",
+        description: "Failed to detect location. Please enter manually.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -420,12 +429,44 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   const processSubmission = async (isPublished: boolean) => {
     if (loading) return;
 
-    // Validate required fields
-    if (!formData.name || !formData.category || !formData.price) {
-      toast.error("Missing required fields", {
-        description:
-          "Please fill in name, category, and price before publishing.",
-        duration: 4000,
+    // Validate required fields with detailed error messages
+    const errors: string[] = [];
+
+    // if (!formData.name || formData.name.trim() === "") {
+    //   errors.push("Product name is required");
+    // }
+
+    // if (!formData.category || formData.category.trim() === "") {
+    //   errors.push("Product category is required");
+    // }
+
+    // if (!formData.price || parseFloat(formData.price) <= 0) {
+    //   errors.push("Product price is required and must be greater than 0");
+    // }
+
+    // if (!formData.description || formData.description.trim() === "") {
+    //   errors.push("Product description is required");
+    // }
+
+    if (!formData.name || formData.name.trim() === "") {
+      errors.push("• Product name is required.");
+    }
+    if (!formData.category || formData.category.trim() === "") {
+      errors.push("• Product category is required.");
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      errors.push("• Product price is required and must be greater than 0.");
+    }
+    if (!formData.description || formData.description.trim() === "") {
+      errors.push("• Product description is required.");
+    }
+
+    if (errors.length > 0) {
+      const errorMessage = errors.join("\n");
+      toast({
+        title: "Missing required fields",
+        description: errorMessage,
+        variant: "destructive",
       });
       return;
     }
@@ -462,8 +503,8 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
       formDataPayload.append("dimensions", JSON.stringify(formData.dimensions));
       formDataPayload.append("seo_title", formData.seoTitle);
       formDataPayload.append("seo_description", formData.seoDescription);
-      formDataPayload.append("status", isPublished ? "active" : "draft");
-      formDataPayload.append("is_published", String(isPublished));
+      formDataPayload.append("status", !saveAsDraft ? "active" : "draft");
+      formDataPayload.append("is_published", String(!saveAsDraft));
       formDataPayload.append("location", formData.location || "");
 
       // Add latitude and longitude if available
@@ -513,17 +554,15 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         altId: response?.data?.product_id,
       });
 
-      toast.success(
-        editingProduct
+      toast({
+        title: editingProduct
           ? "✓ Product updated successfully!"
           : "✓ Product added successfully!",
-        {
-          description: editingProduct
-            ? "Your product changes have been saved."
-            : "Your product is now live in the marketplace!",
-          duration: 4000,
-        },
-      );
+        description: editingProduct
+          ? "Your product changes have been saved."
+          : "Your product is now live in the marketplace!",
+        variant: "default",
+      });
       onSave(response.data || response);
 
       // For new products, show share modal; for edits, just close
@@ -565,19 +604,21 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
         error.response?.data?.message ||
         error.message ||
         "Failed to save product.";
-      toast.error(errorMsg, {
+      toast({
+        title: errorMsg,
         description: "Please check your input and try again.",
-        duration: 5000,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
-  if (!isOpen) return null;
 
   /* ===========================
      UI
      =========================== */
+
+  if (!isOpen) return <></>;
 
   return (
     <div className="fixed inset-0 z-50 md:ml-28 flex items-start md:items-center justify-center p-4 bg-black/50">
@@ -806,7 +847,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                     </div>
 
                     <Input
-                      label="Product Title"
+                      label="Product Title "
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
@@ -816,7 +857,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
                     <div>
                       <label className="block mb-2 text-sm font-medium text-foreground">
-                        Description
+                        Description *
                       </label>
                       <textarea
                         name="description"
@@ -830,7 +871,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
                     <div>
                       <label className="block mb-2 text-sm font-medium text-foreground">
-                        Category
+                        Category *
                       </label>
                       {categoriesLoading ? (
                         <div className="w-full px-3 py-2 border rounded-lg border-border bg-background flex items-center gap-2 text-muted-foreground">
@@ -872,7 +913,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                     <h4 className="text-base font-semibold">Pricing</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <Input
-                        label="Price (₦ / currency)"
+                        label="Price (₦ / currency) *"
                         name="price"
                         type="text"
                         value={formatPriceDisplay(formData.price)}

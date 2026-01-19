@@ -270,7 +270,7 @@ const ProductInfo = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between py-4 border-t border-b border-border">
+        {/* <div className="flex items-center justify-between py-4 border-t border-b border-border">
           <div>
             <span className="text-sm text-text-secondary">Condition</span>
             <p className="font-medium text-text-primary">{product.condition}</p>
@@ -281,7 +281,7 @@ const ProductInfo = ({
               {formatTimeAgo(product.lastUpdated)}
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div>
           <h3 className="mb-3 text-lg font-semibold font-heading text-text-primary">

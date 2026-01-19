@@ -102,7 +102,7 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
 
           <div className="flex items-center mb-2 space-x-2">
             <span className="text-lg font-semibold text-text-primary">
-              {product.price !== undefined ? `₦${product.price}` : ""}
+              {product.price !== undefined ? `₦${product.price.toLocaleString()}` : ""}
             </span>
             {/* <span className="text-sm line-through text-text-secondary">
               {dealData.price !== undefined

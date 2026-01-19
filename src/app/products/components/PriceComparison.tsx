@@ -93,10 +93,10 @@ const PriceComparison = ({
                   )}
                 </div>
                 <div className="flex items-center space-x-4 text-sm text-text-secondary">
-                  <div className="flex items-center space-x-1">
+                  {/* <div className="flex items-center space-x-1">
                     <Icon name="Package" size={12} />
                     <span>{comparison.condition}</span>
-                  </div>
+                  </div> */}
                   <div className="flex items-center space-x-1">
                     <Icon name="MapPin" size={12} />
                     <span>{comparison.distance} mi</span>
