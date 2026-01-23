@@ -324,7 +324,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <p className="text-sm text-muted-foreground">Loading categories...</p>
         ) : (
           <div
-            className={`md:flex items-center justify-start gap-4 ${
+            className={`md:flex flex-wrap items-center overflow-x-auto justify-start gap-4 ${
               isMobile ? "space-y-1.5" : "space-y-2"
             }`}
           >

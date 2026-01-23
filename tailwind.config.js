@@ -51,6 +51,12 @@ module.exports = {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        dance: {
+          "0%, 100%": { transform: "translateX(0) rotate(0deg)" },
+          "25%": { transform: "translateX(-5px) rotate(-2deg)" },
+          "50%": { transform: "translateX(5px) rotate(2deg)" },
+          "75%": { transform: "translateX(-5px) rotate(-2deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -59,6 +65,7 @@ module.exports = {
         "slide-up": "slideUp 0.3s ease-in-out",
         "slide-down": "slideDown 0.3s ease-in-out",
         "fade-in": "fadeIn 0.2s ease-out",
+        dance: "dance 0.6s ease-in-out infinite",
       },
       colors: {
         border: "hsl(var(--border))",

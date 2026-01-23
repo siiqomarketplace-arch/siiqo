@@ -73,9 +73,9 @@ type WizardStep =
   | "details"
   | "pricing"
   | "inventory"
-  | "seo"
+  // | "seo"
   | "location"
-  | "availability"
+  // | "availability"
   | "preview";
 
 /* Component props */
@@ -208,7 +208,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
           Array.isArray(response.categories)
         ) {
           const options = response.categories.map((cat: any) => ({
-            value: cat.name.toLowerCase().replace(/\s+/g, "-"),
+            value: cat.name,
             label: cat.name,
           }));
           setCategoryOptions(options);
@@ -407,9 +407,9 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
     { id: "details", label: "Details", icon: "Info" },
     { id: "pricing", label: "Pricing", icon: "DollarSign" },
     { id: "inventory", label: "Inventory", icon: "Package" },
-    { id: "seo", label: "SEO", icon: "Search" },
+    // { id: "seo", label: "SEO", icon: "Search" },
     { id: "location", label: "Location", icon: "MapPin" },
-    { id: "availability", label: "Availability", icon: "Calendar" },
+    // { id: "availability", label: "Availability", icon: "Calendar" },
     { id: "preview", label: "Preview", icon: "Eye" },
   ];
 
@@ -921,7 +921,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         placeholder="0.00"
                         required
                       />
-                      <Input
+                      {/* <Input
                         label="Compare at Price"
                         name="comparePrice"
                         type="text"
@@ -936,7 +936,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         value={formatPriceDisplay(formData.cost)}
                         onChange={handlePriceChange}
                         placeholder="0.00"
-                      />
+                      /> */}
                     </div>
                   </div>
                 </motion.div>
@@ -953,7 +953,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                 >
                   <div className="space-y-6">
                     <h4 className="text-base font-semibold">Inventory</h4>
-
+{/* 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label="SKU"
@@ -969,7 +969,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter barcode"
                       />
-                    </div>
+                    </div> */}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
@@ -982,7 +982,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         min="0"
                         required
                       />
-                      <Input
+                      {/* <Input
                         label="Low Stock Threshold"
                         name="lowStockThreshold"
                         type="number"
@@ -990,10 +990,10 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         onChange={handleInputChange}
                         placeholder="10"
                         min="0"
-                      />
+                      /> */}
                     </div>
 
-                    <div>
+                    {/* <div>
                       <h5 className="font-medium text-foreground">Shipping</h5>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                         <Input
@@ -1036,13 +1036,13 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                           placeholder="0"
                         />
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </motion.div>
               )}
 
               {/* SEO */}
-              {currentStep === "seo" && (
+              {/* {currentStep === "seo" && (
                 <motion.div
                   key="seo"
                   initial={{ opacity: 0, x: 20 }}
@@ -1075,7 +1075,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                     </div>
                   </div>
                 </motion.div>
-              )}
+              )} */}
 
               {/* LOCATION */}
               {currentStep === "location" && (
@@ -1134,7 +1134,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
               )}
 
               {/* AVAILABILITY */}
-              {currentStep === "availability" && (
+              {/* {currentStep === "availability" && (
                 <motion.div
                   key="availability"
                   initial={{ opacity: 0, x: 20 }}
@@ -1184,7 +1184,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                     </div>
                   </div>
                 </motion.div>
-              )}
+              )} */}
 
               {/* PREVIEW */}
               {currentStep === "preview" && (
@@ -1243,9 +1243,9 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         <p className="text-sm mt-1">
                           Stock: {formData.stock || 0}
                         </p>
-                        <p className="text-sm mt-1">
+                        {/* <p className="text-sm mt-1">
                           SKU: {formData.sku || "-"}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                   </div>

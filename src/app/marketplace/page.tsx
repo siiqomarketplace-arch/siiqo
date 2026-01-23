@@ -12,6 +12,7 @@ import Icon from "@/components/ui/AppIcon";
 import ProductCard from "./components/ProductCard";
 import SearchSuggestions from "./components/SearchSuggestions";
 import FilterPanel from "./components/FilterPanel";
+import CategoryGrid from "@/app/home/components/CategoryGrid";
 import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import { useLocation } from "@/context/LocationContext";
 import api_endpoints from "@/hooks/api_endpoints";
@@ -21,12 +22,17 @@ const MarketplaceBrowse = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchMode, setSearchMode] = useState<"storefront" | "product">(
-    "product"
+    "product",
   );
+  const [viewMode, setViewMode] = useState<"list" | "categories">("list");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [storefronts, setStorefronts] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryProducts, setCategoryProducts] = useState<{
+    [key: string]: any[];
+  }>({});
   const [hasError, setHasError] = useState(false);
   const { coords } = useLocation();
 
@@ -43,7 +49,11 @@ const MarketplaceBrowse = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeFilters, searchMode]);
+    if (searchMode === "storefront") {
+      setViewMode("list");
+      setSelectedCategory(null);
+    }
+  }, [searchQuery, activeFilters, searchMode, setViewMode]);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -106,76 +116,95 @@ const MarketplaceBrowse = () => {
     setHasError(false);
 
     try {
+      // Fetch categories with products included
+      const categoriesRes = await fetch(api_endpoints.GET_CATEGORIES);
+      const categoriesJson = await categoriesRes.json();
+
+      // Fetch nearby/all storefronts
       const baseUrl = api_endpoints.MARKETPLACE_SEARCH;
-      const query = searchParams.get("q") || "";
-
-      const url = new URL(
-        baseUrl,
-        typeof window !== "undefined" ? window.location.origin : ""
-      );
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const nearUrl = new URL(baseUrl, origin);
+      const allUrl = new URL(baseUrl, origin);
       if (coords?.lat && coords?.lng) {
-        url.searchParams.set("lat", String(coords.lat));
-        url.searchParams.set("lng", String(coords.lng));
+        nearUrl.searchParams.set("lat", String(coords.lat));
+        nearUrl.searchParams.set("lng", String(coords.lng));
       }
-      if (query) url.searchParams.set("q", query);
 
-      const response = await fetch(url.toString());
-      const json = await response.json();
+      let nearJson: any = null;
+      let allJson: any = null;
+      try {
+        const [nearRes, allRes] = await Promise.all([
+          fetch(nearUrl.toString()),
+          fetch(allUrl.toString()),
+        ]);
+        [nearJson, allJson] = await Promise.all([
+          nearRes.json(),
+          allRes.json(),
+        ]);
+      } catch (storeErr) {
+        console.warn("Marketplace storefront fetch error:", storeErr);
+      }
 
-      if (json.status === "success") {
-        let p = json.data?.nearby_products || [];
-        let s = json.data?.nearby_stores || [];
+      if (
+        categoriesJson?.categories &&
+        Array.isArray(categoriesJson.categories)
+      ) {
+        // Organize categories with their products
+        const grouped: { [key: string]: any[] } = {};
+        const allProducts: any[] = [];
 
-        // ALWAYS: Fetch all products to supplement nearby ones
-        const allProductsUrl = new URL(
-          baseUrl,
-          typeof window !== "undefined" ? window.location.origin : ""
-        );
-        if (query) allProductsUrl.searchParams.set("q", query);
-        const allProductsRes = await fetch(allProductsUrl.toString());
-        const allProductsJson = await allProductsRes.json();
-        const allProducts =
-          allProductsJson.data?.products ||
-          allProductsJson.data?.nearby_products ||
-          [];
+        categoriesJson.categories.forEach((category: any) => {
+          // Process products
+          if (category.products && Array.isArray(category.products)) {
+            const transformedCategoryProducts = category.products.map(
+              (product: any) =>
+                transformApiProduct({
+                  ...product,
+                  category: category.name,
+                }),
+            );
+            grouped[category.name] = transformedCategoryProducts;
+            allProducts.push(...transformedCategoryProducts);
+          }
+        });
 
-        // Merge products: nearby first, then add remaining all products (avoid duplicates)
-        const productIds = new Set(p.map((product: any) => product.id));
-        p = [
-          ...p,
-          ...allProducts.filter((product: any) => !productIds.has(product.id)),
-        ];
+        const dedup = (arr: any[]) => {
+          const seen = new Set();
+          return arr.filter((it) => {
+            const id = it?.id || it?.slug || it?.store_slug;
+            if (!id) return false;
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+        };
 
-        // ALWAYS: Fetch all stores to supplement nearby ones
-        const allStoresUrl = new URL(
-          baseUrl,
-          typeof window !== "undefined" ? window.location.origin : ""
-        );
-        if (query) allStoresUrl.searchParams.set("q", query);
-        const allStoresRes = await fetch(allStoresUrl.toString());
-        const allStoresJson = await allStoresRes.json();
+        const nearStores =
+          nearJson?.data?.nearby_stores || nearJson?.data?.storefronts || [];
         const allStores =
-          allStoresJson.data?.storefronts ||
-          allStoresJson.data?.nearby_stores ||
-          [];
+          allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
+        // Ensure nearby stores appear first, then the rest
+        const mergedStores = dedup([...nearStores, ...allStores]);
+        const normalizedStores = mergedStores.map((store: any) =>
+          transformApiStorefront(store),
+        );
 
-        // Merge stores: nearby first, then add remaining all stores (avoid duplicates)
-        const storeIds = new Set(s.map((store: any) => store.slug || store.id));
-        s = [
-          ...s,
-          ...allStores.filter(
-            (store: any) => !storeIds.has(store.slug || store.id)
-          ),
-        ];
-
-        // Apply proximity sorting to both products and storefronts
+        // Apply proximity sorting if coords available
         if (coords?.lat && coords?.lng) {
-          p = sortByProximity(p, { lat: coords.lat, lng: coords.lng });
-          s = sortByProximity(s, { lat: coords.lat, lng: coords.lng });
+          const sorted = sortByProximity(allProducts, {
+            lat: coords.lat,
+            lng: coords.lng,
+          });
+          setProducts(sorted);
+          // Keep nearby stores first; avoid reordering storefronts
+          setStorefronts(normalizedStores);
+        } else {
+          setProducts(allProducts);
+          setStorefronts(normalizedStores);
         }
 
-        setProducts(p.map(transformApiProduct));
-        setStorefronts(s.map(transformApiStorefront));
+        setCategoryProducts(grouped);
       } else {
         setHasError(true);
       }
@@ -189,7 +218,12 @@ const MarketplaceBrowse = () => {
 
   useEffect(() => {
     const q = searchParams.get("q");
+    const cat = searchParams.get("category");
     if (q) setSearchQuery(q);
+    if (cat) {
+      setSelectedCategory(cat);
+      setViewMode("list");
+    }
     fetchData();
   }, [searchParams, coords]);
 
@@ -198,13 +232,21 @@ const MarketplaceBrowse = () => {
 
     if (activeFilters.priceRange?.max) {
       current = current.filter(
-        (p) => p.price <= parseFloat(activeFilters.priceRange.max)
+        (p) => p.price <= parseFloat(activeFilters.priceRange.max),
       );
     }
 
     if (searchQuery) {
       current = current.filter((item) =>
-        (item.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        (item.name || "").toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    if (searchMode === "product" && selectedCategory) {
+      current = current.filter(
+        (item) =>
+          String(item.category || "").toLowerCase() ===
+          selectedCategory.toLowerCase(),
       );
     }
 
@@ -217,20 +259,34 @@ const MarketplaceBrowse = () => {
     searchMode,
     searchQuery,
     currentPage,
+    selectedCategory,
   ]);
 
   const totalItemsCount = useMemo(() => {
     let curr = searchMode === "product" ? [...products] : [...storefronts];
     if (activeFilters.priceRange?.max)
       curr = curr.filter(
-        (p) => p.price <= parseFloat(activeFilters.priceRange.max)
+        (p) => p.price <= parseFloat(activeFilters.priceRange.max),
       );
     if (searchQuery)
       curr = curr.filter((item) =>
-        (item.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        (item.name || "").toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    if (searchMode === "product" && selectedCategory)
+      curr = curr.filter(
+        (item) =>
+          String(item.category || "").toLowerCase() ===
+          selectedCategory.toLowerCase(),
       );
     return curr.length;
-  }, [products, storefronts, activeFilters, searchMode, searchQuery]);
+  }, [
+    products,
+    storefronts,
+    activeFilters,
+    searchMode,
+    searchQuery,
+    selectedCategory,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(totalItemsCount / itemsPerPage));
 
@@ -294,7 +350,7 @@ const MarketplaceBrowse = () => {
               <div
                 onClick={() =>
                   setSearchMode(
-                    searchMode === "storefront" ? "product" : "storefront"
+                    searchMode === "storefront" ? "product" : "storefront",
                   )
                 }
                 className={`w-12 h-6 rounded-full cursor-pointer p-1 transition-all ${
@@ -379,7 +435,7 @@ const MarketplaceBrowse = () => {
           <div
             onClick={() =>
               setSearchMode(
-                searchMode === "storefront" ? "product" : "storefront"
+                searchMode === "storefront" ? "product" : "storefront",
               )
             }
             className={`w-12 h-6 rounded-full cursor-pointer p-1 transition-all ${
@@ -430,42 +486,112 @@ const MarketplaceBrowse = () => {
           </div>
         ) : (
           <>
-            <div className="grid justify-center grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
-              {displayItems.map((item) => (
-                <ProductCard
-                  key={`${item.isProduct ? "p" : "s"}-${item.id || item.slug}`}
-                  product={item}
-                  onAddToCart={() => console.log("Added to cart", item)}
-                  onQuickView={() => console.log("Quick view", item)}
-                  onAddToWishlist={(id, state) =>
-                    console.log("Wishlist", id, state)
-                  }
-                  cartQuantities={{}}
-                  isAddingToCart={{}}
-                />
-              ))}
-              {displayItems.length === 0 && (
-                <div className="col-span-full py-20 text-center flex flex-col items-center">
-                  <Icon
-                    name="SearchX"
-                    size={48}
-                    className="text-slate-300 mb-4"
-                  />
-                  <p className="text-slate-500 font-medium">
-                    No {searchMode === "product" ? "products" : "stores"} found.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      fetchData();
+            {/* View Mode Toggle - Only show for products, not for storefronts */}
+            {searchMode === "product" && !searchQuery && (
+              <div className="flex gap-2 items-center px-6 py-4 bg-white border-b border-gray-200">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                    viewMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Icon name="Grid3X3" size={16} className="inline mr-2" />
+                  Grid View
+                </button>
+                <button
+                  onClick={() => setViewMode("categories")}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                    viewMode === "categories"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Icon name="Layers" size={16} className="inline mr-2" />
+                  Browse by Categories
+                </button>
+              </div>
+            )}
+
+            {/* Category View */}
+            {viewMode === "categories" &&
+              searchMode === "product" &&
+              !searchQuery && (
+                <div className="p-6 bg-white">
+                  <CategoryGrid
+                    categoryProducts={categoryProducts}
+                    isLoading={false}
+                    onCategorySelect={(categoryName) => {
+                      setSelectedCategory(categoryName);
+                      setViewMode("list");
+                      setCurrentPage(1);
                     }}
-                    className="text-blue-600 text-sm font-bold mt-2 hover:underline"
-                  >
-                    Clear all filters
-                  </button>
+                  />
                 </div>
               )}
-            </div>
+
+            {/* List/Grid View */}
+            {viewMode === "list" && (
+              <div className="p-6">
+                {searchMode === "product" && selectedCategory && (
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-5">
+                    <div className="text-sm font-semibold text-slate-700">
+                      Showing category:{" "}
+                      <span className="text-blue-600">{selectedCategory}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setCurrentPage(1);
+                      }}
+                      className="text-xs font-bold text-slate-600 hover:text-slate-800"
+                    >
+                      Clear category
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid justify-center grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
+                  {displayItems.map((item) => (
+                    <ProductCard
+                      key={`${item.isProduct ? "p" : "s"}-${item.id || item.slug}`}
+                      product={item}
+                      onAddToCart={() => console.log("Added to cart", item)}
+                      onQuickView={() => console.log("Quick view", item)}
+                      onAddToWishlist={(id, state) =>
+                        console.log("Wishlist", id, state)
+                      }
+                      cartQuantities={{}}
+                      isAddingToCart={{}}
+                    />
+                  ))}
+                  {displayItems.length === 0 && (
+                    <div className="col-span-full py-20 text-center flex flex-col items-center">
+                      <Icon
+                        name="SearchX"
+                        size={48}
+                        className="text-slate-300 mb-4"
+                      />
+                      <p className="text-slate-500 font-medium">
+                        No {searchMode === "product" ? "products" : "stores"}{" "}
+                        found.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSelectedCategory(null);
+                          fetchData();
+                        }}
+                        className="text-blue-600 text-sm font-bold mt-2 hover:underline"
+                      >
+                        Clear all filters
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Pagination */}
             {totalItemsCount > itemsPerPage && (

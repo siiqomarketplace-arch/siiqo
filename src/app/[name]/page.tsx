@@ -19,6 +19,7 @@ import ContactVendorModal from "@/app/vendor-public-view/[name]/ContactVendorMod
 import ShareModal from "@/components/ShareModal";
 import { productService } from "@/services/productService";
 import api_endpoints from "@/hooks/api_endpoints";
+import { getServerErrorMessage } from "@/lib/errorHandler";
 
 interface StoreInfo {
   address: string;
@@ -36,6 +37,33 @@ interface StoreInfo {
   whatsapp_link: string | null;
 }
 
+interface StoreSettings {
+  financials: {
+    account_number: string;
+    bank_name: string;
+    business_address: string;
+    latitude: number;
+    longitude: number;
+    wallet_address: string;
+  };
+  personal_info: {
+    email: string;
+    fullname: string;
+    phone: string;
+    referral_code: string;
+  };
+  store_settings: {
+    banner_url: string;
+    business_name: string;
+    description: string;
+    initialized: boolean;
+    is_published: boolean;
+    logo_url: string;
+    social_links: Record<string, string>;
+    working_hours: Record<string, any>;
+  };
+}
+
 interface StorefrontDetailsResponse {
   catalogs: any[];
   status: string;
@@ -46,7 +74,11 @@ const StorefrontDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
   const [store, setStore] = useState<StoreInfo | null>(null);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -89,7 +121,7 @@ const StorefrontDetailsPage = () => {
 
         const response = await fetch(
           api_endpoints.MARKETPLACE_STORE(storeName),
-          { headers }
+          { headers },
         );
 
         if (!response.ok) {
@@ -106,14 +138,68 @@ const StorefrontDetailsPage = () => {
         }
       } catch (err: any) {
         console.error("Error fetching store details:", err);
-        setError(err.message || "Failed to load store details");
-        toast.error("Failed to load store details");
+        const errorMessage = getServerErrorMessage(err, "Fetch Store Details");
+        setError(errorMessage.message);
+        toast.error(errorMessage.title, { description: errorMessage.message });
       } finally {
         setLoading(false);
       }
     };
 
     fetchStoreDetails();
+  }, [storeName]);
+
+  // Fetch store settings for public details
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      try {
+        setSettingsLoading(true);
+
+        // Get authorization token
+        const token =
+          typeof window !== "undefined"
+            ? sessionStorage.getItem("RSToken") ||
+              localStorage.getItem("RSToken")
+            : null;
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${api_endpoints.VENDOR_SETTINGS}?store=${storeName}`,
+          { headers },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "success" && data.data) {
+            setStoreSettings(data.data);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching store settings:", err);
+        const errorMessage = getServerErrorMessage(err, "Fetch Store Settings");
+        // Only log warnings for store settings - not critical for display
+        if (errorMessage.isServerError) {
+          console.warn(
+            "Server issue loading store settings:",
+            errorMessage.message,
+          );
+        }
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    if (storeName) {
+      fetchStoreSettings();
+    }
   }, [storeName]);
 
   // Fetch catalogs for this store
@@ -153,6 +239,12 @@ const StorefrontDetailsPage = () => {
         }
       } catch (err) {
         console.error("Error fetching catalogs:", err);
+        const errorMessage = getServerErrorMessage(err, "Fetch Catalogs");
+        if (errorMessage.isServerError) {
+          toast.error(errorMessage.title, {
+            description: errorMessage.message,
+          });
+        }
       } finally {
         setLoadingCatalogs(false);
       }
@@ -371,11 +463,11 @@ const StorefrontDetailsPage = () => {
                             {hours.start && hours.end
                               ? `${hours.start} - ${hours.end}`
                               : hours.start
-                              ? `From ${hours.start}`
-                              : "Closed"}
+                                ? `From ${hours.start}`
+                                : "Closed"}
                           </span>
                         </div>
-                      )
+                      ),
                     )
                   ) : (
                     <p className="text-xs text-gray-400 text-center py-3">
@@ -399,6 +491,103 @@ const StorefrontDetailsPage = () => {
                   )}
                 </div>
               </div>
+
+              {/* Store Details Card */}
+              {/* <div className="p-6 border rounded-2xl bg-white shadow-sm">
+                <h3 className="text-xs font-black uppercase tracking-widest mb-4">
+                  Store Information
+                </h3>
+                <div className="space-y-3">
+                  {storeSettings?.personal_info?.email && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Icon name="Mail" size={14} className="text-blue-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">
+                          Email
+                        </p>
+                        <p className="text-sm font-medium text-gray-700 break-all">
+                          {storeSettings.personal_info.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {storeSettings?.personal_info?.phone &&
+                    storeSettings.personal_info.phone !== "Not provided" && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                          <Icon
+                            name="Phone"
+                            size={14}
+                            className="text-green-600"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase tracking-widest">
+                            Phone
+                          </p>
+                          <p className="text-sm font-medium text-gray-700">
+                            {storeSettings.personal_info.phone}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                  {storeSettings?.financials?.business_address && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                        <MapPin size={14} className="text-purple-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">
+                          Location
+                        </p>
+                        <p className="text-sm font-medium text-gray-700">
+                          {storeSettings.financials.business_address}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {storeSettings?.store_settings?.social_links?.website && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                        <Icon
+                          name="Globe"
+                          size={14}
+                          className="text-orange-600"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">
+                          Website
+                        </p>
+                        <a
+                          href={
+                            storeSettings.store_settings.social_links.website
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary hover:underline truncate"
+                        >
+                          {storeSettings.store_settings.social_links.website}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {!storeSettings ||
+                  (!storeSettings.personal_info?.email &&
+                    !storeSettings.financials?.business_address &&
+                    !storeSettings.store_settings?.social_links?.website) ? (
+                    <p className="text-xs text-gray-400 text-center py-2">
+                      Store information not available
+                    </p>
+                  ) : null}
+                </div>
+              </div> */}
 
               {/* Quick Stats */}
               <div className="p-6 border rounded-2xl bg-white shadow-sm">
@@ -424,7 +613,7 @@ const StorefrontDetailsPage = () => {
                       {catalogs.reduce(
                         (total: number, cat: any) =>
                           total + (cat.products?.length || 0),
-                        0
+                        0,
                       )}
                     </span>
                   </div>
@@ -581,7 +770,7 @@ const StorefrontDetailsPage = () => {
                         .filter((c: any) => c.name)
                         .slice(
                           (catalogPage - 1) * catalogsPerPage,
-                          catalogPage * catalogsPerPage
+                          catalogPage * catalogsPerPage,
                         )
                         .map((catalog: any) => (
                           <div
@@ -658,7 +847,7 @@ const StorefrontDetailsPage = () => {
                           {Array.from({
                             length: Math.ceil(
                               catalogs.filter((c: any) => c.name).length /
-                                catalogsPerPage
+                                catalogsPerPage,
                             ),
                           }).map((_, i) => (
                             <button
@@ -681,7 +870,7 @@ const StorefrontDetailsPage = () => {
                             catalogPage >=
                             Math.ceil(
                               catalogs.filter((c: any) => c.name).length /
-                                catalogsPerPage
+                                catalogsPerPage,
                             )
                           }
                           className="px-4 py-2 border rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
@@ -715,7 +904,7 @@ const StorefrontDetailsPage = () => {
                     (cat.products || []).map((p: any) => ({
                       ...p,
                       catalogName: cat.name,
-                    }))
+                    })),
                   );
 
                   return allProducts.length > 0 ? (

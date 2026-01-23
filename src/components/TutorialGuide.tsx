@@ -66,11 +66,11 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 4,
-    title: "Become a Vendor",
+    title: "Become a Vendor/Create a Storefront",
     description: "Set up your store on Siiqo",
     details: [
       "Go to your profile menu",
-      "Select 'Become a Vendor'",
+      "Select 'Create a Storefront' ",
       "Fill in your business details (name, description, address)",
       "Upload your store logo and banner",
       "Add bank details for payouts",

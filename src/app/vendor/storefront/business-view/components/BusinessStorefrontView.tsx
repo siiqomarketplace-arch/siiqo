@@ -22,6 +22,7 @@ import { StorefrontData } from "@/types/vendor/storefront";
 import { productService } from "@/services/productService";
 import { vendorService } from "@/services/vendorService";
 import { toast } from "@/components/ui/sonner";
+import { getServerErrorMessage } from "@/lib/errorHandler";
 
 interface Props {
   storefrontData: StorefrontData | null;
@@ -46,6 +47,22 @@ const BusinessStorefrontView: React.FC<Props> = ({
     setRefetchTrigger((prev) => prev + 1);
   }, []);
 
+  const handleDeleteCatalog = useCallback(
+    async (catalogId: string | number) => {
+      try {
+        await productService.deleteCatalog(catalogId);
+        toast.success("Catalog deleted successfully!");
+        // Refresh catalogs list
+        refetchCatalogs();
+      } catch (error) {
+        console.error("Error deleting catalog:", error);
+        const errorMessage = getServerErrorMessage(error, "Delete Catalog");
+        toast.error(errorMessage.title, { description: errorMessage.message });
+      }
+    },
+    [refetchCatalogs],
+  );
+
   useEffect(() => {
     const fetchCatalogs = async () => {
       setfetchingCatalogs(true);
@@ -69,6 +86,10 @@ const BusinessStorefrontView: React.FC<Props> = ({
         }
       } catch (error) {
         console.error("Failed to load catalogs");
+        const errorMessage = getServerErrorMessage(error, "Fetch Catalogs");
+        if (errorMessage.isServerError) {
+          console.warn("Server issue loading catalogs:", errorMessage.message);
+        }
       } finally {
         setfetchingCatalogs(false);
       }
@@ -153,6 +174,14 @@ const BusinessStorefrontView: React.FC<Props> = ({
         }
       } catch (error) {
         console.error("Error syncing data:", error);
+        const errorMessage = getServerErrorMessage(
+          error,
+          "Sync Storefront Data",
+        );
+        // Don't break UI for sync errors - log only
+        if (errorMessage.isServerError) {
+          console.warn("Server issue syncing data:", errorMessage.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -205,6 +234,7 @@ const BusinessStorefrontView: React.FC<Props> = ({
             <ProductGrid
               collections={availableCatalogs}
               isLoading={fetchingCatalogs}
+              onDeleteCatalog={handleDeleteCatalog}
             />
           </div>
         );
@@ -290,7 +320,7 @@ const BusinessStorefrontView: React.FC<Props> = ({
                             {String(url)}
                           </a>
                         </div>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -427,7 +457,7 @@ const BusinessStorefrontView: React.FC<Props> = ({
                         Storefront Link
                       </p>
                       <p className="text-sm font-semibold">
-                        siiqo.com/storefront-details/{business.storefront_link}
+                        siiqo.com/{business.storefront_link}
                       </p>
                     </div>
                   </div>
@@ -465,11 +495,11 @@ const BusinessStorefrontView: React.FC<Props> = ({
                               {hours.start && hours.end
                                 ? `${hours.start} - ${hours.end}`
                                 : hours.start
-                                ? `From ${hours.start}`
-                                : "Closed"}
+                                  ? `From ${hours.start}`
+                                  : "Closed"}
                             </span>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </>

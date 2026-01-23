@@ -172,7 +172,7 @@ const MyListings = () => {
                     ("images" in product ? product.images[0] : product.image) ||
                     "/placeholder-product.png"
                   }
-                  fill
+            fill
                   alt={product.name}
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />

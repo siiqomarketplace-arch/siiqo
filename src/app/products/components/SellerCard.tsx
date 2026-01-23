@@ -48,7 +48,7 @@ const SellerCard = ({
       return;
     }
     const message = encodeURIComponent(
-      `Hello ${seller.name}, I'm interested in your product on siiqo.`
+      `Hello ${seller.name}, I'm interested in your product on siiqo.`,
     );
     // Remove non-digits for the URL
     const cleanNumber = seller.phoneNumber.replace(/\D/g, "");
@@ -75,7 +75,7 @@ const SellerCard = ({
       return;
     }
 
-    router.push(`/storefront-details/${seller.slug}`);
+    router.push(`/vendor-public-view/${seller.slug}`);
   };
 
   return (

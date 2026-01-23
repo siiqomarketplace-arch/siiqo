@@ -1,16 +1,34 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Camera, Clock, Building, Globe, CheckCircle2, 
-  Palette, Layout, Phone, Instagram, 
-  Facebook, Trash2, Plus, ChevronLeft, MapPin, CheckCircle
+import {
+  Camera,
+  Clock,
+  Building,
+  Globe,
+  CheckCircle2,
+  Palette,
+  Layout,
+  Phone,
+  Instagram,
+  Facebook,
+  Trash2,
+  Plus,
+  ChevronLeft,
+  MapPin,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Save,
+  X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { vendorService } from "@/services/vendorService"; // Ensure this has updateSettings and uploadImage
+import { vendorService } from "@/services/vendorService";
 import switchMode from "@/services/api";
 import { useLocationDetection } from "@/hooks/useLocationDetection";
+import { getServerErrorMessage } from "@/lib/errorHandler";
+
 interface Props {
   initialData: any;
   onSuccess: () => void;
@@ -18,17 +36,24 @@ interface Props {
 
 const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<
+    "banner_url" | "logo_url" | null
+  >(null);
+  const [uploadSuccess, setUploadSuccess] = useState<
+    "banner_url" | "logo_url" | null
+  >(null);
+  const [activeTab, setActiveTab] = useState<
+    "brand" | "details" | "location" | "design" | "social" | "hours"
+  >("brand");
   const coverInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use the existing location detection hook
   const {
     location: autoDetectedLocation,
     loading: isLocationLoading,
     refresh: detectLocation,
   } = useLocationDetection();
 
-  // Sync state with API structure
   const [settings, setSettings] = useState({
     business_name: initialData?.store_settings?.business_name || "",
     description: initialData?.store_settings?.description || "",
@@ -40,47 +65,33 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
     latitude: initialData?.store_settings?.latitude || "",
     longitude: initialData?.store_settings?.longitude || "",
     template_options: {
-      primary_color: initialData?.store_settings?.template_options?.primary_color || "#000000",
-      secondary_color: initialData?.store_settings?.template_options?.secondary_color || "#ffffff",
-      layout_style: initialData?.store_settings?.template_options?.layout_style || "default"
+      primary_color:
+        initialData?.store_settings?.template_options?.primary_color ||
+        "#075E54",
+      secondary_color:
+        initialData?.store_settings?.template_options?.secondary_color ||
+        "#ffffff",
+      layout_style:
+        initialData?.store_settings?.template_options?.layout_style ||
+        "default",
     },
     banner_url: initialData?.store_settings?.banner_url || null,
     logo_url: initialData?.store_settings?.logo_url || null,
     social_links: initialData?.store_settings?.social_links || {},
     working_hours: initialData?.store_settings?.working_hours || {},
-    is_published: initialData?.store_settings?.is_published || false
+    is_published: initialData?.store_settings?.is_published || false,
   });
-  
-  // Keep a ref of the original settings to compare changes
+
   const originalSettingsRef = React.useRef<any>(null);
 
   useEffect(() => {
-    // Initialize original settings once from initialData
-    originalSettingsRef.current = {
-      business_name: initialData?.store_settings?.business_name || "",
-      description: initialData?.store_settings?.description || "",
-      address: initialData?.store_settings?.address || "",
-      phone: initialData?.personal_info?.phone || "",
-      website: initialData?.store_settings?.website || "",
-      storefront_link: initialData?.store_settings?.storefront_link || "",
-      cac_reg: initialData?.store_settings?.cac_reg || "",
-      latitude: initialData?.store_settings?.latitude || "",
-      longitude: initialData?.store_settings?.longitude || "",
-      template_options: initialData?.store_settings?.template_options || {},
-      banner_url: initialData?.store_settings?.banner_url || null,
-      logo_url: initialData?.store_settings?.logo_url || null,
-      social_links: initialData?.store_settings?.social_links || {},
-      working_hours: initialData?.store_settings?.working_hours || {},
-      is_published: initialData?.store_settings?.is_published || false,
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    originalSettingsRef.current = { ...settings };
   }, []);
 
   const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Handle location detection
   const handleDetectLocation = async () => {
     try {
       await detectLocation();
@@ -90,15 +101,15 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
         toast({ title: "Location detected successfully" });
       }
     } catch (error) {
-      toast({ 
-        title: "Location Error", 
-        description: "Failed to detect location. Please try again or enter manually.", 
-        variant: "destructive" 
+      const errorMsg = getServerErrorMessage(error, "Detect Location");
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.message,
+        variant: "destructive",
       });
     }
   };
 
-  // Update location when auto-detected
   useEffect(() => {
     if (autoDetectedLocation.latitude && autoDetectedLocation.longitude) {
       if (!settings.latitude || !settings.longitude) {
@@ -108,48 +119,53 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
     }
   }, [autoDetectedLocation]);
 
-  // Handle Image Uploads to API
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "banner_url" | "logo_url") => {
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "banner_url" | "logo_url",
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      setIsSaving(true);
+      setUploadingField(field);
       const formData = new FormData();
-      
-      // Upload the file
+
       if (field === "banner_url") {
         formData.append("banner", file);
       } else if (field === "logo_url") {
         formData.append("logo", file);
       }
-      
-      // Use update-settings to upload and update in one call
+
       const response = await vendorService.updateVendorSettings(formData);
-      
-      // Update local state with the returned URLs
+
       if (response?.data?.store_settings?.[field]) {
         updateSetting(field, response.data.store_settings[field]);
+        setUploadSuccess(field);
         toast({ title: "Image uploaded successfully" });
+
+        // Clear success state after 3 seconds
+        setTimeout(() => setUploadSuccess(null), 3000);
       }
     } catch (error) {
-      console.error("Upload failed:", error);
-      toast({ title: "Upload failed", variant: "destructive" });
+      const errorMsg = getServerErrorMessage(error, "Upload Image");
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.message,
+        variant: "destructive",
+      });
     } finally {
-      setIsSaving(false);
+      setUploadingField(null);
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Create FormData with only changed fields
       const original = originalSettingsRef.current || {};
       const formData = new FormData();
 
       const appendIfChanged = (key: string, value: any) => {
         const orig = original[key];
-        // For objects, compare JSON
         if (typeof value === "object" && value !== null) {
           const a = JSON.stringify(value || {});
           const b = JSON.stringify(orig || {});
@@ -160,7 +176,6 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
           return false;
         }
 
-        // For primitives (including empty strings), compare as strings
         if (String(value ?? "") !== String(orig ?? "")) {
           formData.append(key, value ?? "");
           return true;
@@ -168,30 +183,33 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
         return false;
       };
 
-      // Track whether any field changed
       let changed = false;
-
-      changed = appendIfChanged("business_name", settings.business_name) || changed;
+      changed =
+        appendIfChanged("business_name", settings.business_name) || changed;
       changed = appendIfChanged("description", settings.description) || changed;
       changed = appendIfChanged("address", settings.address) || changed;
       changed = appendIfChanged("phone", settings.phone) || changed;
       changed = appendIfChanged("website", settings.website) || changed;
-      changed = appendIfChanged("storefront_link", settings.storefront_link) || changed;
+      changed =
+        appendIfChanged("storefront_link", settings.storefront_link) || changed;
       changed = appendIfChanged("cac_reg", settings.cac_reg) || changed;
       changed = appendIfChanged("latitude", settings.latitude) || changed;
       changed = appendIfChanged("longitude", settings.longitude) || changed;
-      // Nested objects: send as JSON strings if changed
-      changed = appendIfChanged("template_options", settings.template_options) || changed;
-      // Banner/logo handled via separate upload; but allow updating url strings
+      changed =
+        appendIfChanged("template_options", settings.template_options) ||
+        changed;
       if (settings.logo_url && typeof settings.logo_url === "string") {
         changed = appendIfChanged("logo_url", settings.logo_url) || changed;
       }
       if (settings.banner_url && typeof settings.banner_url === "string") {
         changed = appendIfChanged("banner_url", settings.banner_url) || changed;
       }
-      changed = appendIfChanged("social_links", settings.social_links) || changed;
-      changed = appendIfChanged("working_hours", settings.working_hours) || changed;
-      changed = appendIfChanged("is_published", settings.is_published) || changed;
+      changed =
+        appendIfChanged("social_links", settings.social_links) || changed;
+      changed =
+        appendIfChanged("working_hours", settings.working_hours) || changed;
+      changed =
+        appendIfChanged("is_published", settings.is_published) || changed;
 
       if (!changed) {
         toast({ title: "No changes", description: "Nothing to save." });
@@ -199,375 +217,583 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
         return;
       }
 
-      // Call update-settings API with FormData containing only changed keys
       const response = await vendorService.updateVendorSettings(formData);
-      
+
       if (response?.status === "success") {
-        // Trigger refresh in BusinessStorefrontView
         localStorage.setItem("storefrontUpdated", Date.now().toString());
-        
-        toast({ title: "Success", description: "Store settings published!" });
-        onSuccess(); // Refresh parent state
+        toast({
+          title: "Success!",
+          description: "Store settings saved successfully!",
+        });
+        onSuccess();
       }
     } catch (error: any) {
-      console.error("Save failed:", error);
-      toast({ 
-        title: "Save Failed", 
-        description: error?.response?.data?.message || "Could not sync with server.", 
-        variant: "destructive" 
+      const errorMsg = getServerErrorMessage(error, "Save Settings");
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.message,
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
-useEffect(() => {
-  switchMode("vendor");
-})
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32">
-      <input type="file" className="hidden" ref={coverInputRef} onChange={(e) => handleImageUpload(e, "banner_url")} />
-      <input type="file" className="hidden" ref={profileInputRef} onChange={(e) => handleImageUpload(e, "logo_url")} />
 
-      {/* --- HEADER --- */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 h-20 flex items-center justify-between">
+  useEffect(() => {
+    switchMode("vendor");
+  }, []);
+
+  const tabs = [
+    { id: "brand", label: "Brand", icon: Camera },
+    { id: "details", label: "Details", icon: Layout },
+    { id: "location", label: "Location", icon: MapPin },
+    { id: "design", label: "Design", icon: Palette },
+    { id: "social", label: "Social", icon: Globe },
+    { id: "hours", label: "Hours", icon: Clock },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "brand":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Cover Banner
+                </label>
+                <div
+                  onClick={() => coverInputRef.current?.click()}
+                  className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 hover:bg-gray-50 transition-all group"
+                >
+                  {uploadingField === "banner_url" && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2
+                          size={40}
+                          className="text-white animate-spin"
+                        />
+                        <p className="text-white font-semibold text-sm">
+                          Uploading...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadSuccess === "banner_url" && (
+                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-20 animate-pulse">
+                      <div className="flex flex-col items-center gap-2">
+                        <CheckCircle2
+                          size={48}
+                          className="text-green-600 animate-bounce"
+                        />
+                        <p className="text-green-700 font-semibold text-sm">
+                          Uploaded!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.banner_url ? (
+                    <img
+                      src={settings.banner_url}
+                      className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
+                      alt="Banner"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <Camera
+                        size={40}
+                        className="text-gray-400 mx-auto mb-2"
+                      />
+                      <p className="text-sm font-medium text-gray-500">
+                        Click to upload banner
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Store Logo
+                </label>
+                <div
+                  onClick={() => profileInputRef.current?.click()}
+                  className="relative flex items-center justify-center h-56 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary/50 hover:bg-gray-50 transition-all overflow-hidden group"
+                >
+                  {uploadingField === "logo_url" && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2
+                          size={40}
+                          className="text-white animate-spin"
+                        />
+                        <p className="text-white font-semibold text-sm">
+                          Uploading...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadSuccess === "logo_url" && (
+                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-20 animate-pulse">
+                      <div className="flex flex-col items-center gap-2">
+                        <CheckCircle2
+                          size={48}
+                          className="text-green-600 animate-bounce"
+                        />
+                        <p className="text-green-700 font-semibold text-sm">
+                          Uploaded!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.logo_url ? (
+                    <img
+                      src={settings.logo_url}
+                      className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
+                      alt="Logo"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <Building
+                        size={40}
+                        className="text-gray-400 mx-auto mb-2"
+                      />
+                      <p className="text-sm font-medium text-gray-500">
+                        Click to upload
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "details":
+        return (
+          <div className="space-y-4">
+            <FormField
+              label="Business Name"
+              value={settings.business_name}
+              onChange={(e: { target: { value: any } }) =>
+                updateSetting("business_name", e.target.value)
+              }
+              placeholder="Enter your business name"
+            />
+            <FormField
+              label="Phone Number"
+              value={settings.phone}
+              onChange={(e: { target: { value: any } }) =>
+                updateSetting("phone", e.target.value)
+              }
+              placeholder="Enter your phone number"
+              type="tel"
+            />
+            <FormField
+              label="Address"
+              value={settings.address}
+              onChange={(e: { target: { value: any } }) =>
+                updateSetting("address", e.target.value)
+              }
+              placeholder="Enter your business address"
+            />
+            <FormField
+              label="Website"
+              value={settings.website}
+              onChange={(e: { target: { value: any } }) =>
+                updateSetting("website", e.target.value)
+              }
+              placeholder="https://example.com"
+              type="url"
+            />
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Storefront Link
+              </label>
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="px-4 py-3 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
+                  siiqo.com/
+                </span>
+                <input
+                  type="text"
+                  value={settings.storefront_link}
+                  onChange={(e) =>
+                    updateSetting("storefront_link", e.target.value)
+                  }
+                  placeholder="your-store-slug"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ring-primary/50 focus:border-primary outline-none transition-all text-sm"
+                />
+              </div>
+            </div>
+            <FormField
+              label="CAC Registration"
+              value={settings.cac_reg}
+              onChange={(e: { target: { value: any } }) =>
+                updateSetting("cac_reg", e.target.value)
+              }
+              placeholder="e.g., RC12345678"
+            />
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={settings.description}
+                onChange={(e) => updateSetting("description", e.target.value)}
+                placeholder="Tell customers about your business..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ring-primary/50 focus:border-primary outline-none transition-all text-sm min-h-28 resize-none"
+              />
+            </div>
+          </div>
+        );
+
+      case "location":
+        return (
+          <div className="space-y-6">
+            {settings.latitude && settings.longitude && (
+              <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <CheckCircle
+                  size={20}
+                  className="text-emerald-600 flex-shrink-0 mt-0.5"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-900">
+                    Location Detected
+                  </p>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Coordinates: {settings.latitude}, {settings.longitude}
+                  </p>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={handleDetectLocation}
+              disabled={isLocationLoading || isSaving}
+              className="w-full px-4 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+            >
+              {isLocationLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Detecting...
+                </>
+              ) : (
+                <>
+                  <MapPin size={18} />
+                  Auto-Detect Location
+                </>
+              )}
+            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                label="Latitude"
+                value={settings.latitude}
+                onChange={(e: { target: { value: any } }) =>
+                  updateSetting("latitude", e.target.value)
+                }
+                placeholder="e.g., 6.524379"
+                type="number"
+              />
+              <FormField
+                label="Longitude"
+                value={settings.longitude}
+                onChange={(e: { target: { value: any } }) =>
+                  updateSetting("longitude", e.target.value)
+                }
+                placeholder="e.g., 3.379206"
+                type="number"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Click "Auto-Detect Location" to fetch coordinates from your
+              device, or enter them manually.
+            </p>
+          </div>
+        );
+
+      case "design":
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Theme Colors
+              </label>
+              <div className="flex flex-wrap  gap-6">
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">
+                    Primary Color
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={settings.template_options.primary_color}
+                      onChange={(e) =>
+                        updateSetting("template_options", {
+                          ...settings.template_options,
+                          primary_color: e.target.value,
+                        })
+                      }
+                      className="w-20 h-20 rounded-lg cursor-pointer border border-gray-300"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {settings.template_options.primary_color}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Used for buttons and highlights
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">
+                    Secondary Color
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={settings.template_options.secondary_color}
+                      onChange={(e) =>
+                        updateSetting("template_options", {
+                          ...settings.template_options,
+                          secondary_color: e.target.value,
+                        })
+                      }
+                      className="w-20 h-20 rounded-lg cursor-pointer border border-gray-300"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {settings.template_options.secondary_color}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Used for backgrounds
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-medium text-blue-900">Preview:</p>
+              <div className="mt-3 flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded"
+                  style={{
+                    backgroundColor: settings.template_options.primary_color,
+                  }}
+                />
+                <div
+                  className="w-8 h-8 rounded"
+                  style={{
+                    backgroundColor: settings.template_options.secondary_color,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case "social":
+        return (
+          <div className="space-y-4">
+            {[
+              "facebook",
+              "instagram",
+              "twitter",
+              "linkedin",
+              "youtube",
+              "tiktok",
+              "whatsapp",
+            ].map((platform) => (
+              <FormField
+                key={platform}
+                label={platform.charAt(0).toUpperCase() + platform.slice(1)}
+                value={settings.social_links[platform] || ""}
+                onChange={(e: { target: { value: any } }) =>
+                  updateSetting("social_links", {
+                    ...settings.social_links,
+                    [platform]: e.target.value,
+                  })
+                }
+                placeholder={`https://${platform}.com/yourpage`}
+                type="url"
+              />
+            ))}
+          </div>
+        );
+
+      case "hours":
+        return (
+          <div className="space-y-4 ">
+            {[
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ].map((day) => (
+              <div key={day} className="flex items-end gap-3">
+                <div className="flex-1 min-w-24">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                    {day}
+                  </label>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <input
+                      type="time"
+                      value={settings.working_hours[day]?.start || "09:00"}
+                      onChange={(e: { target: { value: any } }) =>
+                        updateSetting("working_hours", {
+                          ...settings.working_hours,
+                          [day]: {
+                            ...(settings.working_hours[day] || {}),
+                            start: e.target.value,
+                          },
+                        })
+                      }
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ring-primary/50 outline-none text-sm"
+                    />
+                    <span className="text-gray-400 font-medium">–</span>
+                    <input
+                      type="time"
+                      value={settings.working_hours[day]?.end || "21:00"}
+                      onChange={(e) =>
+                        updateSetting("working_hours", {
+                          ...settings.working_hours,
+                          [day]: {
+                            ...(settings.working_hours[day] || {}),
+                            end: e.target.value,
+                          },
+                        })
+                      }
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ring-primary/50 outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const newHours = { ...settings.working_hours };
+                    delete newHours[day];
+                    updateSetting("working_hours", newHours);
+                  }}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    settings.working_hours[day]
+                      ? "bg-green-100 text-green-700 hover:bg-green-200"
+                      : "bg-red-100 text-red-700 hover:bg-red-200"
+                  }`}
+                >
+                  {settings.working_hours[day] ? "Close" : "Closed"}
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-32">
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        ref={coverInputRef}
+        onChange={(e) => handleImageUpload(e, "banner_url")}
+      />
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        ref={profileInputRef}
+        onChange={(e) => handleImageUpload(e, "logo_url")}
+      />
+
+      {/* HEADER */}
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/vendor/dashboard" className="p-2 hover:bg-slate-100 rounded-full">
-              <ChevronLeft size={20} className="text-slate-600" />
+            <Link
+              href="/vendor/dashboard"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ChevronLeft size={24} className="text-gray-700" />
             </Link>
             <div>
-              <h1 className="text-lg md:text-xl font-black text-slate-900">Store Identity</h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live API Sync Active</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Store Identity
+              </h1>
+              <p className="text-xs text-gray-500 mt-1">
+                Customize your storefront appearance
+              </p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {/* BRAND VISUALS */}
-        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Camera size={14} /> Brand Visuals
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-2">
-               <p className="text-xs font-bold text-slate-700">Cover Banner</p>
-               <div onClick={() => coverInputRef.current?.click()} className="relative h-48 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer">
-                {settings.banner_url ? (
-                  <img src={settings.banner_url} className="w-full h-full object-cover" alt="Banner" />
-                ) : (
-                  <Plus className="text-slate-400" />
-                )}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-700">Store Logo</p>
-              <div onClick={() => profileInputRef.current?.click()} className="flex items-center justify-center h-48 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 cursor-pointer overflow-hidden">
-                {settings.logo_url ? (
-                  <img src={settings.logo_url} className="w-full h-full object-cover" alt="Logo" />
-                ) : (
-                  <Building size={40} className="text-slate-200" />
-                )}
-              </div>
-            </div>
+      {/* TAB NAVIGATION */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex gap-1 overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`px-4 py-3 font-medium text-sm border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${
+                    activeTab === tab.id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <Icon size={18} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
+      </div>
 
-        {/* CORE DETAILS */}
-        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Layout size={14} /> Core Details
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Business Name</span>
-              <input 
-                type="text"
-                value={settings.business_name}
-                onChange={(e) => updateSetting('business_name', e.target.value)}
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Phone Number</span>
-              <input 
-                type="text"
-                value={settings.phone}
-                onChange={(e) => updateSetting('phone', e.target.value)}
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Address</span>
-              <input 
-                type="text"
-                value={settings.address}
-                onChange={(e) => updateSetting('address', e.target.value)}
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Website</span>
-              <input 
-                type="url"
-                value={settings.website}
-                onChange={(e) => updateSetting('website', e.target.value)}
-                placeholder="https://example.com"
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Storefront Link</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">siiqo.com/</span>
-                <input 
-                  type="text"
-                  value={settings.storefront_link}
-                  onChange={(e) => updateSetting('storefront_link', e.target.value)}
-                  className="flex-1 p-4 w-72 md:w-full bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">CAC Registration</span>
-              <input 
-                type="text"
-                value={settings.cac_reg}
-                onChange={(e) => updateSetting('cac_reg', e.target.value)}
-                placeholder="e.g., RC12345678"
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Description</span>
-            <textarea 
-              value={settings.description}
-              onChange={(e) => updateSetting('description', e.target.value)}
-              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm min-h-[100px] outline-none"
-            />
-          </div>
-        </div>
-
-        {/* LOCATION COORDINATES */}
-        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <MapPin size={14} /> Location Coordinates
-          </label>
-          
-          {/* Location Status */}
-          {settings.latitude && settings.longitude && (
-            <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-2xl">
-              <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-bold text-green-900">Location Detected</p>
-                <p className="text-xs text-green-700 mt-1">Your coordinates are set and will be saved.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Fetch Location Button */}
-          <button
-            onClick={handleDetectLocation}
-            disabled={isLocationLoading}
-            className="w-full p-4 bg-blue-50 border-2 border-blue-300 hover:bg-blue-100 text-blue-700 rounded-2xl text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLocationLoading ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                Detecting Location...
-              </>
-            ) : (
-              <>
-                <MapPin size={16} />
-                Auto-Detect Location
-              </>
-            )}
-          </button>
-
-          {/* Latitude & Longitude Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Latitude</span>
-              <input 
-                type="number"
-                step="0.000001"
-                value={settings.latitude}
-                onChange={(e) => updateSetting('latitude', e.target.value)}
-                placeholder="e.g., 6.524379"
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">Longitude</span>
-              <input 
-                type="number"
-                step="0.000001"
-                value={settings.longitude}
-                onChange={(e) => updateSetting('longitude', e.target.value)}
-                placeholder="e.g., 3.379206"
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-              />
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-500 font-medium">Click "Auto-Detect Location" to fetch coordinates from your device, or enter them manually.</p>
-        </div>
-
-        {/* COLORS */}
-        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Palette size={14} /> Theme Colors
-          </label>
-          <div className="flex gap-8">
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Primary</span>
-              <input 
-                type="color" 
-                value={settings.template_options.primary_color}
-                onChange={(e) => updateSetting('template_options', { ...settings.template_options, primary_color: e.target.value })}
-                className="w-16 h-16 rounded-xl cursor-pointer" 
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Secondary</span>
-              <input 
-                type="color" 
-                value={settings.template_options.secondary_color}
-                onChange={(e) => updateSetting('template_options', { ...settings.template_options, secondary_color: e.target.value })}
-                className="w-16 h-16 rounded-xl cursor-pointer" 
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SOCIAL LINKS */}
-        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Globe size={14} /> Social Links
-          </label>
-          <div className="space-y-4">
-            {['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp'].map((platform) => (
-              <div key={platform} className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase ml-2">{platform} URL</span>
-                <input 
-                  type="url"
-                  value={settings.social_links[platform] || ""}
-                  onChange={(e) => updateSetting('social_links', {
-                    ...settings.social_links,
-                    [platform]: e.target.value
-                  })}
-                  placeholder={`https://${platform}.com/yourpage`}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* PUBLISH STATUS */}
-        {/* <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <CheckCircle2 size={14} /> Storefront Status
-          </label>
-          <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="flex-1">
-              <p className="text-sm font-bold text-slate-900">Make Storefront Public</p>
-              <p className="text-xs text-slate-500 mt-1">When enabled, your storefront will be visible to customers</p>
-            </div>
-            <button
-              onClick={() => updateSetting('is_published', !settings.is_published)}
-              className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors ${
-                settings.is_published 
-                  ? 'bg-blue-600 border-blue-600' 
-                  : 'bg-slate-200 border-slate-200'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg transition-transform ${
-                  settings.is_published ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        </div> */}
-
-        {/* WORKING HOURS */}
-        <div className="bg-white p-4 md:p-6 lg:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Clock size={14} /> Business Hours
-          </label>
-          <div className="space-y-3 md:space-y-4">
-            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-              <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 pb-4 border-b border-slate-100 last:border-b-0">
-                <div className="w-20 sm:w-24 flex-shrink-0">
-                  <span className="text-sm font-bold text-slate-900">{day}</span>
-                </div>
-                
-                <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
-                    <input 
-                      type="time" 
-                      value={settings.working_hours[day]?.start || "09:00"}
-                      onChange={(e) => updateSetting('working_hours', {
-                        ...settings.working_hours,
-                        [day]: {
-                          ...(settings.working_hours[day] || {}),
-                          start: e.target.value
-                        }
-                      })}
-                      className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-                    />
-                    <span className="hidden sm:block text-slate-400 font-bold">to</span>
-                    <span className="sm:hidden text-slate-400 font-bold text-xs">to</span>
-                    <input 
-                      type="time" 
-                      value={settings.working_hours[day]?.end || "21:00"}
-                      onChange={(e) => updateSetting('working_hours', {
-                        ...settings.working_hours,
-                        [day]: {
-                          ...(settings.working_hours[day] || {}),
-                          end: e.target.value
-                        }
-                      })}
-                      className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold outline-none focus:ring-2 ring-blue-500"
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      const newHours = { ...settings.working_hours };
-                      delete newHours[day];
-                      updateSetting('working_hours', newHours);
-                    }}
-                    className="w-full sm:w-auto px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors"
-                  >
-                    Closed
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-[11px] text-slate-500 font-medium">Click "Closed" to mark a day as closed for business</p>
+      {/* CONTENT */}
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+          {renderContent()}
         </div>
       </main>
 
-      {/* --- FLOATING SAVE BAR --- */}
-      <footer className="fixed bottom-0 left-20 md:left-28 right-20 p-4 z-40">
-        <div className="max-w-4xl mx-auto bg-slate-900/90 backdrop-blur-xl p-4 rounded-[2rem] flex items-center justify-between shadow-2xl border border-white/10">
-          <div className="hidden sm:flex flex-col ml-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Server Sync</span>
-            <span className="text-white text-xs font-bold">Changes will be public immediately</span>
+      {/* SAVE BUTTON */}
+      <footer className="fixed bottom-0 md:left-48 md:right-0  bg-white border-t border-gray-200 p-4 z-40">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="hidden sm:block">
+            <p className="text-sm font-medium text-gray-900">
+              Changes will be published immediately
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Your storefront will be updated in real-time
+            </p>
           </div>
-          
-          <button 
+          <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 rounded-2xl text-xs font-black hover:scale-105 transition-all flex items-center justify-center gap-2"
+            className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all ml-auto"
           >
             {isSaving ? (
-              <div className="animate-spin h-4 w-4 border-2 border-slate-900 border-t-transparent rounded-full" />
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Saving...
+              </>
             ) : (
-              <><CheckCircle2 size={16} /> Save to Cloud</>
+              <>
+                <Save size={18} />
+                Save Changes
+              </>
             )}
           </button>
         </div>
@@ -575,5 +801,27 @@ useEffect(() => {
     </div>
   );
 };
+
+// FormField Component
+const FormField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: any) => (
+  <div>
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      {label}
+    </label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 ring-primary/50 focus:border-primary outline-none transition-all text-sm"
+    />
+  </div>
+);
 
 export default StorefrontCustomization;

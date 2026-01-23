@@ -23,9 +23,7 @@ import {
   ProductFormData,
 } from "@/types/vendor/products";
 import { ChevronDown, ChevronUp } from "lucide-react";
-
-
-
+import { getServerErrorMessage } from "@/lib/errorHandler";
 
 // --- Toast Component ---
 export interface Toast {
@@ -52,7 +50,7 @@ const ToastNotification: React.FC<{
   const getToastStyles = () => {
     switch (toast.type) {
       case "success":
-        return "bg-success/10 mt-[3rem] border-success/20 text-success";
+        return "bg-black mt-[3rem] border-black/20 text-white";
       case "error":
         return "bg-error/10 mt-[3rem] border-error/20 text-error";
       case "loading":
@@ -143,11 +141,14 @@ const ProductManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
-  const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
+  const [categories, setCategories] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-
 
   const addToast = (toast: Omit<Toast, "id">): string => {
     const id = Date.now().toString();
@@ -184,20 +185,26 @@ const ProductManagement: React.FC = () => {
         });
 
         if (productsArray.length > 0) {
-          const formattedProducts: Product[] = productsArray.map((product: any) => ({
-            id: product.id || product._id,
-            name: product.product_name || product.name,
-            image: product.images?.[0] || "https://via.placeholder.com/150",
-            images: product.images || [],
-            category: product.category || "Uncategorized",
-            sku: product.sku || `SKU-${product.id}`,
-            final_price: product.final_price ?? product.product_price ?? product.price ?? 0,
-            stock: product.quantity ?? 0,
-            status: product.status || "active",
-            createdAt: product.createdAt || new Date().toISOString(),
-            views: product.views || 0,
-            description: product.description,
-          }));
+          const formattedProducts: Product[] = productsArray.map(
+            (product: any) => ({
+              id: product.id || product._id,
+              name: product.product_name || product.name,
+              image: product.images?.[0] || "https://via.placeholder.com/150",
+              images: product.images || [],
+              category: product.category || "Uncategorized",
+              sku: product.sku || `SKU-${product.id}`,
+              final_price:
+                product.final_price ??
+                product.product_price ??
+                product.price ??
+                0,
+              stock: product.quantity ?? 0,
+              status: product.status || "active",
+              createdAt: product.createdAt || new Date().toISOString(),
+              views: product.views || 0,
+              description: product.description,
+            }),
+          );
           setProducts(formattedProducts);
         } else {
           console.warn("No products found in response:", response);
@@ -205,7 +212,13 @@ const ProductManagement: React.FC = () => {
         }
       } catch (err) {
         console.error("Error fetching vendor products:", err);
-        setError("Failed to load products");
+        const errorMessage = getServerErrorMessage(err, "Fetch Products");
+        setError(errorMessage.message);
+        if (errorMessage.isServerError) {
+          toast.error(errorMessage.title, {
+            description: errorMessage.message,
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -219,6 +232,14 @@ const ProductManagement: React.FC = () => {
         }
       } catch (err) {
         console.error("Error fetching categories:", err);
+        const errorMessage = getServerErrorMessage(err, "Fetch Categories");
+        // Don't break UI for categories - log only
+        if (errorMessage.isServerError) {
+          console.warn(
+            "Server issue loading categories:",
+            errorMessage.message,
+          );
+        }
       }
     };
 
@@ -233,7 +254,7 @@ const ProductManagement: React.FC = () => {
     if (selectedCategory) {
       filtered = filtered.filter(
         (product) =>
-          product.category.toLowerCase() === selectedCategory.toLowerCase()
+          product.category.toLowerCase() === selectedCategory.toLowerCase(),
       );
     }
 
@@ -245,12 +266,14 @@ const ProductManagement: React.FC = () => {
           product.sku?.toLowerCase().includes(lowercasedQuery) ||
           product.category?.toLowerCase().includes(lowercasedQuery) ||
           product.description?.toLowerCase().includes(lowercasedQuery) ||
-          String(product.id).includes(lowercasedQuery)
+          String(product.id).includes(lowercasedQuery),
       );
     }
 
     if (showInStockOnly) {
-      filtered = filtered.filter((product) => product.stock && product.stock > 0);
+      filtered = filtered.filter(
+        (product) => product.stock && product.stock > 0,
+      );
     }
 
     // --- Apply Sorting ---
@@ -269,9 +292,15 @@ const ProductManagement: React.FC = () => {
         case "stock-desc":
           return (b.stock || 0) - (a.stock || 0);
         case "created-desc":
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+          return (
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+          );
         case "created-asc":
-          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+          return (
+            new Date(a.createdAt || 0).getTime() -
+            new Date(b.createdAt || 0).getTime()
+          );
         default:
           return 0;
       }
@@ -290,19 +319,19 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleProductSelect = (
-    productId: number ,
-    isSelected: boolean
+    productId: number,
+    isSelected: boolean,
   ): void => {
     setSelectedProducts((prev) =>
       isSelected
         ? [...prev, Number(productId)]
-        : prev.filter((id) => id !== Number(productId))
+        : prev.filter((id) => id !== Number(productId)),
     );
   };
 
   const handleSelectAll = (isSelected: boolean): void => {
     setSelectedProducts(
-      isSelected ? filteredProducts.map((p) => Number(p.id)) : []
+      isSelected ? filteredProducts.map((p) => Number(p.id)) : [],
     );
   };
 
@@ -315,13 +344,13 @@ const ProductManagement: React.FC = () => {
     setEditingProduct(null);
     setShowAddModal(true);
   };
-const handleEditProduct = (productId: number) => {
-  const productToEdit = products.find(p => p.id === productId);
-  if (productToEdit) {
-    setEditingProduct(productToEdit);
-    setShowAddModal(true);
-  }
-};
+  const handleEditProduct = (productId: number) => {
+    const productToEdit = products.find((p) => p.id === productId);
+    if (productToEdit) {
+      setEditingProduct(productToEdit);
+      setShowAddModal(true);
+    }
+  };
   const handleDuplicateProduct = (productId: number): void => {
     const product = products.find((p) => p.id === productId);
     if (product) {
@@ -413,23 +442,28 @@ const handleEditProduct = (productId: number) => {
 
   // 1. Full Edit (Opens the Wizard)
 
-// 2. Quick Edit (Updates price directly from table)
-const handleQuickEdit = async (productId: number, field: string, value: string | number) => {
-  try {
-    // Call API to update only the specific field
-    await productService.editProduct(productId, { [field]: value });
-    
-    // Update local state so UI reflects the new price immediately
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p))
-    );
-    
-    toast.success("Price updated successfully");
-  } catch (error: any) {
-    toast.error("Failed to update price");
-    console.error(error);
-  }
-};
+  // 2. Quick Edit (Updates price directly from table)
+  const handleQuickEdit = async (
+    productId: number,
+    field: string,
+    value: string | number,
+  ) => {
+    try {
+      // Call API to update only the specific field
+      await productService.editProduct(productId, { [field]: value });
+
+      // Update local state so UI reflects the new price immediately
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p)),
+      );
+
+      toast.success("Price updated successfully");
+    } catch (error: any) {
+      console.error(error);
+      const errorMessage = getServerErrorMessage(error, "Update Product Price");
+      toast.error(errorMessage.title, { description: errorMessage.message });
+    }
+  };
 
   // const handleQuickEdit = (
   //   productId:  number,
@@ -456,8 +490,8 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
   //   );
   // };
 
- const transformFormDataToApiRequest = (
-    formData: ProductFormData
+  const transformFormDataToApiRequest = (
+    formData: ProductFormData,
   ): AddProductRequest => {
     // 1. Safety check: If formData is missing, throw a descriptive error or return default
     if (!formData) {
@@ -477,18 +511,20 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       description: (formData.description || "").trim(),
       category: (formData.category || "Uncategorized").trim(),
       // Ensure price is a string before parsing, fallback to 0
-      product_price: Math.round((parseFloat(String(formData.price)) || 0) * 100),
+      product_price: Math.round(
+        (parseFloat(String(formData.price)) || 0) * 100,
+      ),
       quantity: parseInt(String(formData.stock), 10) || 0,
       status: formData.status || "active",
-      visibility: formData.visibility === "visible" ,
+      visibility: formData.visibility === "visible",
       images: imageUrls,
     };
-    
+
     return apiData;
   };
 
   const handleSaveProduct = async (
-    formData: ProductFormData
+    formData: ProductFormData,
   ): Promise<void> => {
     // Immediate check before starting the process
     if (!formData || !formData.name) {
@@ -524,7 +560,7 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
           }
         });
         await productService.editProduct(editingProduct.id, formDataPayload);
-        
+
         setProducts((prev) =>
           prev.map((p) =>
             p.id === editingProduct.id
@@ -538,8 +574,8 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
                   status: apiData.status as ProductStatus,
                   image: apiData.images[0] || p.image,
                 }
-              : p
-          )
+              : p,
+          ),
         );
       } else {
         const formDataPayload = new FormData();
@@ -574,8 +610,9 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
     } catch (err: any) {
       console.error("Error saving product:", err);
       removeToast(loadingToastId);
-      const msg = err.response?.data?.message || "Failed to save product";
-      toast.error(msg);
+      const errorMessage = getServerErrorMessage(err, "Save Product");
+      const msg = errorMessage.message;
+      toast.error(errorMessage.title, { description: msg });
       setError(msg);
     } finally {
       setLoading(false);
@@ -588,14 +625,14 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       const exportData = filteredProducts.map((product) => ({
         "Product ID": product.id,
         "Product Name": product.name,
-        "Category": product.category,
-        "SKU": product.sku,
-        "Price": `₦${product.final_price}`,
-        "Stock": product.stock,
-        "Status": product.status,
-        "Description": product.description || "",
+        Category: product.category,
+        SKU: product.sku,
+        Price: `₦${product.final_price}`,
+        Stock: product.stock,
+        Status: product.status,
+        Description: product.description || "",
         "Created Date": new Date(product.createdAt).toLocaleDateString(),
-        "Views": product.views,
+        Views: product.views,
       }));
 
       // Create CSV content
@@ -603,13 +640,15 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       const csvContent = [
         headers.join(","),
         ...exportData.map((row) =>
-          headers.map((header) => {
-            const value = row[header as keyof typeof row];
-            // Escape quotes and wrap in quotes if contains comma
-            return typeof value === "string" && value.includes(",")
-              ? `"${value.replace(/"/g, '""')}"`
-              : value;
-          }).join(",")
+          headers
+            .map((header) => {
+              const value = row[header as keyof typeof row];
+              // Escape quotes and wrap in quotes if contains comma
+              return typeof value === "string" && value.includes(",")
+                ? `"${value.replace(/"/g, '""')}"`
+                : value;
+            })
+            .join(","),
         ),
       ].join("\n");
 
@@ -628,7 +667,10 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       setShowExportMenu(false);
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export products to Excel");
+      const errorMessage = getServerErrorMessage(error, "Export Products");
+      toast.error(errorMessage.title, {
+        description: "Failed to export to Excel. " + errorMessage.message,
+      });
     }
   };
 
@@ -638,14 +680,14 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       const exportData = filteredProducts.map((product) => ({
         "Product ID": product.id,
         "Product Name": product.name,
-        "Category": product.category,
-        "SKU": product.sku,
-        "Price": `₦${product.final_price}`,
-        "Stock": product.stock,
-        "Status": product.status,
-        "Description": product.description || "",
+        Category: product.category,
+        SKU: product.sku,
+        Price: `₦${product.final_price}`,
+        Stock: product.stock,
+        Status: product.status,
+        Description: product.description || "",
         "Created Date": new Date(product.createdAt).toLocaleDateString(),
-        "Views": product.views,
+        Views: product.views,
       }));
 
       // Create HTML table for PDF
@@ -689,7 +731,9 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
             <table>
               <thead>
                 <tr>
-                  ${Object.keys(exportData[0]).map((key) => `<th>${key}</th>`).join("")}
+                  ${Object.keys(exportData[0])
+                    .map((key) => `<th>${key}</th>`)
+                    .join("")}
                 </tr>
               </thead>
               <tbody>
@@ -697,9 +741,11 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
                   .map(
                     (row) => `
                   <tr>
-                    ${Object.values(row).map((value) => `<td>${value}</td>`).join("")}
+                    ${Object.values(row)
+                      .map((value) => `<td>${value}</td>`)
+                      .join("")}
                   </tr>
-                `
+                `,
                   )
                   .join("")}
               </tbody>
@@ -723,18 +769,19 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
       setShowExportMenu(false);
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export products to PDF");
+      const errorMessage = getServerErrorMessage(error, "Export PDF");
+      toast.error(errorMessage.title, {
+        description: "Failed to export to PDF. " + errorMessage.message,
+      });
     }
   };
 
- 
-
   const lowStockCount = products.filter(
-    (p) => p.stock > 0 && p.stock <= 10
+    (p) => p.stock > 0 && p.stock <= 10,
   ).length;
   const outOfStockCount = products.filter((p) => p.stock === 0).length;
   const activeProductsCount = products.filter(
-    (p) => p.status === "active"
+    (p) => p.status === "active",
   ).length;
 
   return (
@@ -815,13 +862,19 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
           {/* --- Collapsible Stats Section --- */}
           <div className="px-4 mb-8">
             <div className="flex items-center justify-between mb-2 lg:hidden">
-              <h3 className="font-semibold text-sm text-foreground">Overview</h3>
+              <h3 className="font-semibold text-sm text-foreground">
+                Overview
+              </h3>
               <button
                 onClick={() => setIsStatsCollapsed(!isStatsCollapsed)}
                 className="text-primary text-sm flex items-center gap-1 hover:underline"
               >
                 {isStatsCollapsed ? "Show Stats" : "Hide Stats"}
-                {isStatsCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                {isStatsCollapsed ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronUp size={16} />
+                )}
               </button>
             </div>
 
@@ -834,7 +887,9 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
               <div className="p-4 sm:p-6 border rounded-lg bg-card border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Total
+                    </p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">
                       {products.length}
                     </p>
@@ -848,13 +903,19 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
               <div className="p-4 sm:p-6 border rounded-lg bg-card border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Active
+                    </p>
                     <p className="text-xl sm:text-2xl font-bold text-foreground">
                       {activeProductsCount}
                     </p>
                   </div>
                   <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-success/10 self-start sm:self-center">
-                    <Icon name="CheckCircle" size={20} className="text-success" />
+                    <Icon
+                      name="CheckCircle"
+                      size={20}
+                      className="text-success"
+                    />
                   </div>
                 </div>
               </div>
@@ -862,13 +923,19 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
               <div className="p-4 sm:p-6 border rounded-lg bg-card border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Low Stock</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Low Stock
+                    </p>
                     <p className="text-xl sm:text-2xl font-bold text-warning">
                       {lowStockCount}
                     </p>
                   </div>
                   <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-warning/10 self-start sm:self-center">
-                    <Icon name="AlertTriangle" size={20} className="text-warning" />
+                    <Icon
+                      name="AlertTriangle"
+                      size={20}
+                      className="text-warning"
+                    />
                   </div>
                 </div>
               </div>
@@ -876,7 +943,9 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
               <div className="p-4 sm:p-6 border rounded-lg bg-card border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Out of Stock</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Out of Stock
+                    </p>
                     <p className="text-xl sm:text-2xl font-bold text-error">
                       {outOfStockCount}
                     </p>
@@ -891,23 +960,33 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
 
           {/* --- Main Content --- */}
           <div className="grid grid-cols-1 px-4 gap-6 lg:grid-cols-12">
-            
             {/* Sidebar / Category Tree (Collapsible on Mobile) */}
             <div className="lg:col-span-3">
-              <div className="lg:hidden mb-4 border rounded-lg p-3 bg-card" onClick={() => setIsCategoryCollapsed(!isCategoryCollapsed)}>
-                 <div className="flex justify-between items-center">
-                    <span className="font-semibold text-sm">Categories & Filters</span>
-                    {isCategoryCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                 </div>
+              <div
+                className="lg:hidden mb-4 border rounded-lg p-3 bg-card"
+                onClick={() => setIsCategoryCollapsed(!isCategoryCollapsed)}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-sm">
+                    Categories & Filters
+                  </span>
+                  {isCategoryCollapsed ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronUp size={16} />
+                  )}
+                </div>
               </div>
-              
-              <div className={`${isCategoryCollapsed ? "hidden lg:block" : "block"}`}>
-                 <CategoryTree
-                    onCategorySelect={handleCategorySelect}
-                    selectedCategory={selectedCategory}
-                    categories={categories}
-                    products={products}
-                  />
+
+              <div
+                className={`${isCategoryCollapsed ? "hidden lg:block" : "block"}`}
+              >
+                <CategoryTree
+                  onCategorySelect={handleCategorySelect}
+                  selectedCategory={selectedCategory}
+                  categories={categories}
+                  products={products}
+                />
               </div>
             </div>
 
@@ -941,10 +1020,10 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
               ) : viewMode === "table" ? (
                 // Wrapper to allow table scrolling on mobile
                 <div className="w-full overflow-x-auto">
-                    <ProductTable
-                    products={filteredProducts.map(p => ({
+                  <ProductTable
+                    products={filteredProducts.map((p) => ({
                       ...p,
-                      images: p.images || []
+                      images: p.images || [],
                     }))}
                     selectedProducts={selectedProducts}
                     onProductSelect={handleProductSelect}
@@ -952,9 +1031,11 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
                     onEditProduct={handleEditProduct}
                     onDuplicateProduct={handleDuplicateProduct}
                     onDeleteProduct={handleDeleteProduct}
-                    onAddProduct={() => { /* Add product handler */ }}
+                    onAddProduct={() => {
+                      /* Add product handler */
+                    }}
                     onQuickEdit={handleQuickEdit}
-                    />
+                  />
                 </div>
               ) : (
                 <ProductGrid
@@ -994,7 +1075,8 @@ const handleQuickEdit = async (productId: number, field: string, value: string |
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold">Delete product?</h3>
                   <p className="text-sm text-muted-foreground">
-                    This will remove {confirmDeleteName || "this product"} from your catalog.
+                    This will remove {confirmDeleteName || "this product"} from
+                    your catalog.
                   </p>
                 </div>
               </div>

@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./LandingPage";
 import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard";
+import CategoryGrid from "./components/CategoryGrid";
 import { Product } from "@/types/products";
 import { useLocation } from "@/context/LocationContext";
 import BrowserMockup from "@/components/BrowserMockup";
@@ -28,8 +29,8 @@ import TutorialGuide from "@/components/TutorialGuide";
 import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import api_endpoints from "@/hooks/api_endpoints";
 
-const CATEGORIES = ["All Items", "Smartphones", "Electronics", "Fashion"];
 const ITEMS_PER_PAGE = 4;
+const CATEGORIES_PER_PAGE = 4;
 
 const Homepage: React.FC = () => {
   const router = useRouter();
@@ -42,7 +43,11 @@ const Homepage: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [categoryProducts, setCategoryProducts] = useState<{
+    [key: string]: any[];
+  }>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentCategoryPage, setCurrentCategoryPage] = useState(1);
   const [typedPlaceholder, setTypedPlaceholder] = useState<string>("");
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const { coords } = useLocation();
@@ -63,13 +68,31 @@ const Homepage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetching logic remains same
+  // Fetching logic for categories with products
   const fetchProducts = async () => {
     try {
-      const res = await fetch(api_endpoints.MARKETPLACE_SEARCH);
-      const json = await res.json();
-      const merged = json?.data?.products || json?.data?.nearby_products || [];
-      setProducts(merged);
+      // Fetch categories with their products included
+      const categoriesRes = await fetch(api_endpoints.GET_CATEGORIES);
+      const categoriesJson = await categoriesRes.json();
+
+      if (
+        categoriesJson?.categories &&
+        Array.isArray(categoriesJson.categories)
+      ) {
+        // Organize categories with their products
+        const grouped: { [key: string]: any[] } = {};
+        const allProducts: any[] = [];
+
+        categoriesJson.categories.forEach((category: any) => {
+          if (category.products && Array.isArray(category.products)) {
+            grouped[category.name] = category.products;
+            allProducts.push(...category.products);
+          }
+        });
+
+        setProducts(allProducts);
+        setCategoryProducts(grouped);
+      }
     } catch (err) {
       console.error("Failed to fetch products");
     }
@@ -331,6 +354,29 @@ const Homepage: React.FC = () => {
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* Category Sections */}
+      {!hasSearched && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-white">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Shop by Category
+            </h2>
+            <p className="text-gray-600">
+              Explore our curated selection of products across different
+              categories
+            </p>
+          </div>
+
+          <CategoryGrid
+            categoryProducts={categoryProducts}
+            isLoading={products.length === 0}
+            currentPage={currentCategoryPage}
+            onPageChange={setCurrentCategoryPage}
+            categoriesPerPage={CATEGORIES_PER_PAGE}
+          />
+        </section>
+      )}
 
       <LandingPage />
 

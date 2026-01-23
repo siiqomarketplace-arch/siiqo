@@ -114,8 +114,8 @@ const ProductCard = ({
     typeof product.product_price === "number"
       ? `₦${product.product_price.toLocaleString()}`
       : typeof product.price === "number"
-      ? `₦${product.price.toLocaleString()}`
-      : null;
+        ? `₦${product.price.toLocaleString()}`
+        : null;
   const router = useRouter();
   return (
     <div
@@ -125,7 +125,8 @@ const ProductCard = ({
       onClick={() => {
         if (isStorefront) {
           if (storeSlug)
-            router.push(`/storefront-details/${encodeURIComponent(storeSlug)}`);
+            // router.push(`/${encodeURIComponent(storeSlug)}`);
+            router.push(`/${encodeURIComponent(storeSlug)}`);
         } else {
           router.push(`/products/${productId}`);
         }
@@ -176,10 +177,7 @@ const ProductCard = ({
             onClick={(e) => {
               e.stopPropagation();
               if (isStorefront) {
-                if (storeSlug)
-                  router.push(
-                    `/storefront-details/${encodeURIComponent(storeSlug)}`
-                  );
+                if (storeSlug) router.push(`/${encodeURIComponent(storeSlug)}`);
               } else {
                 onQuickView(product);
               }
@@ -192,7 +190,7 @@ const ProductCard = ({
       </div>
 
       {/* ---------------- CONTENT AREA ---------------- */}
-      <div className="p-4 relative">
+      <div className="p-4  relative">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
@@ -226,7 +224,7 @@ const ProductCard = ({
           )}
 
           {/* Visit Badge for Storefront */}
-          {isStorefront && (
+          {/* {isStorefront && (
             <div className="flex-shrink-0 flex items-center text-[#1B3F61] bg-[#1B3F61]/10 px-2 py-0.5 rounded-full border border-[#1B3F61]/20">
               <span className="text-[11px] font-semibold">Visit</span>
               <svg
@@ -243,7 +241,7 @@ const ProductCard = ({
                 />
               </svg>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Rating + Distance */}
@@ -268,8 +266,8 @@ const ProductCard = ({
                 ? `• ${distance} • `
                 : "• "}
               {isStorefront
-                ? product.availability ?? "Open"
-                : product.condition ?? "N/A"}
+                ? (product.availability ?? "Open")
+                : (product.condition ?? "N/A")}
             </span>
           </div>
 
@@ -285,10 +283,10 @@ const ProductCard = ({
         </div>
 
         {/* Location + CTA */}
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-3  flex items-center justify-between">
           <div className="flex items-center text-gray-500 text-xs">
             <MapPin className="w-3 h-3 mr-1 opacity-70" />
-            <span className="truncate max-w-[160px]">{locationText}</span>
+            <span className="truncate max-w-[50px]">{locationText}</span>
           </div>
 
           <div className="ml-3 flex-shrink-0">
@@ -316,16 +314,14 @@ const ProductCard = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (storeSlug) {
-                    router.push(
-                      `/storefront-details/${encodeURIComponent(storeSlug)}`
-                    );
+                    router.push(`/${encodeURIComponent(storeSlug)}`);
                   } else {
                     onQuickView(product);
                   }
                 }}
-                className="flex items-center justify-center px-3 py-1.5 text-sm space-x-2"
+                className="flex items-center justify-center px-3  py-1.5 text-sm space-x-2"
               >
-                <span className="text-sm font-semibold text-[#1B3F61]">
+                <span className="text-sm  font-semibold text-[#1B3F61]">
                   Visit
                 </span>
               </Button>

@@ -30,7 +30,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
       ? window.location.origin
       : "https://siiqo.com";
   const productUrl = isStore
-    ? `${baseUrl}/storefront-details/${productId}`
+    ? `${baseUrl}/${productId}`
     : `${baseUrl}/products/${productId}`;
 
   // SEO-optimized share messages
@@ -47,7 +47,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
       hoverGradient: "hover:from-blue-700 hover:to-blue-800",
       action: () => {
         const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          productUrl
+          productUrl,
         )}&quote=${encodeURIComponent(shareMessage)}`;
         window.open(url, "_blank", "width=600,height=400");
         toast.success("Opening Facebook...");
@@ -83,7 +83,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
       hoverGradient: "hover:from-sky-500 hover:to-sky-600",
       action: () => {
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-          `${shareMessage} ${productUrl}`
+          `${shareMessage} ${productUrl}`,
         )}`;
         window.open(url, "_blank", "width=600,height=400");
         toast.success("Opening Twitter...");
@@ -107,7 +107,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
       hoverGradient: "hover:from-blue-800 hover:to-blue-900",
       action: () => {
         const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          productUrl
+          productUrl,
         )}`;
         window.open(url, "_blank", "width=600,height=400");
         toast.success("Opening LinkedIn...");
@@ -130,7 +130,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
       hoverGradient: "hover:from-blue-600 hover:to-blue-700",
       action: () => {
         const url = `https://t.me/share/url?url=${encodeURIComponent(
-          productUrl
+          productUrl,
         )}&text=${encodeURIComponent(shareMessage)}`;
         window.open(url, "_blank");
         toast.success("Opening Telegram...");

@@ -20,7 +20,7 @@ const AppImage: React.FC<AppImageProps> = ({
   ...props
 }) => {
   const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
+    e: React.SyntheticEvent<HTMLImageElement, Event>,
   ) => {
     const imgElement = e.target as HTMLImageElement;
     imgElement.src = "/assets/images/no_image.png";
@@ -30,15 +30,28 @@ const AppImage: React.FC<AppImageProps> = ({
   const safeSrc =
     src && src.trim() !== "" ? src : "/assets/images/no_image.png";
 
+  // ✅ When using fill, don't pass width/height
+  if (fill) {
+    return (
+      <Image
+        src={safeSrc}
+        alt={alt}
+        className={className}
+        onError={handleImageError}
+        fill
+        {...props}
+      />
+    );
+  }
+
   return (
     <Image
       src={safeSrc}
       alt={alt}
       className={className}
       onError={handleImageError}
-      fill={fill}
-      width={!fill ? width : undefined}
-      height={!fill ? height : undefined}
+      width={width}
+      height={height}
       {...props}
     />
   );

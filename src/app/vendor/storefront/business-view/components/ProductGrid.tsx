@@ -10,7 +10,9 @@ import {
   ArrowLeft,
   LayoutGrid,
   StretchHorizontal,
+  Trash2,
 } from "lucide-react";
+import DeleteCatalogModal from "./DeleteCatalogModal";
 
 interface Product {
   id: number;
@@ -31,21 +33,46 @@ interface Collection {
 interface ProductGridProps {
   collections?: Collection[];
   isLoading?: boolean;
+  onDeleteCatalog?: (catalogId: string | number) => void;
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({
   collections = [],
   isLoading = false,
+  onDeleteCatalog,
 }) => {
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [catalogToDelete, setCatalogToDelete] = useState<Collection | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(price);
+  };
+
+  const handleDeleteClick = (collection: Collection) => {
+    setCatalogToDelete(collection);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!catalogToDelete || !onDeleteCatalog) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteCatalog(catalogToDelete.id);
+      setDeleteModalOpen(false);
+      setCatalogToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // 1. VIEW: Product List (Deep view within a collection)
@@ -184,21 +211,35 @@ const ProductGrid: React.FC<ProductGridProps> = ({
           }
         >
           {displayCollections.map((collection) => (
-            <button
-              key={collection.id}
-              onClick={() => setSelectedCollection(collection)}
-              className={`
-                group relative overflow-hidden bg-white border border-slate-100 transition-all hover:shadow-md hover:border-[#075E54]/20
-                ${
-                  viewMode === "grid"
-                    ? "flex flex-col p-3 rounded-2xl text-center items-center"
-                    : "flex flex-row p-4 rounded-2xl text-left items-center gap-4"
-                }
-              `}
-            >
-              {/* Image Container */}
-              <div
+            <div key={collection.id} className="relative group">
+              {/* Delete Button */}
+              {onDeleteCatalog && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(collection);
+                  }}
+                  className="absolute top-2 right-2 z-10 p-2 rounded-lg bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                  title="Delete catalog"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+
+              <button
+                onClick={() => setSelectedCollection(collection)}
                 className={`
+                  w-full group/btn relative overflow-hidden bg-white border border-slate-100 transition-all hover:shadow-md hover:border-[#075E54]/20
+                  ${
+                    viewMode === "grid"
+                      ? "flex flex-col p-3 rounded-2xl text-center items-center"
+                      : "flex flex-row p-4 rounded-2xl text-left items-center gap-4"
+                  }
+                `}
+              >
+                {/* Image Container */}
+                <div
+                  className={`
                 overflow-hidden rounded-xl bg-slate-50 flex-shrink-0 border border-slate-50
                 ${
                   viewMode === "grid"
@@ -206,41 +247,54 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     : "w-20 h-20"
                 }
               `}
-              >
-                <Image
-                  src={
-                    collection.image ||
-                    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=800"
-                  }
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  alt={collection.name || "Collection"}
-                />
-              </div>
-
-              {/* Content Container */}
-              <div className="flex-1 min-w-0">
-                <h4
-                  className={`font-black text-slate-900 uppercase tracking-tight ${
-                    viewMode === "grid" ? "text-xs line-clamp-1" : "text-sm"
-                  }`}
                 >
-                  {collection.name}
-                </h4>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">
-                  {collection.items?.length || 0} Products
-                </p>
-              </div>
-
-              {/* Action Arrow (Only visible in list mode for cleaner UI) */}
-              {viewMode === "list" && (
-                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-[#075E54]/10 group-hover:text-[#075E54] transition-colors">
-                  <ChevronRight size={18} />
+                  <Image
+                    src={
+                      collection.image ||
+                      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=800"
+                    }
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover/btn:scale-110"
+                    alt={collection.name || "Collection"}
+                  />
                 </div>
-              )}
-            </button>
+
+                {/* Content Container */}
+                <div className="flex-1 min-w-0">
+                  <h4
+                    className={`font-black text-slate-900 uppercase tracking-tight ${
+                      viewMode === "grid" ? "text-xs line-clamp-1" : "text-sm"
+                    }`}
+                  >
+                    {collection.name}
+                  </h4>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">
+                    {collection.items?.length || 0} Products
+                  </p>
+                </div>
+
+                {/* Action Arrow (Only visible in list mode for cleaner UI) */}
+                {viewMode === "list" && (
+                  <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover/btn:bg-[#075E54]/10 group-hover/btn:text-[#075E54] transition-colors">
+                    <ChevronRight size={18} />
+                  </div>
+                )}
+              </button>
+            </div>
           ))}
         </div>
       )}
+
+      {/* Delete Modal */}
+      <DeleteCatalogModal
+        isOpen={deleteModalOpen}
+        catalogName={catalogToDelete?.name || ""}
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setCatalogToDelete(null);
+        }}
+      />
     </div>
   );
 };

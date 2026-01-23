@@ -158,6 +158,14 @@ const UserProfile = () => {
     }
   };
 
+  const handleCreateStorefront = () => {
+    toast({
+      title: "Setting up your storefront",
+      description: "Redirecting to vendor onboarding...",
+    });
+    router.push("/auth/vendor-onboarding");
+  };
+
   // ---------------------------------------------------------
   // LOADING STATE
   // ---------------------------------------------------------
@@ -317,10 +325,15 @@ const UserProfile = () => {
               </button>
             ) : (
               <button
-                onClick={() => router.push("/auth/vendor-onboarding")}
-                className="px-6 py-2 border border-green-200 text-green-600 rounded-full text-sm font-bold hover:bg-green-50 transition-all"
+                onClick={handleCreateStorefront}
+                className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-black shadow-lg shadow-green-500/40 hover:shadow-green-500/60 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group animate-dance"
               >
-                BECOME A VENDOR
+                <Icon
+                  name="Store"
+                  size={18}
+                  className="group-hover:animate-bounce"
+                />
+                CREATE A STOREFRONT
               </button>
             )}
           </div>

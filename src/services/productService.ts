@@ -115,7 +115,7 @@ export const productService = {
       description?: string;
       product_ids?: number[];
       image?: File | null;
-    }
+    },
   ) => {
     const formData = new FormData();
     if (catalogData.name !== undefined)
@@ -134,8 +134,14 @@ export const productService = {
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
-      }
+      },
     );
+    return response.data;
+  },
+
+  deleteCatalog: async (catalogId: number | string) => {
+    // DELETE /api/products/catalogs/:catalog_id
+    const response = await api.delete(`/products/catalogs/${catalogId}`);
     return response.data;
   },
 };

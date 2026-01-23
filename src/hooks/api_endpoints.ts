@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const api_endpoints = {
   // ==================== MARKETPLACE ====================
   MARKETPLACE_SEARCH: `${API_BASE_URL}/marketplace/search`,
+
   MARKETPLACE_STORE: (storeName: string) =>
     `${API_BASE_URL}/marketplace/store/${storeName}`,
   MARKETPLACE_PRODUCTS: (productId: string | number) =>
@@ -25,7 +26,7 @@ const api_endpoints = {
     `${API_BASE_URL}/products/${productId}`,
   GET_MY_PRODUCTS: `${API_BASE_URL}/products/my-products`,
   GET_CATALOGS: `${API_BASE_URL}/products/catalogs`,
-
+GET_CATEGORIES: `${API_BASE_URL}/marketplace/categories`,
   // ==================== STOREFRONT ====================
   GET_STOREFRONT: (storeName: string) =>
     `${API_BASE_URL}/storefront/${storeName}`,

@@ -1,8 +1,12 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import api_endpoints from "@/hooks/api_endpoints";
 import {
   Mail,
   Phone,
@@ -21,6 +25,30 @@ import {
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [categories, setCategories] = useState<string[]>([]);
+  const CATEGORY_LIMIT = 5;
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await fetch(api_endpoints.GET_CATEGORIES);
+        const data = await res.json();
+        const names = (data?.categories || [])
+          .map((c: any) => c?.name)
+          .filter(Boolean);
+        setCategories(names);
+      } catch (error) {
+        setCategories([]);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  const displayedCategories = useMemo(
+    () => categories.slice(0, CATEGORY_LIMIT),
+    [categories],
+  );
 
   return (
     <footer className="bg-[#0B1120] w-full text-gray-300 font-sans border-t border-gray-800 pb-24">
@@ -65,7 +93,6 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="inline-block">
-              {/* Replace with your actual Logo Component or Image */}
               <img
                 src="/images/siiqo.png"
                 alt="Siiqo Logo"
@@ -94,42 +121,20 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold text-lg mb-6">Marketplace</h4>
             <ul className="space-y-4">
-              {[
-                "Browse Categories",
-                "Featured Listings",
-                "Trending",
-                "New Arrivals",
-                "Clearance",
-              ].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-orange-500 transition-colors flex items-center group"
-                  >
-                    <span className="w-0 group-hover:w-2 h-[2px] bg-orange-500 mr-0 group-hover:mr-2 transition-all duration-300"></span>
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Links Column 2 */}
-          <div>
-            <h4 className="text-white font-bold text-lg mb-6">Company</h4>
-            <ul className="space-y-4">
-              {["About Us", "Careers", "Press", "Affiliates", "Partners"].map(
-                (item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
+              {displayedCategories.length > 0 ? (
+                displayedCategories.map((category) => (
+                  <li key={category}>
+                    <Link
+                      href={`/marketplace?category=${encodeURIComponent(category)}`}
                       className="text-gray-400 hover:text-orange-500 transition-colors flex items-center group"
                     >
                       <span className="w-0 group-hover:w-2 h-[2px] bg-orange-500 mr-0 group-hover:mr-2 transition-all duration-300"></span>
-                      {item}
-                    </a>
+                      {category}
+                    </Link>
                   </li>
-                )
+                ))
+              ) : (
+                <li className="text-gray-500 text-sm">Loading categories...</li>
               )}
             </ul>
           </div>
@@ -141,7 +146,7 @@ const Footer = () => {
               <li className="flex items-start gap-3 text-gray-400">
                 <MapPin className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
                 <span>
-               Nelocap Estate 
+                  Nelocap Estate
                   <br />
                   Lokogama, Abuja.
                 </span>
@@ -155,31 +160,10 @@ const Footer = () => {
                 <span>support@siiqo.com</span>
               </li>
             </ul>
-
-            {/* App Store Buttons */}
-            <div className="mt-8 pt-6 border-t border-gray-800">
-              <p className="text-sm font-medium text-white mb-3">Get the App</p>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="h-10 justify-start bg-gray-900 border-gray-700 hover:bg-gray-800 hover:text-white text-gray-300"
-                >
-                  <Smartphone className="mr-2 h-4 w-4" />
-                  <span>App Store</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 justify-start bg-gray-900 border-gray-700 hover:bg-gray-800 hover:text-white text-gray-300"
-                >
-                  <Smartphone className="mr-2 h-4 w-4" />
-                  <span>Google Play</span>
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
 
-        <Separator className="bg-gray-800 mb-12" />
+        {/* <Separator className="bg-gray-800 mb-12" /> */}
 
         {/* --- Trust Indicators --- */}
         {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
@@ -230,7 +214,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-500">
           <p>© {currentYear} Siiqo. All rights reserved.</p>
 
-          <div className="flex flex-wrap justify-center gap-6">
+          {/* <div className="flex flex-wrap justify-center gap-6">
             <a href="#" className="hover:text-white transition-colors">
               Privacy Policy
             </a>
@@ -243,12 +227,12 @@ const Footer = () => {
             <a href="#" className="hover:text-white transition-colors">
               Sitemap
             </a>
-          </div>
+          </div> */}
 
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
             <span>System Operational</span>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

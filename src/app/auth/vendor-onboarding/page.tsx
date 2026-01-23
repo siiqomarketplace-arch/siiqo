@@ -101,6 +101,15 @@ const VendorOnboarding = () => {
     }
   }, [locationDetected, location, setValue]);
 
+  // Show welcome toast on mount
+  useEffect(() => {
+    toast({
+      title: "📸 Upload Your Store Images",
+      description:
+        "Add a logo and banner. You can update them anytime after setup.",
+    });
+  }, []);
+
   // Handle Redirection
   useEffect(() => {
     if (isCompleted) {
@@ -289,23 +298,32 @@ const VendorOnboarding = () => {
                   )}
               </div>
 
-              {/* CHANGED: File input for Logo */}
-              <InputField
-                label="Logo*"
-                type="file"
-                accept="image/*"
-                {...register("logo")}
-                error={(errors as any).logo?.message}
-              />
+              {/* File inputs for Logo and Banner */}
+              <div className="space-y-1">
+                <InputField
+                  label="Logo*"
+                  type="file"
+                  accept="image/*"
+                  {...register("logo")}
+                  error={(errors as any).logo?.message}
+                />
+                <p className="text-xs text-gray-500">
+                  Upload your store logo. You can change it later.
+                </p>
+              </div>
 
-              {/* CHANGED: File input for Banner */}
-              <InputField
-                label="Banner*"
-                type="file"
-                accept="image/*"
-                {...register("banner")}
-                error={(errors as any).banner?.message}
-              />
+              <div className="space-y-1">
+                <InputField
+                  label="Banner*"
+                  type="file"
+                  accept="image/*"
+                  {...register("banner")}
+                  error={(errors as any).banner?.message}
+                />
+                <p className="text-xs text-gray-500">
+                  Upload your store banner. You can change it later.
+                </p>
+              </div>
 
               <InputField
                 label="Bank Name (Optional)"

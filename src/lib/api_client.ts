@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logError } from "./errorHandler";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
@@ -40,18 +41,29 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response, // return full response
   (error) => {
     const status = error.response?.status;
+
+    // Log all server errors for debugging
+    if (status && status >= 500) {
+      logError(error, `API Error (${status})`);
+    }
+
     if (status === 401) {
       console.warn("Unauthorized, redirecting to login...");
+      // Optional: redirect to login
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login";
+      }
     }
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

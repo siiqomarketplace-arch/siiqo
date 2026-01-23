@@ -19,6 +19,8 @@ import { Filter } from "@/types/search-results";
 import { useLocation } from "@/context/LocationContext";
 import api_endpoints from "@/hooks/api_endpoints";
 import { sortByProximity } from "@/utils/proximitySort";
+import { toast } from "sonner";
+import { getServerErrorMessage } from "@/lib/errorHandler";
 
 const SearchResults = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +28,7 @@ const SearchResults = () => {
   const [useEnhancedMapView, setUseEnhancedMapView] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchMode, setSearchMode] = useState<"storefront" | "product">(
-    "product"
+    "product",
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -59,7 +61,7 @@ const SearchResults = () => {
 
     // Generate approximate location from coordinates if available
     const getLocationFromCoordinates = (lat: any, lng: any) => {
-      if (!lat || !lng) return "Lagos, NG";
+      if (!lat || !lng) return "Nearby";
       // This is a simple approximation - in production you'd use reverse geocoding
       const parsedLat = parseFloat(lat);
       const parsedLng = parseFloat(lng);
@@ -92,6 +94,10 @@ const SearchResults = () => {
       return `${parsedLat.toFixed(2)}°, ${parsedLng.toFixed(2)}°`;
     };
 
+    const parsedLat = parseFloat(item.latitude || item.lat);
+    const parsedLng = parseFloat(item.longitude || item.lng);
+    const hasCoords = !isNaN(parsedLat) && !isNaN(parsedLng);
+
     return {
       id: item.id,
       name: item.name || item.business_name || "Unnamed",
@@ -111,11 +117,13 @@ const SearchResults = () => {
         item.location ||
         getLocationFromCoordinates(item.latitude, item.longitude),
       slug: item.slug,
-      // Use provided coordinates or fallback to Lagos
-      coordinates: {
-        lat: parseFloat(item.latitude || item.lat) || 6.5244,
-        lng: parseFloat(item.longitude || item.lng) || 3.3792,
-      },
+      // Use provided coordinates if available
+      coordinates: hasCoords
+        ? {
+            lat: parsedLat,
+            lng: parsedLng,
+          }
+        : null,
       // Store raw lat/lng for later fetching
       latitude: item.latitude,
       longitude: item.longitude,
@@ -132,8 +140,8 @@ const SearchResults = () => {
           productIds.map((id) =>
             fetch(api_endpoints.MARKETPLACE_PRODUCTS(String(id)))
               .then((res) => res.json())
-              .catch(() => null)
-          )
+              .catch(() => null),
+          ),
         );
 
         responses.forEach((response, index) => {
@@ -151,7 +159,45 @@ const SearchResults = () => {
 
       return detailsMap;
     },
-    []
+    [],
+  );
+
+  // Fetch detailed store info to get accurate coordinates
+  const fetchStoreDetails = useCallback(
+    async (storeSlugs: string[]): Promise<Map<string, any>> => {
+      const detailsMap = new Map();
+
+      try {
+        const responses = await Promise.all(
+          storeSlugs.map((slug) =>
+            fetch(api_endpoints.MARKETPLACE_STORE(String(slug)))
+              .then((res) => res.json())
+              .catch(() => null),
+          ),
+        );
+
+        responses.forEach((response, index) => {
+          const store =
+            response?.store ||
+            response?.data?.store ||
+            response?.storefront ||
+            response?.data?.storefront ||
+            response?.data ||
+            null;
+          if (store) {
+            detailsMap.set(storeSlugs[index], {
+              latitude: store.latitude,
+              longitude: store.longitude,
+            });
+          }
+        });
+      } catch (err) {
+        console.error("Error fetching store details:", err);
+      }
+
+      return detailsMap;
+    },
+    [],
   );
 
   const fetchProducts = async (query: string): Promise<void> => {
@@ -161,7 +207,7 @@ const SearchResults = () => {
 
       const nearUrl = new URL(
         baseUrl,
-        typeof window !== "undefined" ? window.location.origin : ""
+        typeof window !== "undefined" ? window.location.origin : "",
       );
       if (query) nearUrl.searchParams.set("q", query);
       if (coords?.lat && coords?.lng) {
@@ -171,7 +217,7 @@ const SearchResults = () => {
 
       const allUrl = new URL(
         baseUrl,
-        typeof window !== "undefined" ? window.location.origin : ""
+        typeof window !== "undefined" ? window.location.origin : "",
       );
       if (query) allUrl.searchParams.set("q", query);
 
@@ -180,8 +226,15 @@ const SearchResults = () => {
         fetch(allUrl.toString()),
       ]);
 
+      const storefrontsUrl = new URL(
+        "/api/buyers/storefronts",
+        typeof window !== "undefined" ? window.location.origin : "",
+      );
+      const storefrontsRes = await fetch(storefrontsUrl.toString());
+
       const nearJson = await nearRes.json();
       const allJson = await allRes.json();
+      const storefrontsJson = await storefrontsRes.json();
 
       if (nearJson.status === "success" || allJson.status === "success") {
         const nearP = nearJson?.data?.nearby_products || [];
@@ -190,6 +243,22 @@ const SearchResults = () => {
           allJson?.data?.products || allJson?.data?.nearby_products || [];
         const allS =
           allJson?.data?.storefronts || allJson?.data?.nearby_stores || [];
+
+        type ActiveStorefront = {
+          slug?: string;
+          latitude?: number;
+          longitude?: number;
+          address?: string;
+          phone?: string | null;
+          logo?: string;
+          banner?: string;
+        };
+
+        const storefrontsList: ActiveStorefront[] =
+          storefrontsJson?.storefronts || [];
+        const storefrontsBySlug = new Map<string, ActiveStorefront>(
+          storefrontsList.map((s) => [s.slug || "", s]),
+        );
 
         const dedup = (arr: any[]) => {
           const seen = new Set();
@@ -201,16 +270,18 @@ const SearchResults = () => {
           });
         };
 
-        const finalP = nearP.length > 0 ? dedup(nearP) : dedup(allP);
-        const finalS = nearS.length > 0 ? dedup(nearS) : dedup(allS);
+        const finalP = dedup([...nearP, ...allP]);
+        const finalS = dedup([...nearS, ...allS]);
 
         // Fetch detailed product info to get accurate coordinates
         const productIds = finalP.map((p) => p.id).filter(Boolean);
-        const storeIds = finalS.map((s) => s.id).filter(Boolean);
+        const storeSlugs = finalS
+          .map((s) => s.slug || s.store_slug || s.storeSlug)
+          .filter(Boolean) as string[];
 
         const [productDetails, storeDetails] = await Promise.all([
           fetchProductDetails(productIds),
-          fetchProductDetails(storeIds),
+          fetchStoreDetails(storeSlugs),
         ]);
 
         let productsData: any[] = [];
@@ -228,11 +299,19 @@ const SearchResults = () => {
 
         // Enrich stores with detailed coordinates
         const enrichedStores = finalS.map((s: any) => {
-          const details = storeDetails.get(s.id);
+          const slug = s.slug || s.store_slug || s.storeSlug;
+          const details = storeDetails.get(slug);
+          const activeStore = slug ? storefrontsBySlug.get(slug) : undefined;
+
           return {
             ...s,
-            latitude: details?.latitude || s.latitude,
-            longitude: details?.longitude || s.longitude,
+            latitude: activeStore?.latitude || details?.latitude || s.latitude,
+            longitude:
+              activeStore?.longitude || details?.longitude || s.longitude,
+            address: activeStore?.address || s.address,
+            phone: activeStore?.phone || s.phone,
+            logo: activeStore?.logo || s.logo,
+            banner: activeStore?.banner || s.banner,
           };
         });
 
@@ -248,15 +327,15 @@ const SearchResults = () => {
           });
 
           productsData = productsSorted.map((p: any) =>
-            transformApiItem(p, true)
+            transformApiItem(p, true),
           );
           storesData = storesSorted.map((s: any) => transformApiItem(s, false));
         } else {
           productsData = enrichedProducts.map((p: any) =>
-            transformApiItem(p, true)
+            transformApiItem(p, true),
           );
           storesData = enrichedStores.map((s: any) =>
-            transformApiItem(s, false)
+            transformApiItem(s, false),
           );
         }
 
@@ -266,11 +345,7 @@ const SearchResults = () => {
         // Update map center to the first result found (with accurate coordinates)
         const firstItem =
           searchMode === "product" ? productsData[0] : storesData[0];
-        if (
-          firstItem?.coordinates &&
-          (firstItem.coordinates.lat !== 6.5244 ||
-            firstItem.coordinates.lng !== 3.3792)
-        ) {
+        if (firstItem?.coordinates?.lat && firstItem?.coordinates?.lng) {
           setMapCenter(firstItem.coordinates);
         } else if (coords?.lat && coords?.lng) {
           setMapCenter({ lat: coords.lat, lng: coords.lng });
@@ -278,6 +353,10 @@ const SearchResults = () => {
       }
     } catch (err) {
       console.error("API Error:", err);
+      const errorMessage = getServerErrorMessage(err, "Search Products");
+      if (errorMessage.isServerError) {
+        toast.error(errorMessage.title, { description: errorMessage.message });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -328,7 +407,7 @@ const SearchResults = () => {
 
   // Helper to focus map on a specific product card click
   const focusOnMap = (item: any) => {
-    if (item.coordinates) {
+    if (item.coordinates?.lat && item.coordinates?.lng) {
       setMapCenter(item.coordinates);
       setSelectedMarkerId(item.id);
     }
@@ -354,9 +433,7 @@ const SearchResults = () => {
           onItemSelect={(item) => {
             setSelectedMarkerId(item.id);
             router.push(
-              item.isProduct
-                ? `/products/${item.id}`
-                : `/storefront-details/${item.slug}`
+              item.isProduct ? `/products/${item.id}` : `/${item.slug}`,
             );
           }}
         />
@@ -374,22 +451,26 @@ const SearchResults = () => {
             <SearchResultsMap
               markers={
                 searchMode === "product"
-                  ? products.map((p) => ({
-                      id: p.id,
-                      lat: p.coordinates.lat,
-                      lng: p.coordinates.lng,
-                      name: p.name,
-                      price: p.price,
-                      isProduct: true,
-                    }))
-                  : stores.map((s) => ({
-                      id: s.id,
-                      lat: s.coordinates.lat,
-                      lng: s.coordinates.lng,
-                      name: s.name,
-                      price: s.price,
-                      isProduct: false,
-                    }))
+                  ? products
+                      .filter((p) => p.coordinates?.lat && p.coordinates?.lng)
+                      .map((p) => ({
+                        id: p.id,
+                        lat: p.coordinates.lat,
+                        lng: p.coordinates.lng,
+                        name: p.name,
+                        price: p.price,
+                        isProduct: true,
+                      }))
+                  : stores
+                      .filter((s) => s.coordinates?.lat && s.coordinates?.lng)
+                      .map((s) => ({
+                        id: s.id,
+                        lat: s.coordinates.lat,
+                        lng: s.coordinates.lng,
+                        name: s.name,
+                        price: s.price,
+                        isProduct: false,
+                      }))
               }
               center={mapCenter}
               onMarkerClick={(marker) => {
@@ -463,7 +544,7 @@ const SearchResults = () => {
                       <button
                         onClick={() => {
                           setSearchMode((prev) =>
-                            prev === "product" ? "storefront" : "product"
+                            prev === "product" ? "storefront" : "product",
                           );
                           setCurrentPage(1);
                         }}
@@ -539,7 +620,7 @@ const SearchResults = () => {
                             router.push(
                               item.isProduct
                                 ? `/products/${item.id}`
-                                : `/storefront-details/${item.slug}`
+                                : `/${item.slug}`,
                             );
                           }}
                         />
@@ -590,7 +671,7 @@ const SearchResults = () => {
           {hasSearched && !useEnhancedMapView && (
             <button
               onClick={() => setShowMapFull(!showMapFull)}
-              className="fixed z-[70] bottom-24 md:bottom-8 right-8 w-16 h-16 bg-[#1B3F61] text-white rounded-full shadow-[0_20px_50px_rgba(27,63,97,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+              className="fixed z-[70] bottom-40 md:bottom-8 right-8 w-16 h-16 bg-[#1B3F61] text-white rounded-full shadow-[0_20px_50px_rgba(27,63,97,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
             >
               <Icon name={showMapFull ? "List" : "Map"} size={28} />
             </button>

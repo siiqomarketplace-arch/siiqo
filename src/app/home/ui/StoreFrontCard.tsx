@@ -20,6 +20,8 @@ import {
   fetchActiveStorefronts,
 } from "@/services/api";
 import { useLocation } from "@/context/LocationContext";
+import { toast } from "sonner";
+import { getServerErrorMessage } from "@/lib/errorHandler";
 
 /**
  * STOREFRONT LIST COMPONENT
@@ -46,7 +48,7 @@ export const StorefrontList = ({
     try {
       const nearUrl = new URL(
         "/api/marketplace/search",
-        typeof window !== "undefined" ? window.location.origin : ""
+        typeof window !== "undefined" ? window.location.origin : "",
       );
       if (coords?.lat && coords?.lng) {
         nearUrl.searchParams.set("lat", String(coords.lat));
@@ -54,7 +56,7 @@ export const StorefrontList = ({
       }
       const allUrl = new URL(
         "/api/marketplace/search",
-        typeof window !== "undefined" ? window.location.origin : ""
+        typeof window !== "undefined" ? window.location.origin : "",
       );
 
       const [nearRes, allRes] = await Promise.all([
@@ -93,6 +95,10 @@ export const StorefrontList = ({
       setStores(merged);
     } catch (err) {
       console.error("Failed to fetch live storefronts", err);
+      const errorMessage = getServerErrorMessage(err, "Fetch Storefronts");
+      if (errorMessage.isServerError) {
+        toast.error(errorMessage.title, { description: errorMessage.message });
+      }
       setError(true);
     } finally {
       setIsLoading(false);
@@ -160,7 +166,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
     const colors = ["2563EB", "059669", "7C3AED", "EA580C", "DC2626", "0D9488"];
     const colorIndex = businessName.length % colors.length;
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      businessName
+      businessName,
     )}&background=${
       colors[colorIndex]
     }&color=fff&size=400&font-size=0.33&bold=true`;
@@ -175,7 +181,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
           .replace(/(^-|-$)+/g, "");
 
       const businessSlug = slugify(stores.slug || stores.business_name);
-      router.push(`/storefront-details/${encodeURIComponent(businessSlug)}`);
+      router.push(`/${encodeURIComponent(businessSlug)}`);
     }
   };
 
@@ -192,7 +198,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
           className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
           onError={(e) => {
             (e.target as HTMLImageElement).src = getFallbackImage(
-              stores.business_name
+              stores.business_name,
             );
           }}
         />
@@ -257,7 +263,7 @@ export const StorefrontCard = ({ stores }: { stores: Storefront }) => {
                   className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = getFallbackImage(
-                      stores.business_name
+                      stores.business_name,
                     );
                   }}
                 />
