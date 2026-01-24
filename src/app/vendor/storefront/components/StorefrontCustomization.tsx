@@ -6,7 +6,6 @@ import {
   Clock,
   Building,
   Globe,
-  CheckCircle2,
   Palette,
   Layout,
   Phone,
@@ -39,9 +38,10 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
   const [uploadingField, setUploadingField] = useState<
     "banner_url" | "logo_url" | null
   >(null);
-  const [uploadSuccess, setUploadSuccess] = useState<
-    "banner_url" | "logo_url" | null
-  >(null);
+  const [pendingImages, setPendingImages] = useState<{
+    banner_url?: File;
+    logo_url?: File;
+  }>({});
   const [activeTab, setActiveTab] = useState<
     "brand" | "details" | "location" | "design" | "social" | "hours"
   >("brand");
@@ -119,7 +119,7 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
     }
   }, [autoDetectedLocation]);
 
-  const handleImageUpload = async (
+  const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "banner_url" | "logo_url",
   ) => {
@@ -127,25 +127,26 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
     if (!file) return;
 
     try {
-      setUploadingField(field);
-      const formData = new FormData();
-
-      if (field === "banner_url") {
-        formData.append("banner", file);
-      } else if (field === "logo_url") {
-        formData.append("logo", file);
+      // Validate file is actually an image
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file",
+          description: "Please select a valid image file",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const response = await vendorService.updateVendorSettings(formData);
+      // Store the file for later upload
+      setPendingImages((prev) => ({ ...prev, [field]: file }));
 
-      if (response?.data?.store_settings?.[field]) {
-        updateSetting(field, response.data.store_settings[field]);
-        setUploadSuccess(field);
-        toast({ title: "Image uploaded successfully" });
+      // Create local preview URL
+      const previewUrl = URL.createObjectURL(file);
+      updateSetting(field, previewUrl);
 
-        // Clear success state after 3 seconds
-        setTimeout(() => setUploadSuccess(null), 3000);
-      }
+      toast({
+        title: "Image ready for preview. Click Save Changes to publish.",
+      });
     } catch (error) {
       const errorMsg = getServerErrorMessage(error, "Upload Image");
       toast({
@@ -153,8 +154,6 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
         description: errorMsg.message,
         variant: "destructive",
       });
-    } finally {
-      setUploadingField(null);
     }
   };
 
@@ -198,12 +197,30 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
       changed =
         appendIfChanged("template_options", settings.template_options) ||
         changed;
-      if (settings.logo_url && typeof settings.logo_url === "string") {
-        changed = appendIfChanged("logo_url", settings.logo_url) || changed;
-      }
-      if (settings.banner_url && typeof settings.banner_url === "string") {
+
+      // Handle image file uploads - only if files are pending
+      if (pendingImages.banner_url) {
+        formData.append("banner", pendingImages.banner_url);
+        changed = true;
+      } else if (
+        settings.banner_url &&
+        typeof settings.banner_url === "string" &&
+        !settings.banner_url.startsWith("blob:")
+      ) {
         changed = appendIfChanged("banner_url", settings.banner_url) || changed;
       }
+
+      if (pendingImages.logo_url) {
+        formData.append("logo", pendingImages.logo_url);
+        changed = true;
+      } else if (
+        settings.logo_url &&
+        typeof settings.logo_url === "string" &&
+        !settings.logo_url.startsWith("blob:")
+      ) {
+        changed = appendIfChanged("logo_url", settings.logo_url) || changed;
+      }
+
       changed =
         appendIfChanged("social_links", settings.social_links) || changed;
       changed =
@@ -225,6 +242,8 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
           title: "Success!",
           description: "Store settings saved successfully!",
         });
+        // Clear pending images after successful save
+        setPendingImages({});
         onSuccess();
       }
     } catch (error: any) {
@@ -280,20 +299,6 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
                     </div>
                   )}
 
-                  {uploadSuccess === "banner_url" && (
-                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-20 animate-pulse">
-                      <div className="flex flex-col items-center gap-2">
-                        <CheckCircle2
-                          size={48}
-                          className="text-green-600 animate-bounce"
-                        />
-                        <p className="text-green-700 font-semibold text-sm">
-                          Uploaded!
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   {settings.banner_url ? (
                     <img
                       src={settings.banner_url}
@@ -330,20 +335,6 @@ const StorefrontCustomization = ({ initialData, onSuccess }: Props) => {
                         />
                         <p className="text-white font-semibold text-sm">
                           Uploading...
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {uploadSuccess === "logo_url" && (
-                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-20 animate-pulse">
-                      <div className="flex flex-col items-center gap-2">
-                        <CheckCircle2
-                          size={48}
-                          className="text-green-600 animate-bounce"
-                        />
-                        <p className="text-green-700 font-semibold text-sm">
-                          Uploaded!
                         </p>
                       </div>
                     </div>

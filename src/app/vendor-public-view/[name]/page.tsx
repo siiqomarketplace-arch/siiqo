@@ -31,6 +31,7 @@ interface StoreInfo {
   phone?: string | null;
   socials: Record<string, string> | null;
   whatsapp_link: string | null;
+  website: string | null;
 }
 
 interface Catalog {
@@ -108,6 +109,7 @@ const VendorPublicProfile = () => {
   const socialLinks: Record<string, string> = {
     ...(storeInfo.socials || {}),
     ...(storeInfo.whatsapp_link ? { whatsapp: storeInfo.whatsapp_link } : {}),
+    ...(storeInfo.website ? { website: storeInfo.website } : {}),
   };
 
   const totalCatalogPages = Math.ceil(
@@ -653,6 +655,7 @@ const VendorPublicProfile = () => {
         phone={storeInfo.phone || null}
         socialLinks={socialLinks}
         workingHours={storeInfo.hours || {}}
+        website={storeInfo.website || null}
       />
     </div>
   );

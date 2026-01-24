@@ -109,7 +109,7 @@ const VerifyOtpPage = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to resend OTP.",
+        description: error.response?.data?.message || "Failed to resend OTP. Please wait for 10 mins before trying to resend again.",
         variant: "destructive",
       });
     } finally {

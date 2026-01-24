@@ -10,6 +10,7 @@ interface ContactVendorModalProps {
   phone: string | null;
   socialLinks: Record<string, string>;
   workingHours: Record<string, { start?: string; end?: string }>;
+  website?: string | null;
   countryCode?: string;
 }
 
@@ -20,6 +21,7 @@ const ContactVendorModal: React.FC<ContactVendorModalProps> = ({
   phone,
   socialLinks,
   workingHours,
+  website,
   countryCode = "234", // Default to Nigeria (+234)
 }) => {
   if (!isOpen) return null;
@@ -51,20 +53,20 @@ const ContactVendorModal: React.FC<ContactVendorModalProps> = ({
   const hasSocialLinks = Object.keys(socialLinks).length > 0;
   const hasPhone = phone && phone.trim() !== "";
   const hasWorkingHours = Object.keys(workingHours).length > 0;
-
+  const hasWebsite = website && website.trim() !== "";
   // Debug logging
   console.log("ContactVendorModal - phone:", phone, "hasPhone:", hasPhone);
   console.log(
     "ContactVendorModal - socialLinks:",
     socialLinks,
     "hasSocialLinks:",
-    hasSocialLinks
+    hasSocialLinks,
   );
   console.log(
     "ContactVendorModal - workingHours:",
     workingHours,
     "hasWorkingHours:",
-    hasWorkingHours
+    hasWorkingHours,
   );
 
   // Get current day's working hours
@@ -79,7 +81,18 @@ const ContactVendorModal: React.FC<ContactVendorModalProps> = ({
   ];
   const today = daysOfWeek[new Date().getDay()];
   const todayHours = workingHours[today];
+  const handleWebsiteClick = () => {
+    if (!website) return;
 
+    let fullUrl = website;
+
+    // If URL doesn't start with http/https, add it
+    if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+      fullUrl = `https://${fullUrl}`;
+    }
+
+    window.open(fullUrl, "_blank");
+  };
   const handleSocialClick = (url: string, platform: string) => {
     if (!url) return;
 
@@ -204,7 +217,21 @@ const ContactVendorModal: React.FC<ContactVendorModalProps> = ({
               </div>
             </div>
           )}
-
+          {/* //contact by website */}
+          {hasWebsite && (
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-widest mb-3 opacity-70">
+                Contact by Website
+              </h3>
+              <button
+                onClick={handleWebsiteClick}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition font-medium"
+              >
+                <Icon name="Globe" size={18} />
+                Visit Website
+              </button>
+            </div>
+          )}
           {!hasSocialLinks && !hasPhone && !hasWorkingHours && (
             <div className="text-center py-6">
               <p className="text-sm text-text-secondary">

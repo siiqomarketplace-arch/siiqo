@@ -12,6 +12,7 @@ import { switchMode } from "@/services/api";
 import { vendorService } from "@/services/vendorService";
 import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<string>("saved");
@@ -233,6 +234,14 @@ const UserProfile = () => {
   // MAIN PROFILE VIEW (RETAINED STYLES)
   // ---------------------------------------------------------
   const { personal_info, store_settings } = user;
+  const roleLabel = (
+    user?.role ||
+    user?.active_view ||
+    user?.target_view ||
+    "buyer"
+  )
+    .toString()
+    .replace(/_/g, " ");
   const avatarImage =
     store_settings?.logo_url ||
     "https://ui-avatars.com/api/?name=" + editData.name;
@@ -252,62 +261,28 @@ const UserProfile = () => {
         </div>
 
         <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
-          <div className="relative w-24 h-24 md:w-36 md:h-36 rounded-full border-[6px] border-white bg-gray-100 shadow-xl overflow-hidden group">
+          <div className="relative w-24 h-24 md:w-36 md:h-36 rounded-full border-[6px] border-white bg-gray-100 shadow-xl overflow-hidden">
             <Image
               src={avatarImage}
               alt="Profile"
               fill
               className="object-cover"
             />
-            <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              <Icon
-                name={uploading ? "Loader2" : "Camera"}
-                size={24}
-                className={`text-white ${uploading ? "animate-spin" : ""}`}
-              />
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) =>
-                  e.target.files?.[0] &&
-                  handleProfilePictureUpload(e.target.files[0])
-                }
-              />
-            </label>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 mt-16 md:mt-20">
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-heading font-extrabold">
-            {isEditing ? (
-              <input
-                className="text-center bg-transparent border-b border-primary outline-none"
-                value={editData.name}
-                onChange={(e) =>
-                  setEditData({ ...editData, name: e.target.value })
-                }
-                placeholder="Full Name"
-              />
-            ) : (
-              editData.name
-            )}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {isEditing ? (
-              <input
-                className="text-center bg-transparent border-b border-primary outline-none text-sm"
-                value={editData.email}
-                onChange={(e) =>
-                  setEditData({ ...editData, email: e.target.value })
-                }
-                placeholder="Email Address"
-              />
-            ) : (
-              editData.email
-            )}
-          </p>
+          <div className="flex items-center justify-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-heading font-extrabold">
+              {editData.name}
+            </h1>
+            <Badge className="bg-blue-50 text-blue-700 border border-blue-200">
+              {roleLabel.toUpperCase()} MODE
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">{editData.email}</p>
 
           <div className="flex items-center justify-center gap-4 mt-6">
             {/* <button 
@@ -346,20 +321,9 @@ const UserProfile = () => {
               <h3 className="text-xs font-black uppercase tracking-widest mb-4">
                 Store Description
               </h3>
-              {isEditing ? (
-                <textarea
-                  className="w-full text-sm p-3 border rounded-xl bg-gray-50 outline-none"
-                  value={editData.bio}
-                  onChange={(e) =>
-                    setEditData({ ...editData, bio: e.target.value })
-                  }
-                  rows={4}
-                />
-              ) : (
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {editData.bio || "No description set."}
-                </p>
-              )}
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {editData.bio || "No description set."}
+              </p>
             </div>
 
             <div className="p-6 border rounded-2xl bg-white shadow-sm">
@@ -371,39 +335,15 @@ const UserProfile = () => {
                   <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
                     <Icon name="MapPin" size={14} className="text-primary" />
                   </div>
-                  {isEditing ? (
-                    <input
-                      className="flex-1 text-xs font-bold bg-transparent border-b border-primary outline-none"
-                      value={editData.address}
-                      onChange={(e) =>
-                        setEditData({ ...editData, address: e.target.value })
-                      }
-                      placeholder="Address"
-                    />
-                  ) : (
-                    <span className="text-xs font-bold">
-                      {editData.address}
-                    </span>
-                  )}
+                  <span className="text-xs font-bold">{editData.address}</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-600">
                   <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
                     <Icon name="Phone" size={14} className="text-primary" />
                   </div>
-                  {isEditing ? (
-                    <input
-                      className="flex-1 text-xs font-bold bg-transparent border-b border-primary outline-none"
-                      value={editData.phone}
-                      onChange={(e) =>
-                        setEditData({ ...editData, phone: e.target.value })
-                      }
-                      placeholder="Phone Number"
-                    />
-                  ) : (
-                    <span className="text-xs font-bold">
-                      {editData.phone || "Not provided"}
-                    </span>
-                  )}
+                  <span className="text-xs font-bold">
+                    {editData.phone || "Not provided"}
+                  </span>
                 </div>
               </div>
             </div>

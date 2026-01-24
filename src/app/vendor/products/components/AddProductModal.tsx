@@ -150,6 +150,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   const [createdProductId, setCreatedProductId] = useState<
     string | number | null
   >(null);
+  const [nameError, setNameError] = useState<string>("");
 
   // Location detection hook
   const {
@@ -300,6 +301,22 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle name input with validation - only allow letters, spaces, and basic punctuation
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    // Allow letters (any language), spaces, hyphens, apostrophes, ampersands, and periods
+    const stringOnlyPattern = /^[\p{L}\s\-'&.,()]*$/u;
+
+    if (value === "" || stringOnlyPattern.test(value)) {
+      setFormData((prev) => ({ ...prev, name: value }));
+      setNameError("");
+    } else {
+      setNameError(
+        "Product name can only contain letters, spaces, and basic punctuation",
+      );
+    }
   };
 
   // Handle price input with comma formatting for display
@@ -846,14 +863,19 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                       </p>
                     </div>
 
-                    <Input
-                      label="Product Title "
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Enter product title"
-                      required
-                    />
+                    <div>
+                      <Input
+                        label="Product Title "
+                        name="name"
+                        value={formData.name}
+                        onChange={handleNameChange}
+                        placeholder="Enter product title"
+                        required
+                      />
+                      {nameError && (
+                        <p className="text-xs text-red-500 mt-1">{nameError}</p>
+                      )}
+                    </div>
 
                     <div>
                       <label className="block mb-2 text-sm font-medium text-foreground">
@@ -953,7 +975,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                 >
                   <div className="space-y-6">
                     <h4 className="text-base font-semibold">Inventory</h4>
-{/* 
+                    {/* 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label="SKU"
