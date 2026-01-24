@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Failed to fetch user profile"
+          "Failed to fetch user profile",
       );
     }
   }, []);
@@ -45,6 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       const storedUser = sessionStorage.getItem("RSUser");
       const storedToken = sessionStorage.getItem("RSToken");
+      const persistedUser = localStorage.getItem("RSUser");
+      const persistedToken = localStorage.getItem("RSToken");
+      const persistedRefreshToken =
+        sessionStorage.getItem("RSRefreshToken") ||
+        localStorage.getItem("RSRefreshToken");
 
       if (storedUser && storedToken) {
         try {
@@ -59,6 +64,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
           setIsLoading(false);
         }
+      } else if (persistedUser && persistedToken) {
+        try {
+          const parsedUser = JSON.parse(persistedUser) as UserData;
+          // Rehydrate session from localStorage for remembered users
+          sessionStorage.setItem("RSUser", JSON.stringify(parsedUser));
+          sessionStorage.setItem("RSToken", persistedToken);
+          setUser(parsedUser);
+          setIsLoggedIn(true);
+          fetchUserProfile();
+        } catch (e) {
+          console.error("Error parsing persisted RSUser:", e);
+          localStorage.removeItem("RSUser");
+          localStorage.removeItem("RSToken");
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (persistedRefreshToken) {
+        (async () => {
+          try {
+            const data = await authService.refresh(persistedRefreshToken);
+            if (data?.access_token) {
+              sessionStorage.setItem("RSToken", data.access_token);
+              if (data.refresh_token) {
+                sessionStorage.setItem("RSRefreshToken", data.refresh_token);
+                if (localStorage.getItem("RSRefreshToken")) {
+                  localStorage.setItem("RSRefreshToken", data.refresh_token);
+                }
+              }
+              setIsLoggedIn(true);
+              await fetchUserProfile();
+            }
+          } catch (err) {
+            sessionStorage.removeItem("RSRefreshToken");
+            localStorage.removeItem("RSRefreshToken");
+          } finally {
+            setIsLoading(false);
+          }
+        })();
       } else {
         setIsLoading(false);
       }
@@ -66,22 +109,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUserProfile]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, remember: boolean = false) => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const data = await authService.login({ email, password });
+        const data = await authService.login({ email, password, remember });
 
         if (data.access_token) {
           if (typeof window !== "undefined") {
             sessionStorage.setItem("RSToken", data.access_token);
+            if (data.refresh_token) {
+              sessionStorage.setItem("RSRefreshToken", data.refresh_token);
+            }
             sessionStorage.setItem("RSEmail", email);
             if (data.user?.target_view) {
               sessionStorage.setItem(
                 "RSUsertarget_view",
-                data.user.target_view
+                data.user.target_view,
               );
+            }
+
+            if (remember) {
+              localStorage.setItem("RSToken", data.access_token);
+              localStorage.setItem("RSEmail", email);
+              if (data.user) {
+                localStorage.setItem("RSUser", JSON.stringify(data.user));
+              }
+              if (data.refresh_token) {
+                localStorage.setItem("RSRefreshToken", data.refresh_token);
+              }
+            } else {
+              localStorage.removeItem("RSToken");
+              localStorage.removeItem("RSEmail");
+              localStorage.removeItem("RSUser");
+              localStorage.removeItem("RSRefreshToken");
             }
           }
 
@@ -115,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [fetchUserProfile]
+    [fetchUserProfile],
   );
 
   const logout = useCallback(() => {
@@ -124,8 +186,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem("RSToken");
       sessionStorage.removeItem("RSUser");
       sessionStorage.removeItem("RSUsertarget_view");
+      sessionStorage.removeItem("RSRefreshToken");
       localStorage.removeItem("rememberedEmail");
       localStorage.removeItem("authToken");
+      localStorage.removeItem("RSToken");
+      localStorage.removeItem("RSUser");
+      localStorage.removeItem("RSEmail");
+      localStorage.removeItem("RSRefreshToken");
+      localStorage.removeItem("rememberMePreference");
     }
     window.location.href = "/";
   }, []);
@@ -140,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshUserProfile: fetchUserProfile,
     }),
-    [isLoggedIn, user, isLoading, error, login, logout, fetchUserProfile]
+    [isLoggedIn, user, isLoading, error, login, logout, fetchUserProfile],
   );
 
   return (

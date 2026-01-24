@@ -14,15 +14,21 @@ export const loginUser = async (email: string, password: string) => {
 export const storeAuthData = (
   data: any,
   rememberMe: boolean,
-  email: string
+  email: string,
 ) => {
   if (typeof window !== "undefined") {
     sessionStorage.setItem("RSToken", data.access_token);
+    if (data.refresh_token) {
+      sessionStorage.setItem("RSRefreshToken", data.refresh_token);
+    }
     sessionStorage.setItem("RSUser", JSON.stringify(data.user));
     sessionStorage.setItem("RSEmail", email);
 
     if (rememberMe) {
       localStorage.setItem("RSToken", data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem("RSRefreshToken", data.refresh_token);
+      }
       localStorage.setItem("RSUser", JSON.stringify(data.user));
       localStorage.setItem("RSEmail", email);
     }

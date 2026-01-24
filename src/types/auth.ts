@@ -28,6 +28,7 @@ export interface UserData {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token?: string;
   user: UserData;
   message?: string;
 }
@@ -45,9 +46,9 @@ export interface AuthContextType {
   user: UserData | null;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
   refreshUserProfile?: () => Promise<void>;
   // Note: You might want to add a register function here too
-  register?: (userData: any) => Promise<void>; 
+  register?: (userData: any) => Promise<void>;
 }

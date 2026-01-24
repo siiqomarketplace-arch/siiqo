@@ -3,7 +3,11 @@ import { LoginResponse } from "@/types/auth";
 
 export const authService = {
   // Login remains the same structure
-  login: async (data: { email: string; password: string }): Promise<LoginResponse> => {
+  login: async (data: {
+    email: string;
+    password: string;
+    remember?: boolean;
+  }): Promise<LoginResponse> => {
     const response = await api.post("/auth/login", data);
     return response.data;
   },
@@ -11,6 +15,19 @@ export const authService = {
   // Updated path from /auth/signup to /auth/register
   signup: async (userData: any) => {
     const response = await api.post("/auth/register", userData);
+    return response.data;
+  },
+
+  refresh: async (refreshToken: string) => {
+    const response = await api.post(
+      "/auth/refresh",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${refreshToken}`,
+        },
+      },
+    );
     return response.data;
   },
 

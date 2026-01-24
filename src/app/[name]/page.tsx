@@ -33,6 +33,7 @@ interface StoreInfo {
   hours: Record<string, any>;
   logo: string;
   name: string;
+  phone: string;
   socials: Record<string, any>;
   whatsapp_link: string | null;
 }
@@ -315,6 +316,10 @@ const StorefrontDetailsPage = () => {
   };
 
   const primaryColor = store.branding?.primary_color || "#000000";
+  const contactSocialLinks = {
+    ...(store.socials || {}),
+    ...(store.whatsapp_link ? { whatsapp: store.whatsapp_link } : {}),
+  };
 
   const handleShareStore = async () => {
     setIsShareModalOpen(true);
@@ -990,8 +995,8 @@ const StorefrontDetailsPage = () => {
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
         vendorName={store.name}
-        phone={null}
-        socialLinks={store.socials || {}}
+        phone={store.phone || null}
+        socialLinks={contactSocialLinks}
         workingHours={store.hours || {}}
         countryCode="234"
       />

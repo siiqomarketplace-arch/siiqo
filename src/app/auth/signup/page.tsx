@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { authService } from "@/services/authService";
+import { getServerErrorMessage } from "@/lib/errorHandler";
 import { SignupResponse } from "@/types/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,8 +63,8 @@ const NotificationModal = ({
                 type === "success"
                   ? "bg-green-500"
                   : type === "error"
-                  ? "bg-red-500"
-                  : "bg-blue-500"
+                    ? "bg-red-500"
+                    : "bg-blue-500"
               }`}
             />
             <div className="p-6 text-center">
@@ -72,8 +73,8 @@ const NotificationModal = ({
                   type === "success"
                     ? "bg-green-100 text-green-600"
                     : type === "error"
-                    ? "bg-red-100 text-red-600"
-                    : "bg-blue-100 text-blue-600"
+                      ? "bg-red-100 text-red-600"
+                      : "bg-blue-100 text-blue-600"
                 }`}
               >
                 {type === "success" && <CheckCircle className="w-8 h-8" />}
@@ -194,14 +195,14 @@ const SignupForm = () => {
     setPasswordsMatch(
       formData.confirmPassword
         ? formData.password === formData.confirmPassword
-        : true
+        : true,
     );
   }, [formData.password, formData.confirmPassword]);
 
   const showNotification = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
+    message: string,
   ) => {
     setNotification({ type, title, message, show: true });
   };
@@ -253,7 +254,7 @@ const SignupForm = () => {
     showNotification(
       "info",
       "Creating Your Account",
-      "Setting up your secure profile..."
+      "Setting up your secure profile...",
     );
 
     try {
@@ -276,22 +277,22 @@ const SignupForm = () => {
         showNotification(
           "success",
           "Registration Successful!",
-          "Redirecting to email verification..."
+          "Redirecting to email verification...",
         );
         setTimeout(() => {
           router.push(
-            `/auth/verify-otp?email=${encodeURIComponent(formData.email)}`
+            `/auth/verify-otp?email=${encodeURIComponent(formData.email)}`,
           );
         }, 2000);
       } else {
         throw new Error(response.message || "Registration failed");
       }
     } catch (error: any) {
-      const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "An error occurred during signup.";
-      showNotification("error", "Signup Failed", errorMsg);
+      const errorResponse = getServerErrorMessage(error, "Signup");
+      const title = errorResponse.isServerError
+        ? errorResponse.title
+        : "Signup Failed";
+      showNotification("error", title, errorResponse.message);
     } finally {
       setIsLoading(false);
     }
@@ -341,7 +342,7 @@ const SignupForm = () => {
           <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-xl ring-1 ring-gray-200/50 rounded-[2.5rem] overflow-hidden">
             <CardHeader className="space-y-1 pb-6 pt-10 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
-             <img src='/images/siiqo.png' />
+                <img src="/images/siiqo.png" />
               </div>
               <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">
                 Get Started
