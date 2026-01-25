@@ -37,7 +37,7 @@ const VendorOrders = () => {
       setOrders(formattedOrders);
     } catch (error) {
       console.error("Failed to fetch orders", error);
-      toast.error("Failed to load orders");
+      toast.error("Failed to load orders...Not your problem, it's ours... Try again later.");
     } finally {
       setLoading(false);
     }

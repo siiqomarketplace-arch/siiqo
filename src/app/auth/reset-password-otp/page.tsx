@@ -135,7 +135,7 @@ export default function ResetPasswordOTPPage() {
 
       const message =
         error.response?.data?.message ||
-        "Failed to reset password. Please try again.";
+        "Failed to reset password. Please try again in a moment.";
 
       toast({
         variant: "destructive",

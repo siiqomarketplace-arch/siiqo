@@ -53,7 +53,7 @@ const NearbyDealCard: React.FC<NearbyDealCardProps> = ({
       setProducts(data.data.nearby_products);
       setCurrentPage(1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch products");
+      setError(err instanceof Error ? err.message : "Failed to fetch products... Not your problem, it's ours... Try again later.");
     } finally {
       setIsLoading(false);
     }

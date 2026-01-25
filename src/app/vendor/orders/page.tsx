@@ -74,7 +74,7 @@ const fetchOrders = async () => {
         setSelectedOrder(prev => prev ? { ...prev, status: newStatus as any } : null);
       }
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error("Failed to update status... Please try again.");
     }
   };
 

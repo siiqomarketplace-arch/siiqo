@@ -108,7 +108,7 @@ const LandingPage: React.FC<{ onRefresh?: () => Promise<void> }> = ({
       ]);
 
       if (!nearRes.ok || !allRes.ok)
-        throw new Error("Failed to fetch data from server");
+        throw new Error("This is not your problem, it's ours... Try again later.");
 
       const nearJson = await nearRes.json();
       const allJson = await allRes.json();

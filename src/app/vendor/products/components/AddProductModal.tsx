@@ -363,11 +363,12 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
     );
 
     incoming.forEach((file) => {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
+      // Validate file type - only allow PNG, JPG, JPEG
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
         setUploadErrors((prev) => [
           ...prev,
-          `${file.name} is not a valid image file.`,
+          `${file.name} is not a valid format. Only PNG, JPG, and JPEG are allowed.`,
         ]);
         return;
       }
@@ -620,7 +621,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
       const errorMsg =
         error.response?.data?.message ||
         error.message ||
-        "Failed to save product.";
+        "Failed to save product... Please try again.";
       toast({
         title: errorMsg,
         description: "Please check your input and try again.",
@@ -767,7 +768,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
                         <input
                           type="file"
                           multiple
-                          accept="image/*"
+                          accept="image/png,image/jpeg,image/jpg"
                           id="wizard-image-input"
                           className="hidden"
                           onChange={(e) => handleImageUpload(e.target.files)}

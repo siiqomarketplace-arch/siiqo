@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Failed to fetch user profile",
+          "Failed to fetch user profile...Not your problem, it's ours... Try again later.",
       );
     }
   }, []);
@@ -157,7 +157,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await fetchUserProfile();
           }
         } else {
-          throw new Error("No access token received");
+          throw new Error(
+            "Authentication failed. Please try logging in again.",
+          );
         }
       } catch (err: any) {
         const errorMessage =

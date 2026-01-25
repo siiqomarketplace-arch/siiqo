@@ -114,7 +114,7 @@ const VerifyOtpPage = () => {
         setIsOtpExpired(false); // Reset expiry status
         setOtp(""); // Clear current OTP
       } else {
-        throw new Error(response.message || "Failed to resend OTP");
+        throw new Error(response.message || "Failed to resend OTP. Please try again.");
       }
     } catch (error: any) {
       toast({
@@ -188,7 +188,7 @@ const VerifyOtpPage = () => {
       if (error.response) {
         // Server responded with error status
         errorMessage =
-          error.response.data?.message || "Invalid OTP. Please try again.";
+          error.response.data?.message || "Invalid OTP. Check your email and try again.";
       } else if (
         error.code === "NETWORK_ERROR" ||
         error.message.includes("Network Error")

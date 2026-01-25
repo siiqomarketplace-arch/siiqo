@@ -66,7 +66,8 @@ export default function ProductDetailPage() {
           cache: "no-store",
         });
 
-        if (!res.ok) throw new Error("Failed to fetch product");
+        if (!res.ok)
+          throw new Error("We couldn't load this product. Please try again.");
 
         const data = await res.json();
 
@@ -148,7 +149,7 @@ export default function ProductDetailPage() {
     slug: storefronts.find(
       (sf) =>
         sf.business_name?.toLowerCase().trim() ===
-        productData.vendor_name?.toLowerCase().trim()
+        productData.vendor_name?.toLowerCase().trim(),
     )?.slug,
   };
 

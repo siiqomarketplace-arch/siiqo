@@ -317,7 +317,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
         setIsEditMode(false);
         toast.success("Settings updated successfully!");
       } else {
-        toast.error("Failed to update settings");
+        toast.error("Failed to update settings... Please try again.");
       }
     } catch (error: any) {
       console.error("Error saving settings:", error);
@@ -518,7 +518,7 @@ const Settings: React.FC<SettingsProps> = ({ isReadOnly = false }) => {
         setIsEditMode(false);
         toast.success("Settings updated successfully!");
       } else {
-        toast.error("Failed to update settings");
+        toast.error("Failed to update settings... Please try again.");
       }
     } catch (error: any) {
       console.error("Error saving settings:", error);

@@ -20,22 +20,23 @@ const authHeaders = () => {
   }
 
   // 3. Clean and return the header
-  const cleanToken = decodeURIComponent(token).replace(/^"|"$/g, ''); // Remove quotes if present
-  return { 
+  const cleanToken = decodeURIComponent(token).replace(/^"|"$/g, ""); // Remove quotes if present
+  return {
     Authorization: `Bearer ${cleanToken}`,
-    "Content-Type": "application/json" 
+    "Content-Type": "application/json",
   };
 };
 
 export const cartService = {
   addToCart: async (productId: number, quantity: number) => {
     const headers = authHeaders();
-    if (!headers.Authorization) throw new Error("Please log in to add items to cart");
+    if (!headers.Authorization)
+      throw new Error("Please sign in to add items to your cart.");
 
     const response = await api.post(
       "/cart/add",
       { product_id: productId, quantity },
-      { headers }
+      { headers },
     );
     return response.data;
   },
@@ -51,7 +52,7 @@ export const cartService = {
     const response = await api.patch(
       `/cart/update/${itemId}`,
       { quantity },
-      { headers: authHeaders() }
+      { headers: authHeaders() },
     );
     return response.data;
   },

@@ -495,7 +495,9 @@ const ProductManagement: React.FC = () => {
   ): AddProductRequest => {
     // 1. Safety check: If formData is missing, throw a descriptive error or return default
     if (!formData) {
-      throw new Error("Form data is missing");
+      throw new Error(
+        "Please fill in all required product information before saving.",
+      );
     }
 
     // 2. Safely extract image URLs (fallback to empty array if not present/uploaded)

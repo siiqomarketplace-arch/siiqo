@@ -37,11 +37,11 @@ const RecentlyViewed: React.FC = () => {
       if (response.data.status === "success") {
         setRecentItems(response.data.data || []);
       } else {
-        setError("Failed to load recently viewed items");
+        setError("Failed to load recently viewed items...Not your problem, it's ours... Try again later.");
       }
     } catch (err: any) {
       console.error("Error fetching recently viewed items:", err);
-      setError(err.response?.data?.message || "Failed to load recently viewed items");
+      setError(err.response?.data?.message || "Failed to load recently viewed items...Not your problem, it's ours... Try again later.");
       setRecentItems([]);
     } finally {
       setLoading(false);

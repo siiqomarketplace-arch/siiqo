@@ -18,13 +18,13 @@ export const useCartManagement = () => {
   const addNotification = useCallback(
     (type: AppNotification["type"], message: string) => {
       const id = crypto.randomUUID();
-      setNotifications(prev => [...prev, { id, type, message }]);
+      setNotifications((prev) => [...prev, { id, type, message }]);
     },
-    []
+    [],
   );
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const fetchCart = useCallback(async () => {
@@ -52,7 +52,7 @@ export const useCartManagement = () => {
             images: item.image ? [item.image] : [],
             category: item.category,
           },
-        })
+        }),
       );
 
       setCartItems(mappedItems);
@@ -63,7 +63,7 @@ export const useCartManagement = () => {
         "error",
         error.message?.includes("token")
           ? "Please log in"
-          : "Failed to load cart"
+          : "Failed to load cart",
       );
       setCartItems([]);
       setTotalItems(0);
@@ -91,7 +91,7 @@ export const useCartManagement = () => {
         setIsLoading(false);
       }
     },
-    [addNotification, fetchCart, isBuyerMode]
+    [addNotification, fetchCart, isBuyerMode],
   );
 
   const updateCartItem = useCallback(
@@ -113,7 +113,7 @@ export const useCartManagement = () => {
         setIsLoading(false);
       }
     },
-    [addNotification, fetchCart, isBuyerMode]
+    [addNotification, fetchCart, isBuyerMode],
   );
 
   const deleteCartItem = useCallback(
@@ -134,7 +134,7 @@ export const useCartManagement = () => {
         setIsLoading(false);
       }
     },
-    [addNotification, fetchCart, isBuyerMode]
+    [addNotification, fetchCart, isBuyerMode],
   );
 
   const clearCart = useCallback(async () => {
@@ -174,12 +174,14 @@ export const useCartManagement = () => {
         return response;
       } catch (error: any) {
         addNotification("error", error.message || "Failed to create order");
-        throw new Error("Checkout failed");
+        throw new Error(
+          "We couldn't complete your order. Please check your information and try again.",
+        );
       } finally {
         setIsLoading(false);
       }
     },
-    [addNotification, isBuyerMode]
+    [addNotification, isBuyerMode],
   );
 
   const uploadPaymentProof = useCallback(
@@ -198,13 +200,18 @@ export const useCartManagement = () => {
         addNotification("success", "Payment proof submitted successfully!");
         return response;
       } catch (error: any) {
-        addNotification("error", error.message || "Failed to upload payment proof");
-        throw new Error("Upload failed");
+        addNotification(
+          "error",
+          error.message || "Failed to upload payment proof",
+        );
+        throw new Error(
+          "File upload failed. Please check your connection and try again.",
+        );
       } finally {
         setIsLoading(false);
       }
     },
-    [addNotification, isBuyerMode]
+    [addNotification, isBuyerMode],
   );
 
   // --- stable return object for better performance. ---
@@ -240,6 +247,6 @@ export const useCartManagement = () => {
       checkout,
       uploadPaymentProof,
       removeNotification,
-    ]
+    ],
   );
 };

@@ -44,14 +44,14 @@ export const useLocationDetection = () => {
             timeout: 10000,
             maximumAge: 0,
           });
-        }
+        },
       );
 
       const { latitude, longitude } = position.coords;
 
       // Use Mapbox Geocoding API to reverse geocode the coordinates
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&types=place,region,country,postcode,neighborhood,address`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&types=place,region,country,postcode,neighborhood,address`,
       );
 
       const data = await response.json();
@@ -88,11 +88,13 @@ export const useLocationDetection = () => {
 
         // Return formatted address string
         const addressParts = [neighborhood, city, state, country].filter(
-          Boolean
+          Boolean,
         );
         return addressParts.join(", ") || feature.place_name;
       } else {
-        throw new Error("No location data found");
+        throw new Error(
+          "We couldn't detect your location. Please check your browser settings or enter it manually.",
+        );
       }
     } catch (error) {
       console.warn("Location detection failed:", error);
@@ -101,7 +103,7 @@ export const useLocationDetection = () => {
         const position = await new Promise<GeolocationPosition>(
           (resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject);
-          }
+          },
         );
         const basicLocation: LocationData = {
           country: "",

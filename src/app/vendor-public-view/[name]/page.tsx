@@ -59,7 +59,9 @@ const VendorPublicProfile = () => {
       setLoading(true);
       const storeSlug = params?.name;
       if (!storeSlug) {
-        throw new Error("Missing store slug");
+        throw new Error(
+          "Invalid store link. Please check the URL and try again.",
+        );
       }
 
       const response = await fetch(api_endpoints.MARKETPLACE_STORE(storeSlug));
@@ -80,7 +82,9 @@ const VendorPublicProfile = () => {
         setStoreInfo(apiStoreInfo);
         setCatalogs(mappedCatalogs);
       } else {
-        throw new Error("Failed to load store info");
+        throw new Error(
+          "We're having trouble loading this store. Please refresh the page.",
+        );
       }
     } catch (err) {
       toast.error("Failed to load store details.");

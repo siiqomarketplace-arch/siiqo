@@ -147,7 +147,7 @@ const Header: React.FC = () => {
       setIsOpen(false);
     } catch (error) {
       removeToast(toastId);
-      addToast("Failed to logout", "error");
+      addToast("Failed to logout... Not your problem, it's ours... Try again later.", "error");
       console.error("Logout error:", error);
     }
   };
@@ -163,7 +163,7 @@ const Header: React.FC = () => {
       return data;
     } catch (error) {
       removeToast(toastId);
-      addToast("Failed to switch mode", "error");
+      addToast("Failed to switch mode... Not your problem, it's ours... Try again later.", "error");
       console.error("Error switching mode:", error);
       throw error;
     } finally {

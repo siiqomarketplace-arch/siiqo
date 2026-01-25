@@ -126,7 +126,9 @@ const StorefrontDetailsPage = () => {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch store details");
+          throw new Error(
+            "We're having trouble loading this store. Please try again in a moment.",
+          );
         }
 
         const data: StorefrontDetailsResponse = await response.json();

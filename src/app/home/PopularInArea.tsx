@@ -130,7 +130,7 @@ const PopularInArea: React.FC = () => {
 
     } catch (err) {
       console.error("Error fetching popular products:", err);
-      setError("Failed to load popular products.");
+      setError("Failed to load popular products... Not your problem, it's ours... Try again later.");
     } finally {
       setLoading(false);
     }
