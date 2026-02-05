@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description:
     "Shop trusted local vendors, discover nearby deals, and grow your storefront with Siiqo — Nigeria’s community-first marketplace for buyers and sellers.",
   verification: {
-    google: "B1hcioL2LHc1exAvGJa46CzyUSQDVBwhbtk9VLkPKOo",
+    google: "VjXbfDnRbOuyWtoJsjwZcokMaSHsz6iVFZE1NnS0A_g",
   },
   alternates: {
     canonical: "https://siiqo.com/",
