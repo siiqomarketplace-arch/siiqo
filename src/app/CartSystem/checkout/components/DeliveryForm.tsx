@@ -7,13 +7,13 @@ import { useCurrency } from "@/context/CurrencyContext";
 
 interface DeliveryFormProps {
   initialData: any;
-    onSubmit: (data: any) => void;
-    onBack: () => void;
+  onSubmit: (data: any) => void;
+  onBack: () => void;
 }
 
 export default function DeliveryForm({
   initialData,
-    onSubmit,
+  onSubmit,
   onBack,
 }: DeliveryFormProps) {
   const [formData, setFormData] = useState(initialData);
@@ -53,7 +53,7 @@ export default function DeliveryForm({
               name="deliveryMethod"
               value="self-pickup"
               checked={formData.deliveryMethod === "self-pickup"}
-              onChange={e => handleDeliveryMethodChange(e.target.value)}
+              onChange={(e) => handleDeliveryMethodChange(e.target.value)}
               className="w-4 h-4 mt-1 text-orange-500"
             />
             <Store
@@ -84,7 +84,7 @@ export default function DeliveryForm({
               name="deliveryMethod"
               value="vendor-delivery"
               checked={formData.deliveryMethod === "vendor-delivery"}
-              onChange={e => handleDeliveryMethodChange(e.target.value)}
+              onChange={(e) => handleDeliveryMethodChange(e.target.value)}
               className="w-4 h-4 mt-1 text-orange-500"
             />
             <Truck
@@ -130,7 +130,9 @@ export default function DeliveryForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="mt-3 font-medium text-md">Please Confirm Your Delivery Informations.</h3>
+        <h3 className="mt-3 font-medium text-md">
+          Please Confirm Your Delivery Informations.
+        </h3>
         {/* Shipping Form Component */}
         <ShippingForm
           initialData={{

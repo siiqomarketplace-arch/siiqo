@@ -44,7 +44,7 @@ const OrderTracking = ({
   useEffect(() => {
     if (statusIndex < steps.length - 1) {
       const timer = setTimeout(() => {
-        setStatusIndex(prev => prev + 1);
+        setStatusIndex((prev) => prev + 1);
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -107,8 +107,8 @@ const OrderTracking = ({
                     isCompleted
                       ? "bg-orange-500 border-orange-500 text-white"
                       : isActive
-                      ? "border-orange-400 text-orange-500 bg-white"
-                      : "bg-white border-gray-300 text-gray-400"
+                        ? "border-orange-400 text-orange-500 bg-white"
+                        : "bg-white border-gray-300 text-gray-400"
                   }`}
                 >
                   {isCompleted ? <Check size={14} /> : <Package size={14} />}
@@ -128,16 +128,16 @@ const OrderTracking = ({
                       {step === "Order Placed"
                         ? "Your order has been received."
                         : step === "Rider Assigned"
-                        ? "A rider has been assigned to your delivery."
-                        : step === "In Transit to You"
-                        ? "Your package is on the way."
-                        : step === "Ready for Pickup"
-                        ? "Your order is ready for pickup."
-                        : step === "Shipped by Vendor"
-                        ? "The vendor has shipped your order."
-                        : step === "Collected"
-                        ? "You’ve collected your order."
-                        : "Your order has been delivered successfully."}
+                          ? "A rider has been assigned to your delivery."
+                          : step === "In Transit to You"
+                            ? "Your package is on the way."
+                            : step === "Ready for Pickup"
+                              ? "Your order is ready for pickup."
+                              : step === "Shipped by Vendor"
+                                ? "The vendor has shipped your order."
+                                : step === "Collected"
+                                  ? "You’ve collected your order."
+                                  : "Your order has been delivered successfully."}
                     </p>
                   )}
                 </div>

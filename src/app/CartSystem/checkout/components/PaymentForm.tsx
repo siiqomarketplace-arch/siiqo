@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Wallet, DollarSign, Loader2, AlertCircle, Store, MessageCircle } from "lucide-react";
+import {
+  Wallet,
+  DollarSign,
+  Loader2,
+  AlertCircle,
+  Store,
+  MessageCircle,
+} from "lucide-react";
 import Button from "@/components/Button";
 import { useCurrency } from "@/context/CurrencyContext";
 
@@ -94,9 +101,7 @@ export default function PaymentForm({
             }`}
           />
           <div className="flex-1">
-            <span className="font-medium text-gray-900">
-              Pay via WhatsApp
-            </span>
+            <span className="font-medium text-gray-900">Pay via WhatsApp</span>
             <p className="mt-1 text-sm text-gray-500">
               Contact seller on WhatsApp for payment instructions
             </p>
@@ -169,7 +174,8 @@ export default function PaymentForm({
                 WhatsApp Payment Selected
               </p>
               <p className="mt-1 text-sm text-green-700">
-                You'll be connected to the seller via WhatsApp for payment arrangements. Include your Order ID in the conversation.
+                You'll be connected to the seller via WhatsApp for payment
+                arrangements. Include your Order ID in the conversation.
               </p>
             </div>
           </div>

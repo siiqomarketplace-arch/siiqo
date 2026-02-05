@@ -84,7 +84,7 @@ export default function OrderSummary({
             onClick={onBack}
             className="flex items-center justify-center w-full gap-3 py-3 text-sm text-gray-700 transition-colors bg-gray-100 rounded-lg hover:bg-gray-200"
           >
-            <ArrowLeft/> Back
+            <ArrowLeft /> Back
           </button>
         )}
       </div>

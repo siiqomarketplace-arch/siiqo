@@ -114,9 +114,7 @@ export default function CheckoutPage() {
           <h1 className="text-2xl font-bold text-text-primary">
             Please Log In
           </h1>
-          <p className="text-text-secondary">
-            You need to log in to checkout.
-          </p>
+          <p className="text-text-secondary">You need to log in to checkout.</p>
           <Button
             onClick={() => router.push("/")}
             variant="orange"
@@ -161,8 +159,8 @@ export default function CheckoutPage() {
                         isCompleted
                           ? "bg-orange-500 border-orange-500 text-white"
                           : isActive
-                          ? "bg-orange-500 border-orange-500 text-white"
-                          : "bg-white border-gray-300 text-gray-400"
+                            ? "bg-orange-500 border-orange-500 text-white"
+                            : "bg-white border-gray-300 text-gray-400"
                       }`}
                     >
                       {isCompleted ? (
@@ -219,7 +217,12 @@ export default function CheckoutPage() {
                   {isLoading ? (
                     <div className="space-y-4">
                       {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} type="rect" width="100%" height="80px" />
+                        <Skeleton
+                          key={i}
+                          type="rect"
+                          width="100%"
+                          height="80px"
+                        />
                       ))}
                     </div>
                   ) : cartItems.length === 0 ? (
