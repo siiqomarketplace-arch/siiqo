@@ -20,6 +20,9 @@ const ConditionalBottomNav = dynamic(
 export const metadata: Metadata = {
   title: "Siiqo",
   description: "Your local Marketplace",
+  verification: {
+    google: "B1hcioL2LHc1exAvGJa46CzyUSQDVBwhbtk9VLkPKOo",
+  },
   icons: {
     icon: "/images/siiqo.png",
   },
