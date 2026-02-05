@@ -81,7 +81,9 @@ export default function RootLayout({
               ],
             }),
           }}
+          
         />
+        <meta name="google-site-verification" content="VjXbfDnRbOuyWtoJsjwZcokMaSHsz6iVFZE1NnS0A_g" />
       </head>
       <body cz-shortcut-listen="true">
         <AuthProvider>
