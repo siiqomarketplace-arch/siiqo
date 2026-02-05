@@ -23,10 +23,9 @@ export const metadata: Metadata = {
   description:
     "Shop trusted local vendors, discover nearby deals, and grow your storefront with Siiqo — Nigeria’s community-first marketplace for buyers and sellers.",
   verification: {
-    other: {
-      "google-site-verification": "VjXbfDnRbOuyWtoJsjwZcokMaSHsz6iVFZE1NnS0A_g",
-    },
+    google: "VjXbfDnRbOuyWtoJsjwZcokMaSHsz6iVFZE1NnS0A_g",
   },
+
   alternates: {
     canonical: "https://siiqo.com/",
   },
@@ -66,6 +65,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+          <meta
+    name="google-site-verification"
+    content="VjXbfDnRbOuyWtoJsjwZcokMaSHsz6iVFZE1NnS0A_g"
+  />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
