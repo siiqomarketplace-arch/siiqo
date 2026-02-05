@@ -10,7 +10,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import Button from "@/components/Button";
-import { useCurrency } from "@/context/CurrencyContext";
+// import { useCurrency } from "@/context/CurrencyContext";
 
 interface PaymentFormProps {
   initialData: PaymentData;
@@ -38,7 +38,7 @@ export default function PaymentForm({
   const [formData, setFormData] = useState<PaymentData>(initialData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { formatCurrency } = useCurrency();
+  // const { formatCurrency } = useCurrency();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -225,20 +225,20 @@ export default function PaymentForm({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Subtotal ({summary.totalItems} items)</span>
-            <span>{formatCurrency(summary.totalPrice)}</span>
+            {/* <span>{formatCurrency(summary.totalPrice)}</span> */}
           </div>
           <div className="flex justify-between text-sm">
             <span>Delivery Fee</span>
-            <span
+            {/* <span
               className={deliveryFee === 0 ? "text-green-600 font-medium" : ""}
             >
               {deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}
-            </span>
+            </span> */}
           </div>
           <div className="pt-2 mt-2 border-t">
             <div className="flex justify-between font-bold text-orange-500">
               <span>Total</span>
-              <span>{formatCurrency(total)}</span>
+              {/* <span>{formatCurrency(total)}</span> */}
             </div>
           </div>
         </div>

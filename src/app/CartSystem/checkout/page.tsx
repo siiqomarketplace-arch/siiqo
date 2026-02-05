@@ -25,7 +25,7 @@ import OrderTracking from "./components/OrderTracking";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/AppIcon";
-import { useCurrency } from "@/context/CurrencyContext";
+// import { useCurrency } from "@/context/CurrencyContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function CheckoutPage() {
   const { notifications, removeNotification } = useCartNotifications();
   const isLoading = useCartLoading();
   const { user, isLoggedIn } = useAuth();
-  const { formatCurrency } = useCurrency();
+  // const { formatCurrency } = useCurrency();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [deliveryData, setDeliveryData] = useState({
@@ -252,9 +252,9 @@ export default function CheckoutPage() {
                               <span className="text-sm">
                                 Qty: {item.quantity}
                               </span>
-                              <span className="font-semibold text-primary">
+                              {/* <span className="font-semibold text-primary">
                                 {formatCurrency(item.subtotal)}
-                              </span>
+                              </span> */}
                             </div>
                           </div>
                         </div>
@@ -324,9 +324,9 @@ export default function CheckoutPage() {
                     <div className="space-y-2 pb-4 border-b border-border mb-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-text-secondary">Subtotal</span>
-                        <span className="font-medium text-text-primary">
+                        {/* <span className="font-medium text-text-primary">
                           {formatCurrency(totalPrice)}
-                        </span>
+                        </span> */}
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-text-secondary">Items</span>
@@ -344,9 +344,9 @@ export default function CheckoutPage() {
 
                     <div className="flex justify-between font-semibold text-lg mb-4">
                       <span>Total</span>
-                      <span className="text-primary">
+                      {/* <span className="text-primary">
                         {formatCurrency(totalPrice)}
-                      </span>
+                      </span> */}
                     </div>
 
                     {checkoutError && (

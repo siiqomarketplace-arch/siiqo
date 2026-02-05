@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Truck, Store, Zap } from "lucide-react";
 import ShippingForm from "@/app/CartSystem/checkout/components/ShippingForm";
-import { useCurrency } from "@/context/CurrencyContext";
+// import { useCurrency } from "@/context/CurrencyContext";
 
 interface DeliveryFormProps {
   initialData: any;
@@ -17,7 +17,7 @@ export default function DeliveryForm({
   onBack,
 }: DeliveryFormProps) {
   const [formData, setFormData] = useState(initialData);
-  const { formatCurrency } = useCurrency();
+  // const { formatCurrency } = useCurrency();
 
   const handleDeliveryMethodChange = (method: string) => {
     setFormData((prev: any) => ({ ...prev, deliveryMethod: method }));
@@ -96,9 +96,9 @@ export default function DeliveryForm({
             />
             <div className="flex-1">
               <span className="font-medium text-gray-900">Vendor Delivery</span>
-              <p className="mt-1 text-sm text-gray-500">
+              {/* <p className="mt-1 text-sm text-gray-500">
                 {formatCurrency(2000)} - Delivered by vendor (1-2 days)
-              </p>
+              </p> */}
             </div>
           </label>
 
