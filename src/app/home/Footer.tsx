@@ -105,10 +105,17 @@ const Footer = () => {
               simple for everyone.
             </p>
             <div className="flex gap-4">
-              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
+              {[
+                { Icon: Facebook, href: "https://www.facebook.com" },
+                { Icon: Twitter, href: "https://x.com" },
+                { Icon: Instagram, href: "https://www.instagram.com" },
+                { Icon: Linkedin, href: "https://www.linkedin.com" },
+              ].map(({ Icon, href }, i) => (
                 <a
                   key={i}
-                  href="#"
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-orange-600 hover:text-white transition-all duration-300 group"
                 >
                   <Icon className="h-5 w-5 group-hover:scale-110 transition-transform" />

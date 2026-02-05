@@ -18,10 +18,38 @@ const ConditionalBottomNav = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: "Siiqo",
-  description: "Your local Marketplace",
+  metadataBase: new URL("https://siiqo.com"),
+  title: "Siiqo | Local Marketplace for Trusted Vendors in Nigeria",
+  description:
+    "Shop trusted local vendors, discover nearby deals, and grow your storefront with Siiqo — Nigeria’s community-first marketplace for buyers and sellers.",
   verification: {
     google: "B1hcioL2LHc1exAvGJa46CzyUSQDVBwhbtk9VLkPKOo",
+  },
+  alternates: {
+    canonical: "https://siiqo.com/",
+  },
+  openGraph: {
+    title: "Siiqo | Local Marketplace for Trusted Vendors in Nigeria",
+    description:
+      "Discover nearby deals, trusted vendors, and verified storefronts on Siiqo. Buy locally, sell smarter.",
+    url: "https://siiqo.com/",
+    siteName: "Siiqo",
+    type: "website",
+    images: [
+      {
+        url: "/images/siiqo.png",
+        width: 1200,
+        height: 630,
+        alt: "Siiqo marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Siiqo | Local Marketplace for Trusted Vendors in Nigeria",
+    description:
+      "Discover nearby deals, trusted vendors, and verified storefronts on Siiqo.",
+    images: ["/images/siiqo.png"],
   },
   icons: {
     icon: "/images/siiqo.png",
@@ -35,6 +63,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Siiqo",
+              url: "https://siiqo.com",
+              logo: "https://siiqo.com/images/siiqo.png",
+              sameAs: [
+                "https://www.facebook.com",
+                "https://www.instagram.com",
+                "https://x.com",
+                "https://www.linkedin.com",
+              ],
+            }),
+          }}
+        />
+      </head>
       <body cz-shortcut-listen="true">
         <AuthProvider>
           <CartProvider>

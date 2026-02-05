@@ -29,14 +29,14 @@ import Footer from "./home/Footer";
 export default function ProductFinder() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [currentLocation, setCurrentLocation] = useState<string>(
-    "Downtown Seattle, WA"
+    "Downtown Seattle, WA",
   );
   const router = useRouter();
 
   const handlePullToRefresh = async () => {
     setIsRefreshing(true);
 
-    await new Promise<void>(resolve => setTimeout(resolve, 1500));
+    await new Promise<void>((resolve) => setTimeout(resolve, 1500));
     setIsRefreshing(false);
   };
 
@@ -67,6 +67,9 @@ export default function ProductFinder() {
         )}
 
         <div className="w-full">
+          <h1 className="sr-only">
+            Siiqo local marketplace for trusted vendors in Nigeria
+          </h1>
           {/* <LandingPage /> */}
           <Homepage />
 
@@ -100,17 +103,13 @@ export default function ProductFinder() {
               </div>
               <RecentlyViewed />
             </section> */}
-{/* 
+            {/* 
             <section className="mb-8">
               <PopularInArea />
             </section> */}
-
           </div>
-
-
         </div>
-            <Footer />
-
+        <Footer />
       </div>
     </div>
   );
