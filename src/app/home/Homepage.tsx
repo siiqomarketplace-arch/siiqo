@@ -22,13 +22,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./LandingPage";
 import NearbyDealCard, { DealData } from "./ui/NearbyDealsProdCard";
 import CategoryGrid from "./components/CategoryGrid";
+import FeaturesSection from "./components/FeaturesSection";
 import { Product } from "@/types/products";
 import { useLocation } from "@/context/LocationContext";
 import BrowserMockup from "@/components/BrowserMockup";
 import TutorialGuide from "@/components/TutorialGuide";
 import FloatingWhatsAppButton from "@/components/FloatingWhatsAppButton";
 import api_endpoints from "@/hooks/api_endpoints";
-
+import Image from "next/image";
 const ITEMS_PER_PAGE = 4;
 const CATEGORIES_PER_PAGE = 4;
 
@@ -164,7 +165,10 @@ const Homepage: React.FC = () => {
       </section> */}
 
       {/* REPLICATED HERO & HEADER FROM hero.txt */}
-      <div className="relative    bg-[#001d3b]">
+      <div
+        className="relative bg-cover bg-center"
+        style={{ backgroundImage: "url(/images/mainbg.png)" }}
+      >
         {/* Decorative gradient blobs */}
         <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
@@ -208,126 +212,75 @@ const Homepage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="relative rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
-                {/* Soft glow */}
-                <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-orange-500/10 via-transparent to-blue-500/10 blur-xl" />
-
-                <div className="relative grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_auto] gap-2 items-center">
-                  {/* WHAT */}
-                  <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition">
-                    <Search
-                      size={18}
-                      className="text-orange-400 flex-shrink-0"
-                    />
-                    <div className="flex flex-col w-full">
-                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-                        What
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={typedPlaceholder}
-                        className="bg-transparent outline-none text-white text-xs sm:text-sm placeholder-blue-200/50"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* WHERE */}
-                  <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition">
-                    <MapPin
-                      size={18}
-                      className="text-orange-400 flex-shrink-0"
-                    />
-                    <div className="flex flex-col w-full">
-                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-semibold text-orange-300 tracking-wider">
-                        Where
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="City or Zip"
-                        className="bg-transparent outline-none text-white text-xs sm:text-sm placeholder-blue-200/50"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* GUIDE BUTTON */}
-                  <motion.button
-                    type="button"
-                    onClick={() => setIsTutorialOpen(true)}
-                    whileHover={{
-                      scale: 1.08,
-                      boxShadow: "0 0 30px rgba(168, 85, 247, 0.8)",
-                    }}
-                    whileTap={{ scale: 0.95 }}
+              <div className="relative flex items-center justify-center rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-3 sm:p-4">
+                <motion.button
+                  type="button"
+                  onClick={() => setIsTutorialOpen(true)}
+                  whileHover={{
+                    scale: 1.08,
+                    boxShadow: "0 0 30px rgba(168, 85, 247, 0.8)",
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={{
+                    boxShadow: [
+                      "0 0 20px rgba(168, 85, 247, 0.4)",
+                      "0 0 40px rgba(168, 85, 247, 0.8)",
+                      "0 0 20px rgba(168, 85, 247, 0.4)",
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="relative w-auto sm:w-auto flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 transition cursor-pointer group shadow-lg"
+                >
+                  <motion.div
+                    className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/30 via-white/10 to-transparent opacity-0"
                     animate={{
-                      boxShadow: [
-                        "0 0 20px rgba(168, 85, 247, 0.4)",
-                        "0 0 40px rgba(168, 85, 247, 0.8)",
-                        "0 0 20px rgba(168, 85, 247, 0.4)",
-                      ],
+                      opacity: [0, 1, 0],
+                      x: ["-100%", "100%"],
                     }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="relative flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 transition cursor-pointer group shadow-lg"
-                  >
-                    {/* Animated shine effect */}
-                    <motion.div
-                      className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/30 via-white/10 to-transparent opacity-0"
-                      animate={{
-                        opacity: [0, 1, 0],
-                        x: ["-100%", "100%"],
-                      }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                    />
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
 
-                    <BookOpen
-                      size={20}
-                      className="text-white flex-shrink-0 group-hover:text-yellow-200 transition relative z-10 animate-bounce"
-                      style={{ animationDelay: "0s" }}
-                    />
-                    <div className="flex flex-col w-full relative z-10">
-                      <label className="text-[10px] sm:text-[11px] self-start uppercase font-bold text-white/90 tracking-wider">
-                        🎓 Getting Started
-                      </label>
-                      <span className="text-white text-xs sm:text-sm text-left font-semibold">
-                        View Guide
-                      </span>
-                    </div>
-                  </motion.button>
-
-                  {/* SEARCH CTA */}
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.96 }}
-                    className="h-full w-full rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 md:px-8 md:py-4 px-4 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg hover:shadow-orange-500/50 transition"
-                  >
-                    {isSearching ? (
-                      <div className="flex items-center gap-2 justify-center">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Searching
-                      </div>
-                    ) : (
-                      "Search"
-                    )}
-                  </motion.button>
-                </div>
+                  <BookOpen
+                    size={20}
+                    className="text-white flex-shrink-0 group-hover:text-yellow-200 transition relative z-10 animate-bounce"
+                    style={{ animationDelay: "0s" }}
+                  />
+                  <div className="flex flex-col relative z-10">
+                    <label className="text-[10px] sm:text-[11px] uppercase font-bold text-white/90 tracking-wider">
+                      🎓 Getting Started
+                    </label>
+                    <span className="text-white text-xs sm:text-sm font-semibold">
+                      View Guide
+                    </span>
+                  </div>
+                </motion.button>
               </div>
             </motion.form>
           </div>
-          {/* THE BROWSER FRAME FROM hero.txt */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-16"
-          >
-            <BrowserMockup />
-          </motion.div>
+
+          {/* --- DASHBOARD HERO IMAGE (Contained) --- */}
+          <div className="relative max-w-6xl mx-auto px-4 mt-12 md:mt-16 lg:mt-20 z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-white/90 backdrop-blur p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-3xl border border-white"
+            >
+              <div className="relative rounded-xl md:rounded-2xl overflow-hidden aspect-[16/10] bg-gray-100 shadow-inner">
+                <Image
+                  src="/images/heroimg.png"
+                  alt="Siiqo Dashboard Preview"
+                  fill
+                  className="object-cover object-top"
+                  priority
+                />
+              </div>
+            </motion.div>
+          </div>
         </section>
       </div>
+
+      <FeaturesSection />
 
       {/* Results Section */}
       <AnimatePresence>

@@ -10,9 +10,9 @@ import QuickActions from "./home/QuickActions";
 import LocationIndicator from "./home/LocationIndicator";
 import LandingPage from "./home/LandingPage";
 import Homepage from "./home/Homepage";
-
+import BrowserMockup from "@/components/BrowserMockup";
 import Footer from "./home/Footer";
-
+import { motion } from "framer-motion";
 // interface QuickFilter {
 // 	label: string;
 // 	icon: LucideIconName;
@@ -109,6 +109,15 @@ export default function ProductFinder() {
             </section> */}
           </div>
         </div>
+           {/* THE BROWSER FRAME FROM hero.txt */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-16"
+                  >
+                    <BrowserMockup />
+                  </motion.div>
         <Footer />
       </div>
     </div>
