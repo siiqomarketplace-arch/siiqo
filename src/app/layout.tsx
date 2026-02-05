@@ -14,7 +14,7 @@ import { LocationProvider } from "@/context/LocationContext";
 // Lazy load non-critical components
 const ConditionalBottomNav = dynamic(
   () => import("@/components/ConditionalBottomNav"),
-  { ssr: true, loading: () => null }
+  { ssr: true, loading: () => null },
 );
 
 export const metadata: Metadata = {
