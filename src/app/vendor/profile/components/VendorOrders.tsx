@@ -27,17 +27,21 @@ const VendorOrders = () => {
     try {
       setLoading(true);
       const response = await vendorService.getVendorOrders();
-      
-      const rawOrders = Array.isArray(response) ? response : (response as any).orders || [];
+
+      const rawOrders = Array.isArray(response)
+        ? response
+        : (response as any).orders || [];
       const formattedOrders = rawOrders.map((order: any) => ({
         ...order,
-        createdAt: new Date(order.createdAt || order.created_at)
+        createdAt: new Date(order.createdAt || order.created_at),
       }));
 
       setOrders(formattedOrders);
     } catch (error) {
       console.error("Failed to fetch orders", error);
-      toast.error("Failed to load orders...Not your problem, it's ours... Try again later.");
+      toast.error(
+        "Failed to load orders...Not your problem, it's ours... Try again later.",
+      );
     } finally {
       setLoading(false);
     }
@@ -67,10 +71,10 @@ const VendorOrders = () => {
   };
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -89,9 +93,12 @@ const VendorOrders = () => {
         <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
           <Icon name="ShoppingBag" size={32} className="text-gray-400" />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">No Recent Orders</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">
+          No Recent Orders
+        </h3>
         <p className="text-sm text-gray-500 text-center max-w-sm">
-          You haven't received any orders yet. Your orders will appear here once customers start purchasing.
+          You haven't received any orders yet. Your orders will appear here once
+          customers start purchasing.
         </p>
       </div>
     );
@@ -102,7 +109,9 @@ const VendorOrders = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Recent Orders</h3>
-          <p className="text-sm text-gray-500">{orders.length} total order{orders.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500">
+            {orders.length} total order{orders.length !== 1 ? "s" : ""}
+          </p>
         </div>
         <button
           onClick={fetchOrders}
@@ -115,7 +124,8 @@ const VendorOrders = () => {
 
       <div className="space-y-3">
         {orders.map((order) => {
-          const customerName = order.customer_name || order.customer?.name || "Unknown Customer";
+          const customerName =
+            order.customer_name || order.customer?.name || "Unknown Customer";
           const firstProduct = order.items?.[0] || order.products?.[0];
           const itemCount = order.items?.length || order.products?.length || 1;
 
@@ -127,15 +137,25 @@ const VendorOrders = () => {
               <div className="flex items-start gap-4">
                 {/* Product Image */}
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                  {firstProduct?.image || firstProduct?.product_image || order.product_image ? (
+                  {firstProduct?.image ||
+                  firstProduct?.product_image ||
+                  order.product_image ? (
                     <Image
-                      src={firstProduct?.image || firstProduct?.product_image || order.product_image}
+                      src={
+                        firstProduct?.image ||
+                        firstProduct?.product_image ||
+                        order.product_image
+                      }
                       alt="Product"
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Icon name="Package" size={24} className="text-gray-400" />
+                      <Icon
+                        name="Package"
+                        size={24}
+                        className="text-gray-400"
+                      />
                     </div>
                   )}
                 </div>
@@ -151,7 +171,7 @@ const VendorOrders = () => {
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
-                        order.status
+                        order.status,
                       )}`}
                     >
                       {order.status}
@@ -162,7 +182,7 @@ const VendorOrders = () => {
                     <div className="flex items-center gap-4 text-gray-600">
                       <span className="flex items-center gap-1">
                         <Icon name="Package" size={14} />
-                        {itemCount} item{itemCount !== 1 ? 's' : ''}
+                        {itemCount} item{itemCount !== 1 ? "s" : ""}
                       </span>
                       <span className="flex items-center gap-1">
                         <Icon name="Calendar" size={14} />

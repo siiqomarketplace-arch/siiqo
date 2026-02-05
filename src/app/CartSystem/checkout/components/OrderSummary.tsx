@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Check } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface OrderSummaryProps {
   cartItems: any[];
@@ -17,8 +18,9 @@ export default function OrderSummary({
   currentStep,
   onBack,
 }: OrderSummaryProps) {
+  const { formatCurrency } = useCurrency();
   // Calculate additional costs
-  const shipping = 1500; // ₦1,500 flat shipping
+  const shipping = 1500; // flat shipping
   const tax = totalPrice * 0.075; // 7.5% tax
   const total = totalPrice + shipping + tax;
 
@@ -50,22 +52,22 @@ export default function OrderSummary({
       <div className="pt-4 space-y-3 border-t border-gray-200">
         <div className="flex justify-between text-sm text-gray-600">
           <span>Subtotal ({totalItems} items)</span>
-          <span>₦{totalPrice.toLocaleString()}</span>
+          <span>{formatCurrency(totalPrice)}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-600">
           <span>Shipping</span>
-          <span>₦{shipping.toLocaleString()}</span>
+          <span>{formatCurrency(shipping)}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-600">
           <span>Tax (7.5%)</span>
-          <span>₦{tax.toLocaleString()}</span>
+          <span>{formatCurrency(tax)}</span>
         </div>
       </div>
 
       {/* Total */}
       <div className="flex justify-between pt-4 mt-4 text-lg font-bold text-gray-900 border-t border-gray-200">
         <span>Total</span>
-        <span className="text-orange-500">₦{total.toLocaleString()}</span>
+        <span className="text-orange-500">{formatCurrency(total)}</span>
       </div>
 
       {/* Action Buttons */}

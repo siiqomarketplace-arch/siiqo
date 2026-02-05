@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Check, Package, Clock } from "lucide-react";
 import Button from "@/components/Button";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface OrderTrackingProps {
   orderId: string;
@@ -19,6 +20,7 @@ const OrderTracking = ({
   paymentMethod,
   onClose,
 }: OrderTrackingProps) => {
+  const { formatCurrency } = useCurrency();
   const getSteps = () => {
     switch (deliveryMethod) {
       case "self-pickup":
@@ -67,7 +69,7 @@ const OrderTracking = ({
         <div className="flex justify-between text-sm mb-2">
           <span className="font-medium">Total Amount:</span>
           <span className="font-semibold text-orange-600">
-            ₦{total.toLocaleString()}
+            {formatCurrency(total)}
           </span>
         </div>
         <div className="flex justify-between text-sm mb-1">

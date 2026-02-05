@@ -147,7 +147,10 @@ const Header: React.FC = () => {
       setIsOpen(false);
     } catch (error) {
       removeToast(toastId);
-      addToast("Failed to logout... Not your problem, it's ours... Try again later.", "error");
+      addToast(
+        "Failed to logout... Not your problem, it's ours... Try again later.",
+        "error",
+      );
       console.error("Logout error:", error);
     }
   };
@@ -163,7 +166,10 @@ const Header: React.FC = () => {
       return data;
     } catch (error) {
       removeToast(toastId);
-      addToast("Failed to switch mode... Not your problem, it's ours... Try again later.", "error");
+      addToast(
+        "Failed to switch mode... Not your problem, it's ours... Try again later.",
+        "error",
+      );
       console.error("Error switching mode:", error);
       throw error;
     } finally {
@@ -249,8 +255,8 @@ const Header: React.FC = () => {
             toast.type === "success"
               ? "bg-green-500"
               : toast.type === "error"
-              ? "bg-red-500"
-              : "bg-blue-500"
+                ? "bg-red-500"
+                : "bg-blue-500"
           }`}
         >
           {toast.type === "loading" && (
@@ -367,7 +373,9 @@ const Header: React.FC = () => {
           <div className="flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:px-6">
             <Link href="/" className="flex items-center space-x-2 group">
               <img src="/images/siiqo.png" alt="Logo" className="w-full h-14" />
-              <span className="hidden text-[1.5em] font-bold text-gray-800 group-hover:text-gray-900 md:inline-block">Siiqo</span>
+              <span className="hidden text-[1.5em] font-bold text-gray-800 group-hover:text-gray-900 md:inline-block">
+                Siiqo
+              </span>
             </Link>
             <div className="flex items-center gap-4">
               {isLoading ? (
@@ -379,7 +387,7 @@ const Header: React.FC = () => {
                     router.push(
                       user?.active_view === "vendor"
                         ? "/vendor/dashboard"
-                        : "/user-profile"
+                        : "/user-profile",
                     )
                   }
                 >

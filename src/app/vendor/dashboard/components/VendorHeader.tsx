@@ -3,8 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Icon from "@/components/AppIcon";
-import { LucidePanelLeftClose, LucidePanelRightClose, Menu, X, Loader2 } from "lucide-react";
-import { vendorService } from "@/services/vendorService"; 
+import {
+  LucidePanelLeftClose,
+  LucidePanelRightClose,
+  Menu,
+  X,
+  Loader2,
+} from "lucide-react";
+import { vendorService } from "@/services/vendorService";
 
 interface VendorData {
   business_name?: string;
@@ -25,6 +31,11 @@ const navigationItems = [
   { label: "Orders", path: "/vendor/orders", icon: "ShoppingCart" },
   { label: "Storefront", path: "/vendor/storefront", icon: "Store" },
   { label: "Analytics", path: "/vendor/analytics", icon: "BarChart3" },
+  {
+    label: "Marketing Tools",
+    path: "/vendor/marketing-tools",
+    icon: "Sparkles",
+  },
   { label: "Settings", path: "/vendor/settings", icon: "Settings" },
 ];
 
@@ -37,9 +48,11 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [vendorData, setVendorData] = useState<VendorData | null>(propVendorData || null);
+  const [vendorData, setVendorData] = useState<VendorData | null>(
+    propVendorData || null,
+  );
   const [loading, setLoading] = useState(!propVendorData);
-  
+
   // New state for navigation/action loading
   const [isPageLoading, setIsPageLoading] = useState(false);
 
@@ -54,7 +67,7 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
         setLoading(true);
         const response = await vendorService.getVendorProfile();
         const apiData = response.data;
-        
+
         setVendorData({
           fullname: apiData.personal_info?.fullname || "Vendor",
           email: apiData.personal_info?.email || "",
@@ -111,7 +124,10 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
               } ${isCollapsed && !mobile ? "justify-center" : "space-x-3"} ${isPageLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               title={isCollapsed && !mobile ? item.label : ""}
             >
-              <Icon name={item.icon as any} size={isCollapsed && !mobile ? 28 : 20} />
+              <Icon
+                name={item.icon as any}
+                size={isCollapsed && !mobile ? 28 : 20}
+              />
               {(!isCollapsed || mobile) && <span>{item.label}</span>}
             </button>
           ))}
@@ -119,7 +135,12 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
       </nav>
 
       <div className="relative p-4 border-t border-border">
-        {showUserMenu && <div className="fixed inset-0 z-[4000]" onClick={() => setShowUserMenu(false)}></div>}
+        {showUserMenu && (
+          <div
+            className="fixed inset-0 z-[4000]"
+            onClick={() => setShowUserMenu(false)}
+          ></div>
+        )}
         <div className="relative z-[5001]">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -127,36 +148,76 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
           >
             <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden rounded-full bg-primary">
               {vendorData?.logo_url ? (
-                <img src={vendorData.logo_url} alt="Logo" className="object-cover w-full h-full" />
+                <img
+                  src={vendorData.logo_url}
+                  alt="Logo"
+                  className="object-cover w-full h-full"
+                />
               ) : (
-                <span className="text-sm font-medium text-white">{vendorData?.fullname?.charAt(0) || "V"}</span>
+                <span className="text-sm font-medium text-white">
+                  {vendorData?.fullname?.charAt(0) || "V"}
+                </span>
               )}
             </div>
             {(!isCollapsed || mobile) && (
               <>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium truncate text-text-primary">{vendorData?.fullname}</p>
-                  <p className="text-xs truncate text-text-muted">{vendorData?.email}</p>
+                  <p className="text-sm font-medium truncate text-text-primary">
+                    {vendorData?.fullname}
+                  </p>
+                  <p className="text-xs truncate text-text-muted">
+                    {vendorData?.email}
+                  </p>
                 </div>
-                <Icon name="ChevronDown" size={16} className={`text-text-muted transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
+                <Icon
+                  name="ChevronDown"
+                  size={16}
+                  className={`text-text-muted transition-transform ${showUserMenu ? "rotate-180" : ""}`}
+                />
               </>
             )}
           </button>
 
           {showUserMenu && (
-            <div className={`absolute bottom-full mb-2 border rounded-lg bg-white border-border shadow-xl z-[5002] ${isCollapsed && !mobile ? "left-full ml-2 w-56" : "left-0 right-0"}`}>
+            <div
+              className={`absolute bottom-full mb-2 border rounded-lg bg-white border-border shadow-xl z-[5002] ${isCollapsed && !mobile ? "left-full ml-2 w-56" : "left-0 right-0"}`}
+            >
               <div className="p-4 border-b border-border">
-                <p className="font-medium text-text-primary">{vendorData?.fullname}</p>
+                <p className="font-medium text-text-primary">
+                  {vendorData?.fullname}
+                </p>
                 <div className="flex items-center mt-1">
-                   <div className={`w-2 h-2 rounded-full mr-2 ${vendorData?.isVerified ? "bg-green-500" : "bg-yellow-500"}`}></div>
-                   <span className="text-[10px] uppercase tracking-wider text-text-muted">{vendorData?.isVerified ? "Initialized" : "Pending"}</span>
+                  <div
+                    className={`w-2 h-2 rounded-full mr-2 ${vendorData?.isVerified ? "bg-green-500" : "bg-yellow-500"}`}
+                  ></div>
+                  <span className="text-[10px] uppercase tracking-wider text-text-muted">
+                    {vendorData?.isVerified ? "Initialized" : "Pending"}
+                  </span>
                 </div>
               </div>
               <div className="p-2">
-                <button onClick={() => handleNavigation("/seller-details")} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"><Icon name="User" size={16} /><span>Profile</span></button>
-                <button onClick={() => handleNavigation("/")} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"><Icon name="ExternalLink" size={16} /><span>Customer App</span></button>
+                <button
+                  onClick={() => handleNavigation("/seller-details")}
+                  className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"
+                >
+                  <Icon name="User" size={16} />
+                  <span>Profile</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation("/")}
+                  className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-text-secondary"
+                >
+                  <Icon name="ExternalLink" size={16} />
+                  <span>Customer App</span>
+                </button>
                 <hr className="my-2 border-border" />
-                <button onClick={handleLogoutAction} className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-red-500"><Icon name="LogOut" size={16} /><span>Sign Out</span></button>
+                <button
+                  onClick={handleLogoutAction}
+                  className="flex items-center w-full px-3 py-2 space-x-3 rounded-lg hover:bg-surface text-sm text-red-500"
+                >
+                  <Icon name="LogOut" size={16} />
+                  <span>Sign Out</span>
+                </button>
               </div>
             </div>
           )}
@@ -172,7 +233,9 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/40 backdrop-blur-md transition-all duration-300">
           <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-2xl border border-border">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-sm font-medium text-text-primary animate-pulse">Processing...</p>
+            <p className="text-sm font-medium text-text-primary animate-pulse">
+              Processing...
+            </p>
           </div>
         </div>
       )}
@@ -180,10 +243,19 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
       {/* Mobile Top Bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-border z-[4999] flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 rounded-md hover:bg-surface"><Menu size={24} /></button>
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 -ml-2 rounded-md hover:bg-surface"
+          >
+            <Menu size={24} />
+          </button>
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary"><Icon name="Store" size={16} color="white" /></div>
-            <h1 className="text-base font-semibold truncate max-w-[150px]">{vendorData?.business_name || "My Store"}</h1>
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
+              <Icon name="Store" size={16} color="white" />
+            </div>
+            <h1 className="text-base font-semibold truncate max-w-[150px]">
+              {vendorData?.business_name || "My Store"}
+            </h1>
           </div>
         </div>
       </div>
@@ -191,30 +263,53 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
       {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[6000] lg:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
           <aside className="absolute top-0 left-0 bottom-0 w-64 bg-white border-r border-border flex flex-col">
-             <div className="p-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><Icon name="Store" size={16} color="white" /></div><span className="font-bold">Menu</span></div>
-                <button onClick={() => setIsMobileMenuOpen(false)}><X size={20} /></button>
-             </div>
-             <NavContent mobile={true} />
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Icon name="Store" size={16} color="white" />
+                </div>
+                <span className="font-bold">Menu</span>
+              </div>
+              <button onClick={() => setIsMobileMenuOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <NavContent mobile={true} />
           </aside>
         </div>
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={`hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-border flex-col z-[5000] transition-all duration-300 ${isCollapsed ? "w-18" : "w-60"}`}>
+      <aside
+        className={`hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-border flex-col z-[5000] transition-all duration-300 ${isCollapsed ? "w-18" : "w-60"}`}
+      >
         <div className="absolute top-3 left-5 z-[5100]">
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-surface">
-            {isCollapsed ? <LucidePanelRightClose size={20} /> : <LucidePanelLeftClose size={20} />}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-surface"
+          >
+            {isCollapsed ? (
+              <LucidePanelRightClose size={20} />
+            ) : (
+              <LucidePanelLeftClose size={20} />
+            )}
           </button>
         </div>
         <div className="p-4 border-b pt-14 border-border">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-lg bg-primary"><Icon name="Store" size={20} color="white" /></div>
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-lg bg-primary">
+              <Icon name="Store" size={20} color="white" />
+            </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-semibold truncate">{vendorData?.business_name || "My Store"}</h1>
+                <h1 className="text-lg font-semibold truncate">
+                  {vendorData?.business_name || "My Store"}
+                </h1>
                 <p className="text-xs text-text-muted">Vendor Dashboard</p>
               </div>
             )}
