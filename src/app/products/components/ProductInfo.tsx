@@ -72,7 +72,7 @@ const ProductInfo = ({
 
     const distanceKm = calculateDistance(
       { lat: coords.lat, lng: coords.lng },
-      { lat: Number(product.latitude), lng: Number(product.longitude) }
+      { lat: Number(product.latitude), lng: Number(product.longitude) },
     );
 
     return distanceKm;
@@ -81,7 +81,7 @@ const ProductInfo = ({
   const formatTimeAgo = (date: Date): string => {
     const now = new Date();
     const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
     );
     if (diffInHours < 1) return "Just now";
     if (diffInHours < 24) return `${diffInHours}h ago`;
@@ -175,7 +175,7 @@ const ProductInfo = ({
   };
 
   const discountPercentage = Math.round(
-    ((product.price - product.price) / product.price) * 100
+    ((product.price - product.price) / product.price) * 100,
   );
 
   return (
@@ -224,8 +224,8 @@ const ProductInfo = ({
                   {calculatedDistance
                     ? `${calculatedDistance.toFixed(1)} km away`
                     : product.distance
-                    ? `${product.distance} km away`
-                    : "Distance unavailable"}
+                      ? `${product.distance} km away`
+                      : "Distance unavailable"}
                 </span>
               </div>
             </div>

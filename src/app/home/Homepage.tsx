@@ -167,7 +167,7 @@ const Homepage: React.FC = () => {
       {/* REPLICATED HERO & HEADER FROM hero.txt */}
       <div
         className="relative bg-cover bg-center"
-        style={{ backgroundImage: "url(/images/mainbg.png)" }}
+        style={{ backgroundColor: "#0b1b3b" }}
       >
         {/* Decorative gradient blobs */}
         <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
@@ -204,58 +204,30 @@ const Homepage: React.FC = () => {
               professional online brands — and helps buyers discover trusted
               brands near and beyond their neighborhood.
             </motion.p>
-
-            <motion.form
-              onSubmit={handleSearch}
-              className="mt-10 sm:mt-12 md:mt-14 w-full max-w-5xl z-10 px-2 sm:px-0"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="relative flex items-center justify-center rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-3 sm:p-4">
-                <motion.button
-                  type="button"
-                  onClick={() => setIsTutorialOpen(true)}
-                  whileHover={{
-                    scale: 1.08,
-                    boxShadow: "0 0 30px rgba(168, 85, 247, 0.8)",
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={{
-                    boxShadow: [
-                      "0 0 20px rgba(168, 85, 247, 0.4)",
-                      "0 0 40px rgba(168, 85, 247, 0.8)",
-                      "0 0 20px rgba(168, 85, 247, 0.4)",
-                    ],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="relative w-auto sm:w-auto flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 transition cursor-pointer group shadow-lg"
-                >
-                  <motion.div
-                    className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/30 via-white/10 to-transparent opacity-0"
-                    animate={{
-                      opacity: [0, 1, 0],
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
-
-                  <BookOpen
-                    size={20}
-                    className="text-white flex-shrink-0 group-hover:text-yellow-200 transition relative z-10 animate-bounce"
-                    style={{ animationDelay: "0s" }}
-                  />
-                  <div className="flex flex-col relative z-10">
-                    <label className="text-[10px] sm:text-[11px] uppercase font-bold text-white/90 tracking-wider">
-                      🎓 Getting Started
-                    </label>
-                    <span className="text-white text-xs sm:text-sm font-semibold">
-                      View Guide
-                    </span>
-                  </div>
-                </motion.button>
-              </div>
-            </motion.form>
+            <div className="flex gap-4 items-center">
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                onClick={() => {
+                  router.push("/signup");
+                }}
+                className="bg-yellow-600 text-black border-none px-6 py-3 rounded-full mt-8 font-medium  transition-colors"
+              >
+                Create Your Storefront Free
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                onClick={() => {
+                  router.push("/marketplace");
+                }}
+                className="bg-blue-900 text-white border-none px-6 py-3 rounded-full mt-8 font-medium transition-colors"
+              >
+                Discover Brands
+              </motion.button>
+            </div>
           </div>
 
           {/* --- DASHBOARD HERO IMAGE (Contained) --- */}
@@ -337,6 +309,26 @@ const Homepage: React.FC = () => {
         isOpen={isTutorialOpen}
         onClose={() => setIsTutorialOpen(false)}
       />
+
+      <motion.button
+        type="button"
+        onClick={() => setIsTutorialOpen(true)}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        animate={{
+          boxShadow: [
+            "0 0 20px rgba(168, 85, 247, 0.4)",
+            "0 0 40px rgba(168, 85, 247, 0.8)",
+            "0 0 20px rgba(168, 85, 247, 0.4)",
+          ],
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="fixed bottom-8 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg"
+        aria-label="Open getting started guide"
+      >
+        <BookOpen size={18} className="text-white" />
+        <span className="text-sm font-semibold">Getting Started</span>
+      </motion.button>
 
       <FloatingWhatsAppButton />
     </div>

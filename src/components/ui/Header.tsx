@@ -11,6 +11,10 @@ import {
   LayoutDashboard,
   LogOut,
   User,
+  UserPlus,
+  LogIn,
+  MapPin,
+  Search,
   ArrowLeft,
   Check,
   AlertCircle,
@@ -19,6 +23,7 @@ import CartDrawer from "@/components/CartDrawer";
 import { useAuth } from "@/context/AuthContext";
 import { useCartTotals } from "@/context/CartContext";
 import { cartService } from "@/services/cartService";
+import SearchSuggestions from "@/app/search-results/components/SearchSuggestions";
 import Skeleton from "../skeleton";
 import Button from "../Button";
 import { switchMode } from "@/services/api";
@@ -56,6 +61,18 @@ const Header: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [whatQuery, setWhatQuery] = useState("");
+  const [whereQuery, setWhereQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [activeInput, setActiveInput] = useState<"what" | "where" | null>(null);
+  const popularSearches = [
+    "Electronics",
+    "Fashion",
+    "Home",
+    "Books",
+    "Services",
+  ];
 
   // --- Refs & Hooks ---
   const desktopRef = useRef<HTMLDivElement | null>(null);
@@ -210,6 +227,50 @@ const Header: React.FC = () => {
     setIsOpen(false);
   };
 
+  const executeHeaderSearch = (
+    queryValue: string = whatQuery,
+    whereValue: string = whereQuery,
+  ) => {
+    const query = queryValue.trim();
+    const where = whereValue.trim();
+    if (!query && !where) return;
+
+    if (query) {
+      setRecentSearches((prev) => {
+        const updated = [query, ...prev.filter((s) => s !== query)].slice(0, 5);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(
+            "headerRecentSearches",
+            JSON.stringify(updated),
+          );
+        }
+        return updated;
+      });
+    }
+
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (where) params.set("where", where);
+    router.push(`/search-results?${params.toString()}`);
+  };
+
+  const handleHeaderSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setShowSuggestions(false);
+    executeHeaderSearch();
+  };
+
+  const handleSuggestionSelect = (value: string) => {
+    if (activeInput === "where") {
+      setWhereQuery(value);
+      executeHeaderSearch(whatQuery, value);
+    } else {
+      setWhatQuery(value);
+      executeHeaderSearch(value, whereQuery);
+    }
+    setShowSuggestions(false);
+  };
+
   // --- Effects ---
   // Auto-switch to buyer mode when on app pages with cart header
   useEffect(() => {
@@ -244,6 +305,19 @@ const Header: React.FC = () => {
     if (isModalOpen) closeModal();
     setIsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("headerRecentSearches");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setRecentSearches(parsed);
+      } catch {
+        setRecentSearches([]);
+      }
+    }
+  }, []);
 
   // --- Toast Component ---
   const ToastContainer = () => (
@@ -369,7 +443,7 @@ const Header: React.FC = () => {
   if (!isAppPage) {
     return (
       <>
-        <header className="sticky top-0 z-[200] bg-white border-b border-gray-100">
+        <header className="sticky  top-0 z-[200] bg-white border-b border-gray-100">
           <div className="flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:px-6">
             <Link href="/" className="flex items-center space-x-2 group">
               <img src="/images/siiqo.png" alt="Logo" className="w-full h-14" />
@@ -377,6 +451,72 @@ const Header: React.FC = () => {
                 Siiqo
               </span>
             </Link>
+            <form
+              onSubmit={handleHeaderSearch}
+              className="hidden sm:flex items-center  max-w-md lg:max-w-lg mx-4"
+            >
+              <div className="relative w-full">
+                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
+                  <div className="flex items-center flex-1 gap-2">
+                    <Search size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whatQuery}
+                      onChange={(e) => {
+                        setWhatQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("what");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="What"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="h-5 w-px bg-gray-200" />
+                  <div className="flex items-center  gap-2">
+                    <MapPin size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whereQuery}
+                      onChange={(e) => {
+                        setWhereQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("where");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="Where"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                    aria-label="Search"
+                    title="Search"
+                  >
+                    <Search size={16} />
+                  </button>
+                </div>
+                {showSuggestions &&
+                  (activeInput
+                    ? activeInput === "where"
+                      ? whereQuery
+                      : whatQuery
+                    : whatQuery || whereQuery) && (
+                    <SearchSuggestions
+                      query={activeInput === "where" ? whereQuery : whatQuery}
+                      recentSearches={recentSearches}
+                      popularSearches={popularSearches}
+                      onSelect={handleSuggestionSelect}
+                      onClose={() => setShowSuggestions(false)}
+                    />
+                  )}
+              </div>
+            </form>
             <div className="flex items-center gap-4">
               {isLoading ? (
                 <Skeleton type="rect" width="100px" height="36px" />
@@ -390,20 +530,97 @@ const Header: React.FC = () => {
                         : "/user-profile",
                     )
                   }
+                  title={
+                    user?.active_view === "vendor"
+                      ? "Vendor Dashboard"
+                      : "User Profile"
+                  }
+                  ariaLabel="buton"
+                  className="p-2"
                 >
-                  {user?.active_view === "vendor"
-                    ? "Vendor Dashboard"
-                    : "User Profile"}
+                  {user?.active_view === "vendor" ? (
+                    <LayoutDashboard size={18} />
+                  ) : (
+                    <User size={18} />
+                  )}
                 </Button>
               ) : (
                 <Button
                   variant="navy"
                   onClick={() => router.push("/auth/signup")}
+                  title="Get Started"
+                  ariaLabel="buton"
+                  className="p-2"
                 >
-                  Get Started
+                  <UserPlus size={18} />
                 </Button>
               )}
             </div>
+          </div>
+          <div className="sm:hidden px-4 pb-3">
+            <form onSubmit={handleHeaderSearch} className="w-full">
+              <div className="relative w-full">
+                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
+                  <div className="flex items-center flex-1 gap-2">
+                    <Search size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whatQuery}
+                      onChange={(e) => {
+                        setWhatQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("what");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="What"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="h-5 w-px bg-gray-200" />
+                  <div className="flex items-center flex-1 gap-2">
+                    <MapPin size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whereQuery}
+                      onChange={(e) => {
+                        setWhereQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("where");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="Where"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                    aria-label="Search"
+                    title="Search"
+                  >
+                    <Search size={16} />
+                  </button>
+                </div>
+                {showSuggestions &&
+                  (activeInput
+                    ? activeInput === "where"
+                      ? whereQuery
+                      : whatQuery
+                    : whatQuery || whereQuery) && (
+                    <SearchSuggestions
+                      query={activeInput === "where" ? whereQuery : whatQuery}
+                      recentSearches={recentSearches}
+                      popularSearches={popularSearches}
+                      onSelect={handleSuggestionSelect}
+                      onClose={() => setShowSuggestions(false)}
+                    />
+                  )}
+              </div>
+            </form>
           </div>
           <GetStartedModal />
         </header>
@@ -438,6 +655,73 @@ const Header: React.FC = () => {
               </Link>
             )}
           </div>
+
+          <form
+            onSubmit={handleHeaderSearch}
+            className="hidden sm:flex items-center w-full max-w-md lg:max-w-lg mx-4"
+          >
+            <div className="relative w-full">
+              <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
+                <div className="flex items-center flex-1 gap-2">
+                  <Search size={16} className="text-gray-400" />
+                  <input
+                    type="text"
+                    value={whatQuery}
+                    onChange={(e) => {
+                      setWhatQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      setActiveInput("what");
+                      setShowSuggestions(true);
+                    }}
+                    placeholder="What"
+                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                </div>
+                <div className="h-5 w-px bg-gray-200" />
+                <div className="flex items-center flex-1 gap-2">
+                  <MapPin size={16} className="text-gray-400" />
+                  <input
+                    type="text"
+                    value={whereQuery}
+                    onChange={(e) => {
+                      setWhereQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      setActiveInput("where");
+                      setShowSuggestions(true);
+                    }}
+                    placeholder="Where"
+                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Search"
+                  title="Search"
+                >
+                  <Search size={16} />
+                </button>
+              </div>
+              {showSuggestions &&
+                (activeInput
+                  ? activeInput === "where"
+                    ? whereQuery
+                    : whatQuery
+                  : whatQuery || whereQuery) && (
+                  <SearchSuggestions
+                    query={activeInput === "where" ? whereQuery : whatQuery}
+                    recentSearches={recentSearches}
+                    popularSearches={popularSearches}
+                    onSelect={handleSuggestionSelect}
+                    onClose={() => setShowSuggestions(false)}
+                  />
+                )}
+            </div>
+          </form>
 
           {/* Desktop actions */}
           <div className="items-center hidden sm:flex gap-x-3">
@@ -495,8 +779,14 @@ const Header: React.FC = () => {
                 </div>
               </>
             ) : (
-              <Button variant="navy" onClick={() => router.push("/auth/login")}>
-                Login
+              <Button
+                variant="navy"
+                onClick={() => router.push("/auth/login")}
+                title="Login"
+                ariaLabel="buton"
+                className="p-2"
+              >
+                <LogIn size={18} />
               </Button>
             )}
           </div>
@@ -546,11 +836,80 @@ const Header: React.FC = () => {
               <Button
                 variant="navy"
                 onClick={() => router.push("/auth/signup")}
+                title="Get Started"
+                ariaLabel="buton"
+                className="p-2"
               >
-                Get Started
+                <UserPlus size={18} />
               </Button>
             )}
           </div>
+        </div>
+
+        <div className="sm:hidden px-4 pb-3">
+          <form onSubmit={handleHeaderSearch} className="w-full">
+            <div className="relative w-full">
+              <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
+                <div className="flex items-center flex-1 gap-2">
+                  <Search size={16} className="text-gray-400" />
+                  <input
+                    type="text"
+                    value={whatQuery}
+                    onChange={(e) => {
+                      setWhatQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      setActiveInput("what");
+                      setShowSuggestions(true);
+                    }}
+                    placeholder="What"
+                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                </div>
+                <div className="h-5 w-px bg-gray-200" />
+                <div className="flex items-center flex-1 gap-2">
+                  <MapPin size={16} className="text-gray-400" />
+                  <input
+                    type="text"
+                    value={whereQuery}
+                    onChange={(e) => {
+                      setWhereQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      setActiveInput("where");
+                      setShowSuggestions(true);
+                    }}
+                    placeholder="Where"
+                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Search"
+                  title="Search"
+                >
+                  <Search size={16} />
+                </button>
+              </div>
+              {showSuggestions &&
+                (activeInput
+                  ? activeInput === "where"
+                    ? whereQuery
+                    : whatQuery
+                  : whatQuery || whereQuery) && (
+                  <SearchSuggestions
+                    query={activeInput === "where" ? whereQuery : whatQuery}
+                    recentSearches={recentSearches}
+                    popularSearches={popularSearches}
+                    onSelect={handleSuggestionSelect}
+                    onClose={() => setShowSuggestions(false)}
+                  />
+                )}
+            </div>
+          </form>
         </div>
 
         {/* Cart Drawer */}

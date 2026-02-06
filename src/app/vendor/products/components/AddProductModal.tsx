@@ -303,18 +303,18 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle name input with validation - only allow letters, spaces, and basic punctuation
+  // Handle name input with validation - allow letters, numbers, spaces, and basic punctuation
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    // Allow letters (any language), spaces, hyphens, apostrophes, ampersands, and periods
-    const stringOnlyPattern = /^[\p{L}\s\-'&.,()]*$/u;
+    // Allow letters (any language), numbers, spaces, hyphens, apostrophes, ampersands, and periods
+    const stringOnlyPattern = /^[\p{L}\p{N}\s\-'&.,()]*$/u;
 
     if (value === "" || stringOnlyPattern.test(value)) {
       setFormData((prev) => ({ ...prev, name: value }));
       setNameError("");
     } else {
       setNameError(
-        "Product name can only contain letters, spaces, and basic punctuation",
+        "Product name can only contain letters, numbers, spaces, and basic punctuation",
       );
     }
   };
@@ -364,7 +364,7 @@ const AddProductWizard: React.FC<AddProductWizardProps> = ({
 
     incoming.forEach((file) => {
       // Validate file type - only allow PNG, JPG, JPEG
-      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
       if (!allowedTypes.includes(file.type.toLowerCase())) {
         setUploadErrors((prev) => [
           ...prev,

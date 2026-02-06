@@ -10,6 +10,7 @@ import Button from "@/components/ui/new/Button";
 import ProductPromoCard from "./components/ProductPromoCard";
 import html2canvas from "html2canvas";
 import { toast } from "@/hooks/use-toast";
+import ShareModal from "@/components/ShareModal";
 interface VendorProfile {
   business_name?: string;
   logo_url?: string | null;
@@ -38,6 +39,7 @@ const MarketingToolsPage: React.FC = () => {
   const [baseUrl, setBaseUrl] = useState<string>("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -212,110 +214,85 @@ const MarketingToolsPage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex bg-background mt-14 md:mt-0 pb-10">
-      <main className="w-full md:max-w-[85vw]  mx-auto px-4 py-4 md:py-6">
-        <div className="mb-6 md:mb-8">
-          <h1 className="mb-1 md:mb-2 text-xl md:text-2xl font-bold font-heading text-text-primary">
-            Marketing Tools
+    <div className="min-h-screen bg-[#F9FAFB] mt-14 md:mt-0">
+      <main className="max-w-[1400px] mx-auto px-4 py-8 md:py-12">
+        <div className="mb-10 text-center md:text-left">
+          <h1 className="text-xl md:text-2xl font-black text-[#0B1B3B] tracking-tight">
+            ShareKit Marketing
           </h1>
-          <p className="text-sm md:text-base text-text-muted">
-            Promote your products & storefront on social media with ShareKit
-            cards.
+          <p className="text-lg text-gray-500 font-medium mt-2">
+            Create high-converting promo cards for your social media.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <section className="xl:col-span-5">
-            <div className="bg-white border border-border rounded-2xl p-5 md:p-6">
-              <h2 className="text-lg font-semibold text-text-primary">
-                Siiqo ShareKit
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          {/* SETTINGS PANEL */}
+          <section className="lg:col-span-5 order-2 lg:order-1">
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 sticky top-6">
+              <h2 className="text-xl font-bold text-[#0B1B3B] mb-6 flex items-center gap-2">
+                <span className="w-2 h-8 bg-[#3662D8] rounded-full" />
+                Customize Your Card
               </h2>
-              <p className="text-sm text-text-muted mt-1">
-                Auto-generate a promo card with QR code for products or your
-                storefront.
-              </p>
 
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={cardType === "product" ? "default" : "outline"}
-                    size="sm"
-                    iconName="Package"
+              <div className="space-y-6">
+                {/* Type & Orientation Selectors */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
                     onClick={() => setCardType("product")}
+                    className={`py-4 rounded-2xl font-bold transition-all ${cardType === "product" ? "bg-[#0B1B3B] text-white shadow-lg" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
                   >
                     Product Card
-                  </Button>
-                  <Button
-                    variant={cardType === "store" ? "default" : "outline"}
-                    size="sm"
-                    iconName="Store"
+                  </button>
+                  <button
                     onClick={() => setCardType("store")}
+                    className={`py-4 rounded-2xl font-bold transition-all ${cardType === "store" ? "bg-[#0B1B3B] text-white shadow-lg" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
                   >
-                    Storefront Card
-                  </Button>
+                    Store Card
+                  </button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={orientation === "portrait" ? "default" : "outline"}
-                    size="sm"
-                    iconName="Smartphone"
+                <div className="flex gap-4 p-1 bg-gray-100 rounded-2xl">
+                  <button
+                    className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${orientation === "portrait" ? "bg-white shadow-sm" : "text-gray-500"}`}
                     onClick={() => setOrientation("portrait")}
                   >
                     Portrait
-                  </Button>
-                  <Button
-                    variant={
-                      orientation === "landscape" ? "default" : "outline"
-                    }
-                    size="sm"
-                    iconName="Monitor"
+                  </button>
+                  <button
+                    className={`flex-1 py-2 rounded-xl text-sm font-bold transition ${orientation === "landscape" ? "bg-white shadow-sm" : "text-gray-500"}`}
                     onClick={() => setOrientation("landscape")}
                   >
                     Landscape
-                  </Button>
+                  </button>
                 </div>
 
-                <label className="block text-sm font-medium text-text-secondary">
-                  Select product
-                </label>
-                <select
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                  value={selectedProductId ?? ""}
-                  onChange={(e) => setSelectedProductId(Number(e.target.value))}
-                  disabled={cardType === "store"}
-                >
-                  {products.length === 0 && (
-                    <option value="" disabled>
-                      No products found
-                    </option>
-                  )}
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name}
-                    </option>
-                  ))}
-                </select>
+                {/* Product Select */}
+                {cardType === "product" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+                      Select Product
+                    </label>
+                    <select
+                      className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-medium focus:ring-2 focus:ring-blue-500 transition"
+                      value={selectedProductId ?? ""}
+                      onChange={(e) =>
+                        setSelectedProductId(Number(e.target.value))
+                      }
+                    >
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-                <div className="rounded-lg bg-muted/50 p-3 text-xs text-text-muted">
-                  {cardType === "product"
-                    ? "Tip: Add products first, then come back to generate a promo card."
-                    : "Tip: Keep your storefront name, logo, and banner updated for a better card."}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconName="Share2"
-                    onClick={handleCopyLink}
-                    loading={isCopying}
-                  >
-                    Share
-                  </Button>
+                {/* Actions */}
+                <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button
                     variant="secondary"
-                    size="sm"
+                    className="w-full py-7 rounded-2xl font-bold text-lg shadow-xl"
                     iconName="Download"
                     onClick={handleDownloadPng}
                     disabled={downloadDisabled || isDownloading}
@@ -323,36 +300,67 @@ const MarketingToolsPage: React.FC = () => {
                   >
                     Download PNG
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full py-7 rounded-2xl font-bold text-lg"
+                    iconName="Share2"
+                    onClick={() => setIsShareModalOpen(true)}
+                  >
+                    Share
+                  </Button>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="xl:col-span-7 flex justify-center xl:justify-end w-full overflow-x-auto">
-            {cardType === "product" && !selectedProduct ? (
-              <div className="bg-white border border-border rounded-2xl p-6 text-sm text-text-muted">
-                Add a product to generate your promo card.
+          {/* PREVIEW PANEL */}
+          <section className="lg:col-span-7 order-1 lg:order-2 flex flex-col items-center">
+            <div className="mb-4 text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">
+              Live Preview
+            </div>
+
+            {/* THE MAGIC WRAPPER: Handles responsiveness via CSS scaling */}
+            <div className="w-full flex justify-center items-center overflow-x-auto py-10 px-4 scrollbar-hide min-h-[500px]">
+              <div className="origin-center scale-[0.7] sm:scale-[0.85] md:scale-100 transition-transform duration-500">
+                <div
+                  ref={cardRef}
+                  className="shadow-[0_40px_100px_rgba(0,0,0,0.15)] rounded-[45px]"
+                >
+                  <ProductPromoCard
+                    type={cardType}
+                    orientation={orientation}
+                    product={cardType === "product" ? selectedProduct : null}
+                    storeName={vendorProfile?.business_name || "My Store"}
+                    storeUrl={storeUrl}
+                    storeLogoUrl={vendorProfile?.logo_url}
+                    storeBannerUrl={vendorProfile?.banner_url}
+                    storeTagline={vendorProfile?.description}
+                    productUrl={productUrl}
+                    locationLabel={vendorProfile?.address || undefined}
+                  />
+                </div>
               </div>
-            ) : (
-              <div ref={cardRef}>
-                <ProductPromoCard
-                  type={cardType}
-                  orientation={orientation}
-                  product={cardType === "product" ? selectedProduct : null}
-                  storeName={vendorProfile?.business_name || "My Store"}
-                  storeUrl={storeUrl}
-                  storeLogoUrl={vendorProfile?.logo_url || null}
-                  storeBannerUrl={vendorProfile?.banner_url || null}
-                  storeTagline={vendorProfile?.description || null}
-                  productUrl={productUrl}
-                  locationLabel={vendorProfile?.address || undefined}
-                  ctaText={cardType === "store" ? "Visit my Store" : undefined}
-                />
-              </div>
-            )}
+            </div>
           </section>
         </div>
       </main>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        productId={
+          cardType === "store"
+            ? vendorProfile?.business_name || "store"
+            : selectedProduct?.id || "product"
+        }
+        productName={
+          cardType === "store"
+            ? vendorProfile?.business_name || "My Store"
+            : selectedProduct?.name || "Product"
+        }
+        productOwner={vendorProfile?.business_name || "Siiqo Store"}
+        isStore={cardType === "store"}
+      />
     </div>
   );
 };

@@ -20,6 +20,7 @@ import ShareModal from "@/components/ShareModal";
 import { productService } from "@/services/productService";
 import api_endpoints from "@/hooks/api_endpoints";
 import { getServerErrorMessage } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
 
 interface StoreInfo {
   address: string;
@@ -74,6 +75,7 @@ interface StorefrontDetailsResponse {
 const StorefrontDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
+  const { user, isLoggedIn } = useAuth();
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(
     null,
@@ -89,9 +91,15 @@ const StorefrontDetailsPage = () => {
   const [selectedCatalog, setSelectedCatalog] = useState<any | null>(null);
   const [catalogPage, setCatalogPage] = useState(1);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isStorefrontBannerClosed, setIsStorefrontBannerClosed] =
+    useState(false);
   const catalogsPerPage = 6;
 
   const storeName = typeof params.name === "string" ? params.name : "";
+  const userData = (user as any)?.data;
+  const isVendorInitialized = userData?.store_settings?.initialized === true;
+  const showStorefrontBanner =
+    !isStorefrontBannerClosed && (!isLoggedIn || !isVendorInitialized);
 
   useEffect(() => {
     const fetchStoreDetails = async () => {
@@ -358,6 +366,45 @@ const StorefrontDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {showStorefrontBanner && (
+          <div className="max-w-7xl mx-auto px-4 md:px-6 mt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0B1B3B] text-white rounded-2xl p-4 sm:p-5 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                  <Icon name="Store" size={16} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-sm sm:text-base font-semibold">
+                    Create your storefront on Siiqo today.
+                  </p>
+                  <p className="text-xs sm:text-sm text-white/80">
+                    It only takes a few minutes to start selling.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button
+                  onClick={() =>
+                    router.push(
+                      isLoggedIn ? "/auth/vendor-onboarding" : "/auth/signup",
+                    )
+                  }
+                  className="px-4 py-2 rounded-xl bg-white text-[#0B1B3B] font-bold text-xs sm:text-sm hover:bg-white/90 transition"
+                >
+                  Create Storefront
+                </button>
+                <button
+                  onClick={() => setIsStorefrontBannerClosed(true)}
+                  className="p-2 rounded-lg hover:bg-white/10 transition"
+                  aria-label="Close banner"
+                >
+                  <Icon name="X" size={16} className="text-white" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ShareModal
           isOpen={isShareModalOpen}
