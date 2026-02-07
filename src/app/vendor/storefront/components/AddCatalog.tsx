@@ -45,14 +45,14 @@ const AddCatalog = () => {
   const [catalogName, setCatalogName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCatalogId, setSelectedCatalogId] = useState<number | null>(
-    null
+    null,
   );
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [existingCatalogs, setExistingCatalogs] = useState<Catalog[]>([]);
   const [catalogImage, setCatalogImage] = useState<File | null>(null);
   const [catalogImagePreview, setCatalogImagePreview] = useState<string | null>(
-    null
+    null,
   );
 
   // 1. Fetch products and catalogs on mount
@@ -94,7 +94,7 @@ const AddCatalog = () => {
         const res = await productService.getCatalogs();
         if (res.status === "success" && res.catalogs) {
           const catalogs = res.catalogs.filter(
-            (cat: any) => cat.name !== "Standalone Products"
+            (cat: any) => cat.name !== "Standalone Products",
           );
           setExistingCatalogs(
             catalogs.map((cat: any) => ({
@@ -103,7 +103,7 @@ const AddCatalog = () => {
               description: cat.description,
               product_count: cat.products?.length || 0,
               image: cat.image || null,
-            }))
+            })),
           );
         }
       } catch (error) {
@@ -133,7 +133,7 @@ const AddCatalog = () => {
 
   const toggleProduct = (id: number) => {
     setSelectedProductIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
     );
   };
 
@@ -150,7 +150,7 @@ const AddCatalog = () => {
       const res = await productService.getCatalogs();
       if (res.status === "success" && res.catalogs) {
         const selectedCat = res.catalogs.find(
-          (cat: any) => cat.id === catalog.id
+          (cat: any) => cat.id === catalog.id,
         );
         if (selectedCat && selectedCat.products) {
           // Pre-select products already in this catalog
@@ -201,7 +201,7 @@ const AddCatalog = () => {
         });
       } else {
         const targetCatalog = existingCatalogs.find(
-          (c) => c.id === selectedCatalogId
+          (c) => c.id === selectedCatalogId,
         );
         data = await productService.updateCatalog(selectedCatalogId!, {
           name: catalogName || targetCatalog?.name,
@@ -235,7 +235,7 @@ const AddCatalog = () => {
           .then((res) => {
             if (res.status === "success" && res.catalogs) {
               const catalogs = res.catalogs.filter(
-                (cat: any) => cat.name !== "Standalone Products"
+                (cat: any) => cat.name !== "Standalone Products",
               );
               setExistingCatalogs(
                 catalogs.map((cat: any) => ({
@@ -244,7 +244,7 @@ const AddCatalog = () => {
                   description: cat.description,
                   product_count: cat.products?.length || 0,
                   image: cat.image || null,
-                }))
+                })),
               );
             }
           })
@@ -551,8 +551,8 @@ const AddCatalog = () => {
           {loading
             ? "Processing..."
             : mode === "new"
-            ? `Create catalog (${selectedProductIds.length} Items)`
-            : `Add to catalog (${selectedProductIds.length} Items)`}
+              ? `Create catalog (${selectedProductIds.length} Items)`
+              : `Add to catalog (${selectedProductIds.length} Items)`}
         </button>
       </div>
     </div>

@@ -27,7 +27,9 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { removeNotification } = useCartNotifications();
   const isLoading = useCartLoading();
   const router = useRouter();
-  const [updatingItemId, setUpdatingItemId] = useState<number | string | null>(null);
+  const [updatingItemId, setUpdatingItemId] = useState<number | string | null>(
+    null,
+  );
 
   const handleCheckout = () => {
     onClose();
@@ -36,7 +38,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   const handleUpdateQuantity = async (
     itemId: number | string,
-    quantity: number
+    quantity: number,
   ) => {
     if (quantity < 1) {
       await handleDeleteItem(itemId);
@@ -73,11 +75,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   return (
     <div className="fixed inset-0 z-[300]">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50" 
-        onClick={onClose} 
-      />
-      
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+
       {/* Drawer */}
       <div className="fixed top-0 right-0 h-full bg-white shadow-lg w-full sm:w-96 animate-in slide-in-from-right duration-300 flex flex-col">
         {/* Header */}
@@ -102,7 +101,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-4">
-                  <Skeleton type="rect" width="80px" height="80px" className="rounded" />
+                  <Skeleton
+                    type="rect"
+                    width="80px"
+                    height="80px"
+                    className="rounded"
+                  />
                   <div className="flex-1 space-y-2">
                     <Skeleton type="rect" width="100%" height="16px" />
                     <Skeleton type="rect" width="60%" height="14px" />
@@ -116,7 +120,9 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 <ShoppingCart size={32} className="text-gray-400" />
               </div>
               <div className="text-center">
-                <p className="font-medium text-text-primary">Your cart is empty</p>
+                <p className="font-medium text-text-primary">
+                  Your cart is empty
+                </p>
                 <p className="text-sm text-text-secondary mt-1">
                   Add items to get started
                 </p>
@@ -132,8 +138,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   {/* Product Image */}
                   <img
                     src={
-                      item.product.images[0] ||
-                      "https://via.placeholder.com/80"
+                      item.product.images[0] || "https://via.placeholder.com/80"
                     }
                     alt={item.product.product_name}
                     className="w-20 h-20 object-cover rounded border border-border"
@@ -157,10 +162,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         onClick={() =>
                           handleUpdateQuantity(
                             item.id,
-                            Math.max(1, item.quantity - 1)
+                            Math.max(1, item.quantity - 1),
                           )
                         }
-                        disabled={isLoading || updatingItemId === item.id || item.quantity <= 1}
+                        disabled={
+                          isLoading ||
+                          updatingItemId === item.id ||
+                          item.quantity <= 1
+                        }
                         className="p-1 border border-border rounded hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Icon name="Minus" size={14} />
@@ -172,7 +181,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         onClick={() =>
                           handleUpdateQuantity(item.id, item.quantity + 1)
                         }
-                        disabled={isLoading || updatingItemId === item.id || item.quantity >= item.available_stock}
+                        disabled={
+                          isLoading ||
+                          updatingItemId === item.id ||
+                          item.quantity >= item.available_stock
+                        }
                         className="p-1 border border-border rounded hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Icon name="Plus" size={14} />

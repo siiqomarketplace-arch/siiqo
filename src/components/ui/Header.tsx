@@ -104,6 +104,7 @@ const Header: React.FC = () => {
   const isAppPage =
     !isSearchPage && appPages.some((page) => pathname.startsWith(page));
   const showBackButton = pathname === "/create-listing";
+  const isHomePage = pathname === "/";
 
   const modalOptions: ModalOption[] = [
     {
@@ -451,72 +452,74 @@ const Header: React.FC = () => {
                 Siiqo
               </span>
             </Link>
-            <form
-              onSubmit={handleHeaderSearch}
-              className="hidden sm:flex items-center  max-w-md lg:max-w-lg mx-4"
-            >
-              <div className="relative w-full">
-                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
-                  <div className="flex items-center flex-1 gap-2">
-                    <Search size={16} className="text-gray-400" />
-                    <input
-                      type="text"
-                      value={whatQuery}
-                      onChange={(e) => {
-                        setWhatQuery(e.target.value);
-                        setShowSuggestions(true);
-                      }}
-                      onFocus={() => {
-                        setActiveInput("what");
-                        setShowSuggestions(true);
-                      }}
-                      placeholder="What"
-                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                    />
+            {isHomePage && (
+              <form
+                onSubmit={handleHeaderSearch}
+                className="hidden sm:flex items-center  max-w-md lg:max-w-lg mx-4"
+              >
+                <div className="relative w-full">
+                  <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
+                    <div className="flex items-center flex-1 gap-2">
+                      <Search size={16} className="text-gray-400" />
+                      <input
+                        type="text"
+                        value={whatQuery}
+                        onChange={(e) => {
+                          setWhatQuery(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          setActiveInput("what");
+                          setShowSuggestions(true);
+                        }}
+                        placeholder="What"
+                        className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                      />
+                    </div>
+                    <div className="h-5 w-px bg-gray-200" />
+                    <div className="flex items-center  gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <input
+                        type="text"
+                        value={whereQuery}
+                        onChange={(e) => {
+                          setWhereQuery(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          setActiveInput("where");
+                          setShowSuggestions(true);
+                        }}
+                        placeholder="Where"
+                        className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="ml-1 p-2 rounded-md  bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                      aria-label="Search"
+                      title="Search"
+                    >
+                      <Search size={16} className='md:hidden' /><span className='md:block'>Search</span>
+                    </button>
                   </div>
-                  <div className="h-5 w-px bg-gray-200" />
-                  <div className="flex items-center  gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <input
-                      type="text"
-                      value={whereQuery}
-                      onChange={(e) => {
-                        setWhereQuery(e.target.value);
-                        setShowSuggestions(true);
-                      }}
-                      onFocus={() => {
-                        setActiveInput("where");
-                        setShowSuggestions(true);
-                      }}
-                      placeholder="Where"
-                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-                    aria-label="Search"
-                    title="Search"
-                  >
-                    <Search size={16} />
-                  </button>
+                  {showSuggestions &&
+                    (activeInput
+                      ? activeInput === "where"
+                        ? whereQuery
+                        : whatQuery
+                      : whatQuery || whereQuery) && (
+                      <SearchSuggestions
+                        query={activeInput === "where" ? whereQuery : whatQuery}
+                        recentSearches={recentSearches}
+                        popularSearches={popularSearches}
+                        onSelect={handleSuggestionSelect}
+                        onClose={() => setShowSuggestions(false)}
+                      />
+                    )}
                 </div>
-                {showSuggestions &&
-                  (activeInput
-                    ? activeInput === "where"
-                      ? whereQuery
-                      : whatQuery
-                    : whatQuery || whereQuery) && (
-                    <SearchSuggestions
-                      query={activeInput === "where" ? whereQuery : whatQuery}
-                      recentSearches={recentSearches}
-                      popularSearches={popularSearches}
-                      onSelect={handleSuggestionSelect}
-                      onClose={() => setShowSuggestions(false)}
-                    />
-                  )}
-              </div>
-            </form>
+              </form>
+            )}
             <div className="flex items-center gap-4">
               {isLoading ? (
                 <Skeleton type="rect" width="100px" height="36px" />
@@ -557,10 +560,114 @@ const Header: React.FC = () => {
               )}
             </div>
           </div>
-          <div className="sm:hidden px-4 pb-3">
-            <form onSubmit={handleHeaderSearch} className="w-full">
+          {isHomePage && (
+            <div className="sm:hidden px-4 pb-3">
+              <form onSubmit={handleHeaderSearch} className="w-full">
+                <div className="relative w-full">
+                  <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
+                    <div className="flex items-center flex-1 gap-2">
+                      <Search size={16} className="text-gray-400" />
+                      <input
+                        type="text"
+                        value={whatQuery}
+                        onChange={(e) => {
+                          setWhatQuery(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          setActiveInput("what");
+                          setShowSuggestions(true);
+                        }}
+                        placeholder="What"
+                        className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                      />
+                    </div>
+                    <div className="h-5 w-px bg-gray-200" />
+                    <div className="flex items-center flex-1 gap-2">
+                      <MapPin size={16} className="text-gray-400" />
+                      <input
+                        type="text"
+                        value={whereQuery}
+                        onChange={(e) => {
+                          setWhereQuery(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          setActiveInput("where");
+                          setShowSuggestions(true);
+                        }}
+                        placeholder="Where"
+                        className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                      aria-label="Search"
+                      title="Search"
+                    >
+                      <Search size={16} />
+                    </button>
+                  </div>
+                  {showSuggestions &&
+                    (activeInput
+                      ? activeInput === "where"
+                        ? whereQuery
+                        : whatQuery
+                      : whatQuery || whereQuery) && (
+                      <SearchSuggestions
+                        query={activeInput === "where" ? whereQuery : whatQuery}
+                        recentSearches={recentSearches}
+                        popularSearches={popularSearches}
+                        onSelect={handleSuggestionSelect}
+                        onClose={() => setShowSuggestions(false)}
+                      />
+                    )}
+                </div>
+              </form>
+            </div>
+          )}
+          <GetStartedModal />
+        </header>
+        <ToastContainer />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <header className="sticky top-0 z-[200] bg-white border-b border-border">
+        <div className="flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:h-18 md:px-2">
+          <div className="flex items-center space-x-4">
+            {showBackButton ? (
+              <button
+                onClick={() => {
+                  addToast("Going back...", "loading");
+                  window.history.length > 1 ? router.back() : router.push("/");
+                }}
+                disabled={isSwitching}
+                className="p-2 -ml-2 transition-colors rounded-lg hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            ) : (
+              <Link href="/" className="block">
+                <img
+                  src="/images/siiqo.png"
+                  alt="Logo"
+                  className="w-full h-14"
+                />
+              </Link>
+            )}
+          </div>
+
+          {isHomePage && (
+            <form
+              onSubmit={handleHeaderSearch}
+              className="hidden sm:flex items-center w-full max-w-md lg:max-w-lg mx-4"
+            >
               <div className="relative w-full">
-                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
+                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
                   <div className="flex items-center flex-1 gap-2">
                     <Search size={16} className="text-gray-400" />
                     <input
@@ -621,107 +728,7 @@ const Header: React.FC = () => {
                   )}
               </div>
             </form>
-          </div>
-          <GetStartedModal />
-        </header>
-        <ToastContainer />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <header className="sticky top-0 z-[200] bg-white border-b border-border">
-        <div className="flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:h-18 md:px-2">
-          <div className="flex items-center space-x-4">
-            {showBackButton ? (
-              <button
-                onClick={() => {
-                  addToast("Going back...", "loading");
-                  window.history.length > 1 ? router.back() : router.push("/");
-                }}
-                disabled={isSwitching}
-                className="p-2 -ml-2 transition-colors rounded-lg hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowLeft size={20} />
-              </button>
-            ) : (
-              <Link href="/" className="block">
-                <img
-                  src="/images/siiqo.png"
-                  alt="Logo"
-                  className="w-full h-14"
-                />
-              </Link>
-            )}
-          </div>
-
-          <form
-            onSubmit={handleHeaderSearch}
-            className="hidden sm:flex items-center w-full max-w-md lg:max-w-lg mx-4"
-          >
-            <div className="relative w-full">
-              <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 shadow-sm">
-                <div className="flex items-center flex-1 gap-2">
-                  <Search size={16} className="text-gray-400" />
-                  <input
-                    type="text"
-                    value={whatQuery}
-                    onChange={(e) => {
-                      setWhatQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      setActiveInput("what");
-                      setShowSuggestions(true);
-                    }}
-                    placeholder="What"
-                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                  />
-                </div>
-                <div className="h-5 w-px bg-gray-200" />
-                <div className="flex items-center flex-1 gap-2">
-                  <MapPin size={16} className="text-gray-400" />
-                  <input
-                    type="text"
-                    value={whereQuery}
-                    onChange={(e) => {
-                      setWhereQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      setActiveInput("where");
-                      setShowSuggestions(true);
-                    }}
-                    placeholder="Where"
-                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-                  aria-label="Search"
-                  title="Search"
-                >
-                  <Search size={16} />
-                </button>
-              </div>
-              {showSuggestions &&
-                (activeInput
-                  ? activeInput === "where"
-                    ? whereQuery
-                    : whatQuery
-                  : whatQuery || whereQuery) && (
-                  <SearchSuggestions
-                    query={activeInput === "where" ? whereQuery : whatQuery}
-                    recentSearches={recentSearches}
-                    popularSearches={popularSearches}
-                    onSelect={handleSuggestionSelect}
-                    onClose={() => setShowSuggestions(false)}
-                  />
-                )}
-            </div>
-          </form>
+          )}
 
           {/* Desktop actions */}
           <div className="items-center hidden sm:flex gap-x-3">
@@ -846,71 +853,73 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="sm:hidden px-4 pb-3">
-          <form onSubmit={handleHeaderSearch} className="w-full">
-            <div className="relative w-full">
-              <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
-                <div className="flex items-center flex-1 gap-2">
-                  <Search size={16} className="text-gray-400" />
-                  <input
-                    type="text"
-                    value={whatQuery}
-                    onChange={(e) => {
-                      setWhatQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      setActiveInput("what");
-                      setShowSuggestions(true);
-                    }}
-                    placeholder="What"
-                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                  />
+        {isHomePage && (
+          <div className="sm:hidden px-4 pb-3">
+            <form onSubmit={handleHeaderSearch} className="w-full">
+              <div className="relative w-full">
+                <div className="flex items-center w-full gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 shadow-sm">
+                  <div className="flex items-center flex-1 gap-2">
+                    <Search size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whatQuery}
+                      onChange={(e) => {
+                        setWhatQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("what");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="What"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="h-5 w-px bg-gray-200" />
+                  <div className="flex items-center flex-1 gap-2">
+                    <MapPin size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={whereQuery}
+                      onChange={(e) => {
+                        setWhereQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setActiveInput("where");
+                        setShowSuggestions(true);
+                      }}
+                      placeholder="Where"
+                      className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                    aria-label="Search"
+                    title="Search"
+                  >
+                    <Search size={16} />
+                  </button>
                 </div>
-                <div className="h-5 w-px bg-gray-200" />
-                <div className="flex items-center flex-1 gap-2">
-                  <MapPin size={16} className="text-gray-400" />
-                  <input
-                    type="text"
-                    value={whereQuery}
-                    onChange={(e) => {
-                      setWhereQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      setActiveInput("where");
-                      setShowSuggestions(true);
-                    }}
-                    placeholder="Where"
-                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="ml-1 p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-                  aria-label="Search"
-                  title="Search"
-                >
-                  <Search size={16} />
-                </button>
+                {showSuggestions &&
+                  (activeInput
+                    ? activeInput === "where"
+                      ? whereQuery
+                      : whatQuery
+                    : whatQuery || whereQuery) && (
+                    <SearchSuggestions
+                      query={activeInput === "where" ? whereQuery : whatQuery}
+                      recentSearches={recentSearches}
+                      popularSearches={popularSearches}
+                      onSelect={handleSuggestionSelect}
+                      onClose={() => setShowSuggestions(false)}
+                    />
+                  )}
               </div>
-              {showSuggestions &&
-                (activeInput
-                  ? activeInput === "where"
-                    ? whereQuery
-                    : whatQuery
-                  : whatQuery || whereQuery) && (
-                  <SearchSuggestions
-                    query={activeInput === "where" ? whereQuery : whatQuery}
-                    recentSearches={recentSearches}
-                    popularSearches={popularSearches}
-                    onSelect={handleSuggestionSelect}
-                    onClose={() => setShowSuggestions(false)}
-                  />
-                )}
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
 
         {/* Cart Drawer */}
         <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

@@ -71,14 +71,20 @@ const ProductPromoCard: React.FC<ProductPromoCardProps> = ({
     >
       {/* 1. Header Image Section */}
       <div
-        className={`relative overflow-hidden ${isLandscape ? "w-[45%] h-full" : "h-[450px] w-full"}`}
+        className={`relative overflow-hidden ${
+          isLandscape
+            ? "w-[45%] h-full"
+            : "w-full h-[320px] sm:h-[380px] md:h-[450px]"
+        }`}
       >
         <div
           className="w-full h-full"
           style={{
             backgroundImage: `url(${headerImageSrc})`,
-            backgroundSize: "cover",
+            backgroundSize: "contain",
             backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            backgroundColor: "#F3F4F6",
           }}
         />
         {/* Shine/Sparkle effect */}
@@ -104,7 +110,7 @@ const ProductPromoCard: React.FC<ProductPromoCardProps> = ({
           )}
 
           {isStoreCard && (
-            <p className="text-[#D29E53] text-lg font-bold italic opacity-90 line-clamp-1">
+            <p className="text-[#D29E53] text-lg font-bold italic opacity-90 md:line-clamp-2 w-full">
               {storeTagline || "Verified Local Store"}
             </p>
           )}
@@ -137,7 +143,7 @@ const ProductPromoCard: React.FC<ProductPromoCardProps> = ({
               <p className="text-white/70 text-sm mt-1">
                 Shop on <span className="font-black text-white">Siiqo!</span>
               </p>
-              <span className="text-[#D29E53] text-[11px] mt-2 font-mono font-extrabold  line-clamp-2 max-w-[140px]">
+              <span className="text-[#D29E53] text-[11px] mt-2 font-mono font-extrabold  md:line-clamp-2 w-full">
                 {displayStoreUrl}
               </span>
             </div>

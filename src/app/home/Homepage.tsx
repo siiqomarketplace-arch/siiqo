@@ -204,15 +204,15 @@ const Homepage: React.FC = () => {
               professional online brands — and helps buyers discover trusted
               brands near and beyond their neighborhood.
             </motion.p>
-            <div className="flex gap-4 items-center">
+            <div className="flex flex-wrap-reverse md:no-wrap  md:gap-4 items-center justify-center">
               <motion.button
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 onClick={() => {
-                  router.push("/signup");
+                  router.push("/auth/signup");
                 }}
-                className="bg-yellow-600 text-black border-none px-6 py-3 rounded-full mt-8 font-medium  transition-colors"
+                className="bg-yellow-600 w-[100%] md:w-auto text-black  border-none px-6 py-3 rounded-full mt-8 font-medium  transition-colors"
               >
                 Create Your Storefront Free
               </motion.button>
@@ -223,7 +223,7 @@ const Homepage: React.FC = () => {
                 onClick={() => {
                   router.push("/marketplace");
                 }}
-                className="bg-blue-900 text-white border-none px-6 py-3 rounded-full mt-8 font-medium transition-colors"
+                className="bg-blue-900 text-white w-full md:w-auto border-none px-6 py-3 rounded-full mt-8 font-medium transition-colors"
               >
                 Discover Brands
               </motion.button>
@@ -323,7 +323,7 @@ const Homepage: React.FC = () => {
           ],
         }}
         transition={{ duration: 2, repeat: Infinity }}
-        className="fixed bottom-8 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg"
+        className="fixed bottom-28 md:bottom-8 left-6 z-[900] flex items-center gap-3 px-4 py-3 rounded-full bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 hover:from-purple-700 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg"
         aria-label="Open getting started guide"
       >
         <BookOpen size={18} className="text-white" />

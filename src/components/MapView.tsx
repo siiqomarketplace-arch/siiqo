@@ -65,7 +65,7 @@ const MapView: React.FC<MapViewProps> = ({
 
       return { lat, lng };
     },
-    []
+    [],
   );
 
   // Initialize map
@@ -82,7 +82,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       // Cleanup markers
       Object.values(markersRef.current || {}).forEach((marker: any) =>
-        marker.remove()
+        marker.remove(),
       );
       markersRef.current = {};
     };
@@ -94,7 +94,7 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Clear existing markers
     Object.values(markersRef.current || {}).forEach((marker: any) =>
-      marker.remove()
+      marker.remove(),
     );
     markersRef.current = {};
 

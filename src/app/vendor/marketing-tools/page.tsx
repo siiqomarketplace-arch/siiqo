@@ -149,23 +149,42 @@ const MarketingToolsPage: React.FC = () => {
     if (!shareUrl) return;
     try {
       setIsCopying(true);
-      if (navigator?.clipboard?.writeText) {
+      if (window.isSecureContext && navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = shareUrl;
-        textArea.style.position = "fixed";
-        textArea.style.opacity = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
+        toast({ title: "Link copied", description: shareUrl });
+        return;
       }
+
+      if (navigator?.share) {
+        await navigator.share({ title: "Siiqo", url: shareUrl });
+        toast({ title: "Share opened", description: shareUrl });
+        return;
+      }
+
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, textArea.value.length);
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textArea);
+
+      if (!copied) {
+        throw new Error("Copy command failed");
+      }
+
       toast({ title: "Link copied", description: shareUrl });
     } catch (error) {
       console.error("Failed to copy link", error);
-      toast({ title: "Could not copy link", variant: "destructive" });
+      try {
+        window.prompt("Copy this link:", shareUrl);
+      } catch {
+        // Ignore prompt failures
+      }
+      toast({ title: "Could not auto-copy", description: shareUrl });
     } finally {
       setIsCopying(false);
     }
@@ -175,6 +194,12 @@ const MarketingToolsPage: React.FC = () => {
     if (!cardRef.current) return;
     try {
       setIsDownloading(true);
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => resolve(null)),
+      );
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => resolve(null)),
+      );
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,
@@ -321,7 +346,13 @@ const MarketingToolsPage: React.FC = () => {
 
             {/* THE MAGIC WRAPPER: Handles responsiveness via CSS scaling */}
             <div className="w-full flex justify-center items-center overflow-x-auto py-10 px-4 scrollbar-hide min-h-[500px]">
-              <div className="origin-center scale-[0.7] sm:scale-[0.85] md:scale-100 transition-transform duration-500">
+              <div
+                className={`origin-center transition-transform duration-500 ${
+                  isDownloading
+                    ? "scale-100"
+                    : "scale-[0.7] sm:scale-[0.85] md:scale-100"
+                }`}
+              >
                 <div
                   ref={cardRef}
                   className="shadow-[0_40px_100px_rgba(0,0,0,0.15)] rounded-[45px]"
